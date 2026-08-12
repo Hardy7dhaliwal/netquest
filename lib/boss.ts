@@ -20,6 +20,46 @@ export const DAILY_TIME_PER_QUESTION = 20;
 /** Accuracy needed to win a battle (5/6 = 83%, 4/5 = 80%). */
 export const VICTORY_ACCURACY = 0.8;
 
+export type BossTierId = "rookie" | "veteran" | "elite";
+
+export type BossTier = {
+  id: BossTierId;
+  label: string;
+  /** Short spec line, e.g. "4 questions · 25s each". */
+  description: string;
+  questions: number;
+  timePerQuestion: number;
+  xp: { victory: number; defeat: number };
+};
+
+/** Boss difficulty tiers — harder tiers ask more questions in less time for more XP. */
+export const BOSS_TIERS: BossTier[] = [
+  {
+    id: "rookie",
+    label: "Rookie",
+    description: "4 questions · 25s each",
+    questions: 4,
+    timePerQuestion: 25,
+    xp: { victory: 50, defeat: 10 },
+  },
+  {
+    id: "veteran",
+    label: "Veteran",
+    description: "6 questions · 15s each",
+    questions: BOSS_QUESTIONS,
+    timePerQuestion: BOSS_TIME_PER_QUESTION,
+    xp: { victory: BOSS_XP.victory, defeat: BOSS_XP.defeat },
+  },
+  {
+    id: "elite",
+    label: "Elite",
+    description: "8 questions · 10s each",
+    questions: 8,
+    timePerQuestion: 10,
+    xp: { victory: 100, defeat: 20 },
+  },
+];
+
 // ─── Deterministic PRNG (xmur3 string hash + mulberry32), no dependencies. ──
 function xmur3(str: string): () => number {
   let h = 1779033703 ^ str.length;
@@ -76,8 +116,8 @@ export function getBossFights(): BossFight[] {
 }
 
 /** A seeded, time-pressured sample of the arc's checkpoint questions. */
-export function getBossBattle(arcId: string, seed: string): QuizQuestion[] {
-  return pickMany(getArcQuiz(arcId), BOSS_QUESTIONS, seededRng(seed));
+export function getBossBattle(arcId: string, seed: string, count: number = BOSS_QUESTIONS): QuizQuestion[] {
+  return pickMany(getArcQuiz(arcId), count, seededRng(seed));
 }
 
 /** A battle is won at or above the accuracy threshold. */

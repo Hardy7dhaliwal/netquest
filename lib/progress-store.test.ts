@@ -210,6 +210,16 @@ describe("progress", () => {
     expect(state.mastery["3.1.c"]).toBe(85); // unchanged by the defeat
   });
 
+  it("awards tier-based boss XP when passed", () => {
+    useProgressStore.getState().recordBossResult("stp-storm", true, 1, 100); // Elite win
+    expect(useProgressStore.getState().xp).toBe(100);
+    expect(useProgressStore.getState().mastery["3.1.c"]).toBe(95);
+
+    useProgressStore.getState().recordBossResult("stp-storm", false, 0.5, 20); // Elite defeat
+    expect(useProgressStore.getState().xp).toBe(120);
+    expect(useProgressStore.getState().bossRecords).toEqual({ battles: 2, victories: 1, bestAccuracy: 1 });
+  });
+
   it("ignores boss results for unknown arcs", () => {
     useProgressStore.getState().recordBossResult("not-an-arc", true, 1);
     expect(useProgressStore.getState().xp).toBe(0);

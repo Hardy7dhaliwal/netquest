@@ -2,9 +2,7 @@
 
 import { useState } from "react";
 import {
-  BOSS_QUESTIONS,
-  BOSS_TIME_PER_QUESTION,
-  BOSS_XP,
+  BOSS_TIERS,
   DAILY_QUESTIONS,
   DAILY_TIME_PER_QUESTION,
   DAILY_XP,
@@ -12,15 +10,17 @@ import {
   getBossBattle,
   getBossFights,
   getDailyChallenge,
+  type BossTierId,
 } from "@/lib/boss";
 import { useProgressStore } from "@/lib/progress-store";
 import Gauntlet, { type GauntletResult } from "./gauntlet";
 
-type Active = { mode: "daily" } | { mode: "boss"; arcId: string; seed: string };
+type Active = { mode: "daily" } | { mode: "boss"; arcId: string; seed: string; tierId: BossTierId };
 
 /** Daily challenge + boss battles — the under-pressure practice modes. */
 export default function TrainingGrounds() {
   const [active, setActive] = useState<Active | null>(null);
+  const [tierId, setTierId] = useState<BossTierId>("veteran");
 
   const daily = useProgressStore((s) => s.daily);
   const bossRecords = useProgressStore((s) => s.bossRecords);
@@ -32,7 +32,9 @@ export default function TrainingGrounds() {
   const fights = getBossFights();
   const bestPercent = Math.round(bossRecords.bestAccuracy * 100);
 
+  const tier = BOSS_TIERS.find((entry) => entry.id === tierId)!;
   const bossFight = active?.mode === "boss" ? fights.find((f) => f.arcId === active.arcId) : undefined;
+  const bossTier = active?.mode === "boss" ? BOSS_TIERS.find((entry) => entry.id === active.tierId)! : tier;
 
   function handleComplete(result: GauntletResult) {
     if (!active) return;
@@ -41,7 +43,12 @@ export default function TrainingGrounds() {
       // its Close button dismisses it (closing the modal would skip the result).
       claimDaily(challenge.arcId);
     } else {
-      recordBossResult(active.arcId, result.victory, result.accuracy);
+      recordBossResult(
+        active.arcId,
+        result.victory,
+        result.accuracy,
+        result.victory ? bossTier.xp.victory : bossTier.xp.defeat,
+      );
     }
   }
 
@@ -90,19 +97,34 @@ export default function TrainingGrounds() {
 
         {/* Boss fights */}
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Boss battles · one per arc</p>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Boss battles · one per arc</p>
+            <div className="flex flex-wrap gap-1.5" role="group" aria-label="Boss difficulty tier">
+              {BOSS_TIERS.map((option) => (
+                <button
+                  aria-pressed={tierId === option.id}
+                  className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition ${tierId === option.id ? "border-rose-300 bg-rose-300 text-slate-950" : "border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-200"}`}
+                  key={option.id}
+                  onClick={() => setTierId(option.id)}
+                  type="button"
+                >
+                  {option.label} · {option.questions}q · {option.timePerQuestion}s
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             {fights.map((fight) => (
               <button
                 className="group rounded-xl border border-slate-800 bg-slate-950/60 p-4 text-left transition hover:border-rose-300/40 hover:bg-rose-300/5"
                 key={fight.arcId}
-                onClick={() => setActive({ mode: "boss", arcId: fight.arcId, seed: String(Date.now()) })}
+                onClick={() => setActive({ mode: "boss", arcId: fight.arcId, seed: String(Date.now()), tierId })}
                 type="button"
               >
                 <p className="text-sm font-bold text-slate-100 transition group-hover:text-rose-200">{fight.title}</p>
                 <p className="mt-1 text-[11px] text-slate-500">
-                  {fight.questionCount} question{fight.questionCount === 1 ? "" : "s"} · {BOSS_TIME_PER_QUESTION}s each ·{" "}
-                  <span className="font-bold text-rose-300/80">+{BOSS_XP.victory} XP win</span>
+                  {fight.questionCount} question{fight.questionCount === 1 ? "" : "s"} in the bank · {tier.description} ·{" "}
+                  <span className="font-bold text-rose-300/80">+{tier.xp.victory} XP win</span>
                 </p>
               </button>
             ))}
@@ -132,13 +154,13 @@ export default function TrainingGrounds() {
           defeatLabel="The boss holds — for now"
           onClose={() => setActive(null)}
           onComplete={handleComplete}
-          questions={getBossBattle(bossFight.arcId, active.seed)}
-          tagline={`${bossFight.title} · ${BOSS_QUESTIONS} questions, ${BOSS_TIME_PER_QUESTION} seconds each`}
-          timePerQuestion={BOSS_TIME_PER_QUESTION}
-          title="Boss battle"
+          questions={getBossBattle(bossFight.arcId, active.seed, bossTier.questions)}
+          tagline={`${bossFight.title} · ${bossTier.questions} questions, ${bossTier.timePerQuestion} seconds each`}
+          timePerQuestion={bossTier.timePerQuestion}
+          title={`Boss battle · ${bossTier.label}`}
           victoryLabel="Boss defeated — Under Pressure mastery earned"
-          xpDefeat={BOSS_XP.defeat}
-          xpVictory={BOSS_XP.victory}
+          xpDefeat={bossTier.xp.defeat}
+          xpVictory={bossTier.xp.victory}
         />
       )}
     </section>

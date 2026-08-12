@@ -71,8 +71,8 @@ type ProgressState = ProgressData & {
   syncBadges: () => void;
   /** Claim today's daily challenge (+DAILY_XP and a streak day); once per calendar day. */
   claimDaily: (arcId: string) => void;
-  /** Finish a boss battle: XP, records, and under-pressure mastery on a win. */
-  recordBossResult: (arcId: string, victory: boolean, accuracy: number) => void;
+  /** Finish a boss battle: XP (tier-based when passed), records, and under-pressure mastery on a win. */
+  recordBossResult: (arcId: string, victory: boolean, accuracy: number, xp?: number) => void;
   reset: () => void;
 };
 
@@ -154,11 +154,12 @@ export const useProgressStore = create<ProgressState>()(
             streak: state.streak + 1,
           };
         }),
-      recordBossResult: (arcId, victory, accuracy) =>
+      recordBossResult: (arcId, victory, accuracy, xp) =>
         set((state) => {
           const arc = ENCOR_MISSION_ARCS.find((candidate) => candidate.id === arcId);
           if (!arc) return state;
           const mastery = victory ? recordBossMastery(state.mastery, arc.objectiveIds, true) : state.mastery;
+          const awarded = xp ?? (victory ? BOSS_XP.victory : BOSS_XP.defeat);
           return {
             ...state,
             mastery,
@@ -168,7 +169,7 @@ export const useProgressStore = create<ProgressState>()(
               victories: state.bossRecords.victories + (victory ? 1 : 0),
               bestAccuracy: Math.max(state.bossRecords.bestAccuracy, accuracy),
             },
-            xp: state.xp + (victory ? BOSS_XP.victory : BOSS_XP.defeat),
+            xp: state.xp + awarded,
           };
         }),
       reset: () => set(INITIAL_PROGRESS),

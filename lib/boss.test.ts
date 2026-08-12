@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   BOSS_QUESTIONS,
+  BOSS_TIERS,
   DAILY_QUESTIONS,
   VICTORY_ACCURACY,
   dateKey,
@@ -46,6 +47,36 @@ describe("boss engine", () => {
     // 5 of 6 and 4 of 5 both clear the bar.
     expect(isVictory(5 / 6)).toBe(true);
     expect(isVictory(4 / 5)).toBe(true);
+  });
+
+  it("defines three escalating difficulty tiers", () => {
+    expect(BOSS_TIERS.map((tier) => tier.id)).toEqual(["rookie", "veteran", "elite"]);
+    const [rookie, veteran, elite] = BOSS_TIERS;
+    expect(rookie.questions).toBe(4);
+    expect(rookie.timePerQuestion).toBe(25);
+    expect(veteran.questions).toBe(6);
+    expect(veteran.timePerQuestion).toBe(15);
+    expect(elite.questions).toBe(8);
+    expect(elite.timePerQuestion).toBe(10);
+    // Harder tiers pay more.
+    expect(rookie.xp.victory).toBeLessThan(veteran.xp.victory);
+    expect(veteran.xp.victory).toBeLessThan(elite.xp.victory);
+    // The veteran tier matches the original battle defaults.
+    expect(veteran.questions).toBe(BOSS_QUESTIONS);
+  });
+
+  it("samples the tier's question count from the arc's bank", () => {
+    const bank = getArcQuiz("stp-storm");
+    const elite = getBossBattle("stp-storm", "seed-1", 8);
+    const rookie = getBossBattle("stp-storm", "seed-1", 4);
+    expect(elite.length).toBeLessThanOrEqual(8);
+    expect(rookie.length).toBeLessThanOrEqual(4);
+    expect(elite.length).toBeGreaterThanOrEqual(rookie.length);
+    for (const question of [...elite, ...rookie]) {
+      expect(bank.some((entry) => entry.id === question.id)).toBe(true);
+    }
+    // Same seed + count stays deterministic.
+    expect(getBossBattle("stp-storm", "seed-1", 8).map((q) => q.id)).toEqual(elite.map((q) => q.id));
   });
 });
 
