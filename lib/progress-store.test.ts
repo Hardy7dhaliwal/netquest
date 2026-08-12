@@ -164,4 +164,72 @@ describe("progress", () => {
     const persisted = JSON.parse(values.get("netquest-progress") ?? "{}") as { state: { badges: string[] } };
     expect(persisted.state.badges).toContain("cli-apprentice");
   });
+
+  it("claims the daily challenge once per calendar day", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 7, 12));
+    try {
+      useProgressStore.getState().claimDaily("stp-storm");
+      expect(useProgressStore.getState().xp).toBe(40);
+      expect(useProgressStore.getState().streak).toBe(1);
+      expect(useProgressStore.getState().daily).toEqual({ date: "2026-08-12", arcId: "stp-storm", done: true });
+
+      // A second claim the same day awards nothing.
+      useProgressStore.getState().claimDaily("stp-storm");
+      expect(useProgressStore.getState().xp).toBe(40);
+
+      // A new day opens a fresh claim.
+      vi.setSystemTime(new Date(2026, 7, 13));
+      useProgressStore.getState().claimDaily("stp-storm");
+      expect(useProgressStore.getState().xp).toBe(80);
+      expect(useProgressStore.getState().streak).toBe(2);
+      expect(useProgressStore.getState().daily?.date).toBe("2026-08-13");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("records a boss victory with XP, stats, and under-pressure mastery", () => {
+    useProgressStore.getState().recordBossResult("stp-storm", true, 5 / 6);
+
+    const state = useProgressStore.getState();
+    expect(state.xp).toBe(75);
+    expect(state.bossRecords).toEqual({ battles: 1, victories: 1, bestAccuracy: 5 / 6 });
+    expect(state.mastery["3.1.c"]).toBe(95);
+    // Weak topics are derived from the boosted mastery.
+    expect(state.weakTopics).not.toEqual(["VLANs and trunks"]);
+  });
+
+  it("records a boss defeat without touching mastery", () => {
+    useProgressStore.getState().recordMissionResult("stp-storm", 0);
+    useProgressStore.getState().recordBossResult("stp-storm", false, 0.4);
+
+    const state = useProgressStore.getState();
+    expect(state.xp).toBe(15);
+    expect(state.bossRecords).toEqual({ battles: 1, victories: 0, bestAccuracy: 0.4 });
+    expect(state.mastery["3.1.c"]).toBe(85); // unchanged by the defeat
+  });
+
+  it("ignores boss results for unknown arcs", () => {
+    useProgressStore.getState().recordBossResult("not-an-arc", true, 1);
+    expect(useProgressStore.getState().xp).toBe(0);
+    expect(useProgressStore.getState().bossRecords).toEqual({ battles: 0, victories: 0, bestAccuracy: 0 });
+  });
+
+  it("persists daily and boss records", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 7, 12));
+    try {
+      useProgressStore.getState().claimDaily("stp-storm");
+      useProgressStore.getState().recordBossResult("stp-storm", true, 1);
+
+      const persisted = JSON.parse(values.get("netquest-progress") ?? "{}") as {
+        state: { daily: { date: string }; bossRecords: { victories: number } };
+      };
+      expect(persisted.state.daily.date).toBe("2026-08-12");
+      expect(persisted.state.bossRecords.victories).toBe(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

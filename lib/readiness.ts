@@ -40,7 +40,7 @@ const VERDICTS: Record<ReadinessVerdict, { label: string; copy: string }> = {
   starting: { label: "Getting started", copy: "Play through the missions to build command of the blueprint." },
   developing: { label: "Developing", copy: "A solid base is forming — keep practicing and reviewing weak topics." },
   approaching: { label: "Approaching ready", copy: "Nearly there — top up the objectives still below Guided." },
-  ready: { label: "Exam-ready", copy: "Independent across the board — future pressure modes will push you toward 95." },
+  ready: { label: "Exam-ready", copy: "Independent across the board — take on boss battles to push your objectives toward Under Pressure (95)." },
 };
 
 export function getExamReadiness(mastery: MasteryMap): ExamReadiness {

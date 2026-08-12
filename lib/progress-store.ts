@@ -3,16 +3,31 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { BADGE_XP, getBadgeStatus } from "./badges";
+import { BOSS_XP, DAILY_XP, dateKey } from "./boss";
 import { ENCOR_MISSION_ARCS } from "./encor-catalog";
 import { nextCardState, type CardState } from "./flashcards";
 import {
   getWeakObjectives,
+  recordBossResult as recordBossMastery,
   recordMissionResult as recordMastery,
   recordQuizResult as recordQuizMastery,
   type MasteryMap,
 } from "./mastery";
 
 export type QuizResult = { correct: number; total: number; perfect: boolean };
+
+export type DailyState = {
+  /** Calendar day (YYYY-MM-DD) this claim is for. */
+  date: string;
+  arcId: string;
+  done: boolean;
+};
+
+export type BossRecords = {
+  battles: number;
+  victories: number;
+  bestAccuracy: number;
+};
 
 type ProgressData = {
   xp: number;
@@ -24,6 +39,10 @@ type ProgressData = {
   cardReviews: Record<string, CardState>;
   /** Badge ids earned so far (each awards BADGE_XP exactly once). */
   badges: string[];
+  /** Today's daily challenge, once claimed. */
+  daily: DailyState | null;
+  /** Lifetime boss-battle stats. */
+  bossRecords: BossRecords;
 };
 
 export const INITIAL_PROGRESS: ProgressData = {
@@ -35,6 +54,8 @@ export const INITIAL_PROGRESS: ProgressData = {
   quizResults: {},
   cardReviews: {},
   badges: [],
+  daily: null,
+  bossRecords: { battles: 0, victories: 0, bestAccuracy: 0 },
 };
 
 type ProgressState = ProgressData & {
@@ -48,6 +69,10 @@ type ProgressState = ProgressData & {
   reviewFlashcard: (cardId: string, remembered: boolean) => void;
   /** Award newly earned badges (+BADGE_XP each); a no-op when none are new. */
   syncBadges: () => void;
+  /** Claim today's daily challenge (+DAILY_XP and a streak day); once per calendar day. */
+  claimDaily: (arcId: string) => void;
+  /** Finish a boss battle: XP, records, and under-pressure mastery on a win. */
+  recordBossResult: (arcId: string, victory: boolean, accuracy: number) => void;
   reset: () => void;
 };
 
@@ -118,6 +143,34 @@ export const useProgressStore = create<ProgressState>()(
             xp: state.xp + fresh.length * BADGE_XP,
           };
         }),
+      claimDaily: (arcId) =>
+        set((state) => {
+          const today = dateKey(new Date());
+          if (state.daily?.date === today && state.daily.done) return state;
+          return {
+            ...state,
+            daily: { date: today, arcId, done: true },
+            xp: state.xp + DAILY_XP,
+            streak: state.streak + 1,
+          };
+        }),
+      recordBossResult: (arcId, victory, accuracy) =>
+        set((state) => {
+          const arc = ENCOR_MISSION_ARCS.find((candidate) => candidate.id === arcId);
+          if (!arc) return state;
+          const mastery = victory ? recordBossMastery(state.mastery, arc.objectiveIds, true) : state.mastery;
+          return {
+            ...state,
+            mastery,
+            weakTopics: victory ? getWeakObjectives(mastery).slice(0, 3).map((objective) => objective.label) : state.weakTopics,
+            bossRecords: {
+              battles: state.bossRecords.battles + 1,
+              victories: state.bossRecords.victories + (victory ? 1 : 0),
+              bestAccuracy: Math.max(state.bossRecords.bestAccuracy, accuracy),
+            },
+            xp: state.xp + (victory ? BOSS_XP.victory : BOSS_XP.defeat),
+          };
+        }),
       reset: () => set(INITIAL_PROGRESS),
     }),
     {
@@ -133,6 +186,8 @@ export const useProgressStore = create<ProgressState>()(
         quizResults: state.quizResults,
         cardReviews: state.cardReviews,
         badges: state.badges,
+        daily: state.daily,
+        bossRecords: state.bossRecords,
       }),
       merge: (persisted, current) => ({
         ...current,
@@ -143,6 +198,8 @@ export const useProgressStore = create<ProgressState>()(
         quizResults: (persisted as Partial<ProgressData>).quizResults ?? current.quizResults,
         cardReviews: (persisted as Partial<ProgressData>).cardReviews ?? current.cardReviews,
         badges: (persisted as Partial<ProgressData>).badges ?? current.badges,
+        daily: (persisted as Partial<ProgressData>).daily ?? current.daily,
+        bossRecords: (persisted as Partial<ProgressData>).bossRecords ?? current.bossRecords,
       }),
     },
   ),

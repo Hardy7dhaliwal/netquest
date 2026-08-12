@@ -7,6 +7,7 @@ import {
   getWeakObjectives,
   MASTERY_BANDS,
   objectiveScore,
+  recordBossResult,
   recordMissionResult,
   recordQuizResult,
   recommendNext,
@@ -38,12 +39,23 @@ describe("mastery engine", () => {
     expect(bandLabel(50)).toBe("Recognized");
     expect(bandLabel(70)).toBe("Guided");
     expect(bandLabel(85)).toBe("Independent");
+    expect(bandLabel(95)).toBe("Under Pressure");
   });
 
   it("raises every taught objective to the attempts band", () => {
     const next = recordMissionResult({}, ["3.1.a", "3.1.b"], 2);
     expect(next["3.1.a"]).toBe(70);
     expect(next["3.1.b"]).toBe(70);
+  });
+
+  it("a boss victory is the only path to the under-pressure band", () => {
+    const victory = recordBossResult({}, ["3.1.a", "3.1.b"], true);
+    expect(victory["3.1.a"]).toBe(95);
+    expect(victory["3.1.b"]).toBe(95);
+    // A defeat changes nothing.
+    expect(recordBossResult({ "3.1.a": 85 }, ["3.1.a"], false)["3.1.a"]).toBe(85);
+    // Victory only ever raises.
+    expect(recordBossResult({ "3.1.a": 95 }, ["3.1.a"], true)["3.1.a"]).toBe(95);
   });
 
   it("keeps the best result when a mission is rerun", () => {

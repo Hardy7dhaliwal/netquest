@@ -27,7 +27,7 @@ export default function RescuePanel({ rescue, onClose }: { rescue: RescueDefinit
   const canReveal = state.attempts >= 1 && !state.revealed;
 
   return (
-    <div aria-label={rescue.title} aria-modal="true" className="fixed inset-0 z-30 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm" role="dialog">
+    <div aria-label={rescue.title} aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm" role="dialog">
       <div className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-cyan-300/25 bg-slate-900 shadow-2xl shadow-cyan-950/40">
         <div className="flex items-start justify-between gap-4 border-b border-slate-800 px-6 py-4">
           <div>

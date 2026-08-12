@@ -30,6 +30,7 @@ export function bandForAttempts(attempts: number): number {
 }
 
 export function bandLabel(score: number): string {
+  if (score >= MASTERY_BANDS.underPressure) return "Under Pressure";
   if (score >= MASTERY_BANDS.independent) return "Independent";
   if (score >= MASTERY_BANDS.guided) return "Guided";
   if (score >= MASTERY_BANDS.recognized) return "Recognized";
@@ -47,6 +48,20 @@ export function recordMissionResult(mastery: MasteryMap, objectiveIds: string[],
   const next = { ...mastery };
   for (const id of objectiveIds) {
     next[id] = Math.max(next[id] ?? 0, band);
+  }
+  return next;
+}
+
+/**
+ * A boss-battle victory (enough accuracy under the clock) earns the top
+ * under-pressure band for every objective the battle covers; a defeat leaves
+ * mastery untouched. This is the only path to 95.
+ */
+export function recordBossResult(mastery: MasteryMap, objectiveIds: string[], victory: boolean): MasteryMap {
+  if (!victory) return mastery;
+  const next = { ...mastery };
+  for (const id of objectiveIds) {
+    next[id] = Math.max(next[id] ?? 0, MASTERY_BANDS.underPressure);
   }
   return next;
 }
@@ -108,7 +123,7 @@ export function recommendNext(mastery: MasteryMap): Recommendation {
   return {
     kind: "ready",
     message:
-      "Every playable objective is at Guided or better. Replay a mission with zero wrong attempts to reach Independent — new modes like the daily challenge are on the way.",
+      "Every playable objective is at Guided or better. Replay a mission with zero wrong attempts to reach Independent, or take on a boss battle to earn Under Pressure.",
   };
 }
 
