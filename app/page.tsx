@@ -29,6 +29,7 @@ import CoverageDashboard from "@/components/coverage-dashboard";
 import MasteryPanel from "@/components/mastery-panel";
 import ArcQuiz from "@/components/arc-quiz";
 import FlashcardReview from "@/components/flashcard-review";
+import RescueLauncher from "@/components/rescue-launcher";
 import { resetStpMission, startStpMission, type StpMissionState } from "@/lib/stp-mission";
 import { resetEcMission, startEcMission, type EcMissionState } from "@/lib/etherchannel-mission";
 import { resetOspfMission, startOspfMission, type OspfMissionState } from "@/lib/ospf-mission";
@@ -44,6 +45,7 @@ import { resetLockControlPlaneMission, startLockControlPlaneMission, type LockCo
 import { resetAutomatorPrimeMission, startAutomatorPrimeMission, type AutomatorPrimeMissionState } from "@/lib/automator-prime-mission";
 import { advanceQuiz as advanceQuizStep, answerQuiz as answerQuizStep, getArcQuiz, quizScore, startQuiz, type QuizSessionState } from "@/lib/quiz";
 import { dueCards, getFlashcardDeck } from "@/lib/flashcards";
+import { rescueFor } from "@/lib/rescues";
 import CliBasicsMission from "@/components/cli-basics-mission";
 import ShowAndPingMission from "@/components/show-and-ping-mission";
 import PacketTrailMission from "@/components/packet-trail-mission";
@@ -1317,59 +1319,115 @@ export default function Home() {
   }
 
   if (stpMission.status !== "not_started") {
-    return <StpMission mission={stpMission} onChange={updateStpMission} onExit={exitStpMission} />;
+    return (
+      <RescueLauncher rescue={stpMission.status === "complete" ? null : rescueFor("stp", stpMission.phase)}>
+        <StpMission mission={stpMission} onChange={updateStpMission} onExit={exitStpMission} />
+      </RescueLauncher>
+    );
   }
 
   if (ecMission.status !== "not_started") {
-    return <EtherchannelMission mission={ecMission} onChange={updateEcMission} onExit={exitEcMission} />;
+    return (
+      <RescueLauncher rescue={ecMission.status === "complete" ? null : rescueFor("ec", ecMission.phase)}>
+        <EtherchannelMission mission={ecMission} onChange={updateEcMission} onExit={exitEcMission} />
+      </RescueLauncher>
+    );
   }
 
   if (ospfMission.status !== "not_started") {
-    return <OspfMission mission={ospfMission} onChange={updateOspfMission} onExit={exitOspfMission} />;
+    return (
+      <RescueLauncher rescue={ospfMission.status === "complete" ? null : rescueFor("ospf", ospfMission.phase)}>
+        <OspfMission mission={ospfMission} onChange={updateOspfMission} onExit={exitOspfMission} />
+      </RescueLauncher>
+    );
   }
 
   if (edgeMission.status !== "not_started") {
-    return <EdgeMission mission={edgeMission} onChange={updateEdgeMission} onExit={exitEdgeMission} />;
+    return (
+      <RescueLauncher rescue={edgeMission.status === "complete" ? null : rescueFor("edge", edgeMission.phase)}>
+        <EdgeMission mission={edgeMission} onChange={updateEdgeMission} onExit={exitEdgeMission} />
+      </RescueLauncher>
+    );
   }
 
   if (gatewayMission.status !== "not_started") {
-    return <GatewayMission mission={gatewayMission} onChange={updateGatewayMission} onExit={exitGatewayMission} />;
+    return (
+      <RescueLauncher rescue={gatewayMission.status === "complete" ? null : rescueFor("gateway", gatewayMission.phase)}>
+        <GatewayMission mission={gatewayMission} onChange={updateGatewayMission} onExit={exitGatewayMission} />
+      </RescueLauncher>
+    );
   }
 
   if (edgeServicesMission.status !== "not_started") {
-    return <EdgeServicesMission mission={edgeServicesMission} onChange={updateEdgeServicesMission} onExit={exitEdgeServicesMission} />;
+    return (
+      <RescueLauncher rescue={edgeServicesMission.status === "complete" ? null : rescueFor("edge-services", edgeServicesMission.phase)}>
+        <EdgeServicesMission mission={edgeServicesMission} onChange={updateEdgeServicesMission} onExit={exitEdgeServicesMission} />
+      </RescueLauncher>
+    );
   }
 
   if (tunnelVisionMission.status !== "not_started") {
-    return <TunnelVisionMission mission={tunnelVisionMission} onChange={updateTunnelVisionMission} onExit={exitTunnelVisionMission} />;
+    return (
+      <RescueLauncher rescue={tunnelVisionMission.status === "complete" ? null : rescueFor("tunnel-vision", tunnelVisionMission.phase)}>
+        <TunnelVisionMission mission={tunnelVisionMission} onChange={updateTunnelVisionMission} onExit={exitTunnelVisionMission} />
+      </RescueLauncher>
+    );
   }
 
   if (fabricExpressMission.status !== "not_started") {
-    return <FabricExpressMission mission={fabricExpressMission} onChange={updateFabricExpressMission} onExit={exitFabricExpressMission} />;
+    return (
+      <RescueLauncher rescue={fabricExpressMission.status === "complete" ? null : rescueFor("fabric-express", fabricExpressMission.phase)}>
+        <FabricExpressMission mission={fabricExpressMission} onChange={updateFabricExpressMission} onExit={exitFabricExpressMission} />
+      </RescueLauncher>
+    );
   }
 
   if (sdwanMission.status !== "not_started") {
-    return <SdwanMission mission={sdwanMission} onChange={updateSdwanMission} onExit={exitSdwanMission} />;
+    return (
+      <RescueLauncher rescue={sdwanMission.status === "complete" ? null : rescueFor("sdwan", sdwanMission.phase)}>
+        <SdwanMission mission={sdwanMission} onChange={updateSdwanMission} onExit={exitSdwanMission} />
+      </RescueLauncher>
+    );
   }
 
   if (signalDetectiveMission.status !== "not_started") {
-    return <SignalDetectiveMission mission={signalDetectiveMission} onChange={updateSignalDetectiveMission} onExit={exitSignalDetectiveMission} />;
+    return (
+      <RescueLauncher rescue={signalDetectiveMission.status === "complete" ? null : rescueFor("signal-detective", signalDetectiveMission.phase)}>
+        <SignalDetectiveMission mission={signalDetectiveMission} onChange={updateSignalDetectiveMission} onExit={exitSignalDetectiveMission} />
+      </RescueLauncher>
+    );
   }
 
   if (campusFabricMission.status !== "not_started") {
-    return <CampusFabricMission mission={campusFabricMission} onChange={updateCampusFabricMission} onExit={exitCampusFabricMission} />;
+    return (
+      <RescueLauncher rescue={campusFabricMission.status === "complete" ? null : rescueFor("campus-fabric", campusFabricMission.phase)}>
+        <CampusFabricMission mission={campusFabricMission} onChange={updateCampusFabricMission} onExit={exitCampusFabricMission} />
+      </RescueLauncher>
+    );
   }
 
   if (lockControlPlaneMission.status !== "not_started") {
-    return <LockControlPlaneMission mission={lockControlPlaneMission} onChange={updateLockControlPlaneMission} onExit={exitLockControlPlaneMission} />;
+    return (
+      <RescueLauncher rescue={lockControlPlaneMission.status === "complete" ? null : rescueFor("lock-the-control-plane", lockControlPlaneMission.phase)}>
+        <LockControlPlaneMission mission={lockControlPlaneMission} onChange={updateLockControlPlaneMission} onExit={exitLockControlPlaneMission} />
+      </RescueLauncher>
+    );
   }
 
   if (automatorPrimeMission.status !== "not_started") {
-    return <AutomatorPrimeMission mission={automatorPrimeMission} onChange={updateAutomatorPrimeMission} onExit={exitAutomatorPrimeMission} />;
+    return (
+      <RescueLauncher rescue={automatorPrimeMission.status === "complete" ? null : rescueFor("automator-prime", automatorPrimeMission.phase)}>
+        <AutomatorPrimeMission mission={automatorPrimeMission} onChange={updateAutomatorPrimeMission} onExit={exitAutomatorPrimeMission} />
+      </RescueLauncher>
+    );
   }
 
   if (mission.status !== "not_started") {
-    return <MissionWorkspace mission={mission} onChange={updateMission} onReset={resetCurrentMission} />;
+    return (
+      <RescueLauncher rescue={mission.status === "complete" ? null : rescueFor("vlan")}>
+        <MissionWorkspace mission={mission} onChange={updateMission} onReset={resetCurrentMission} />
+      </RescueLauncher>
+    );
   }
 
   return (

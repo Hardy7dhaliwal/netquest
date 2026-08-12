@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { ARC_TO_MISSION } from "./quiz";
 import { EC_PHASES } from "./etherchannel-mission";
 import { EDGE_PHASES } from "./edge-mission";
 import { CAMPUS_PHASES } from "./campus-fabric-mission";
@@ -63,6 +64,17 @@ describe("rescue catalog", () => {
     for (const mission of MISSIONS) {
       expect(RESCUES.some((rescue) => rescue.mission === mission && rescue.isDefault), `${mission} lacks a default rescue`).toBe(true);
     }
+  });
+
+  it("every catalog arc maps to a rescue mission (in-mission stuck button wiring)", () => {
+    // The dashboard's rescue button looks up by ARC_TO_MISSION arc → mission,
+    // so every mapped value must be a real mission with a default rescue.
+    for (const [arcId, mission] of Object.entries(ARC_TO_MISSION)) {
+      expect(MISSIONS, `${arcId} → "${mission}" is not a known rescue mission`).toContain(mission);
+      expect(RESCUES.some((rescue) => rescue.mission === mission && rescue.isDefault), `${arcId} (${mission}) lacks a default rescue`).toBe(true);
+    }
+    // Every playable arc is wired: the map covers all 14 catalog arcs.
+    expect(Object.keys(ARC_TO_MISSION)).toHaveLength(14);
   });
 
   it("prefers an exact phase match over the default rescue", () => {
