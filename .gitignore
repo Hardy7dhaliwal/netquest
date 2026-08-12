@@ -1,0 +1,13 @@
+.next/
+node_modules/
+out/
+dist/
+coverage/
+*.tsbuildinfo
+.env
+.env.local
+npm-debug.log*
+
+# Cisco curriculum source documents (copyrighted — kept local, not distributed)
+350-401-ENCORE-v1.2.pdf
+CCNP-350-401-ENCOR-v1.2-Learning-Matrix.xlsx
