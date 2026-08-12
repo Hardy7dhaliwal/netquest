@@ -27,6 +27,8 @@ import LockControlPlaneMission from "@/components/lock-control-plane-mission";
 import AutomatorPrimeMission from "@/components/automator-prime-mission";
 import CoverageDashboard from "@/components/coverage-dashboard";
 import MasteryPanel from "@/components/mastery-panel";
+import ReadinessReport from "@/components/readiness-report";
+import BadgesPanel from "@/components/badges-panel";
 import ArcQuiz from "@/components/arc-quiz";
 import FlashcardReview from "@/components/flashcard-review";
 import RescueLauncher from "@/components/rescue-launcher";
@@ -45,6 +47,7 @@ import { resetLockControlPlaneMission, startLockControlPlaneMission, type LockCo
 import { resetAutomatorPrimeMission, startAutomatorPrimeMission, type AutomatorPrimeMissionState } from "@/lib/automator-prime-mission";
 import { advanceQuiz as advanceQuizStep, answerQuiz as answerQuizStep, getArcQuiz, quizScore, startQuiz, type QuizSessionState } from "@/lib/quiz";
 import { dueCards, getFlashcardDeck } from "@/lib/flashcards";
+import { getBadgeStatus } from "@/lib/badges";
 import { rescueFor } from "@/lib/rescues";
 import CliBasicsMission from "@/components/cli-basics-mission";
 import ShowAndPingMission from "@/components/show-and-ping-mission";
@@ -244,7 +247,7 @@ function MissionWorkspace({
 }
 
 export default function Home() {
-  const { xp, streak, weakTopics, completedMissions, completeReview, awardMission, mastery, recordMissionResult, cardReviews, recordQuizResult, reviewFlashcard, quizResults } = useProgressStore();
+  const { xp, streak, weakTopics, completedMissions, completeReview, awardMission, mastery, recordMissionResult, cardReviews, recordQuizResult, reviewFlashcard, quizResults, syncBadges } = useProgressStore();
   const [mission, setMission] = useState<MissionState>(resetMission);
   const [stpMission, setStpMission] = useState<StpMissionState>(resetStpMission);
   const [ecMission, setEcMission] = useState<EcMissionState>(resetEcMission);
@@ -353,7 +356,13 @@ export default function Home() {
     if (packetTrail.status === "complete" && !packetTrailCompleted) {
       awardMission("packet-trail", 50);
     }
-  }, [awardMission, recordMissionResult, mission.status, missionCompleted, stpMission.status, stpCompleted, ecMission.status, ecCompleted, ospfMission.status, ospfCompleted, edgeMission.status, edgeCompleted, gatewayMission.status, gatewayCompleted, edgeServicesMission.status, edgeServicesCompleted, tunnelVisionMission.status, tunnelVisionCompleted, fabricExpressMission.status, fabricExpressCompleted, sdwanMission.status, sdwanCompleted, signalDetectiveMission.status, signalDetectiveCompleted, campusFabricMission.status, campusFabricCompleted, lockControlPlaneMission.status, lockControlPlaneCompleted, automatorPrimeMission.status, automatorPrimeCompleted, cliBasics.status, cliBasicsCompleted, showAndPing.status, showAndPingCompleted, packetTrail.status, packetTrailCompleted]);
+  }, [awardMission, recordMissionResult, mission.status, missionCompleted, stpMission.status, stpCompleted, ecMission.status, ecCompleted, ospfMission.status, ospfCompleted, edgeMission.status, edgeCompleted, gatewayMission.status, gatewayCompleted, edgeServicesMission.status, edgeServicesCompleted, tunnelVisionMission.status, tunnelVisionCompleted, fabricExpressMission.status, fabricExpressCompleted, sdwanMission.status, sdwanCompleted, signalDetectiveMission.status, signalDetectiveCompleted, campusFabricMission.status, campusFabricCompleted, lockControlPlaneMission.status, lockControlPlaneCompleted, automatorPrimeMission.status, automatorPrimeCompleted, cliBasics.status, cliBasicsCompleted,      showAndPing.status, showAndPingCompleted, packetTrail.status, packetTrailCompleted]);
+
+  // Award badges (+BADGE_XP) the moment their milestones are reached. Declared
+  // after the award effect so badge XP lands in the same commit as the milestone.
+  useEffect(() => {
+    syncBadges();
+  }, [syncBadges, xp, streak, completedMissions, mastery, quizResults, cardReviews]);
 
   function updateMission(next: MissionState) {
     setMission(next);
@@ -1087,6 +1096,7 @@ export default function Home() {
 
   const quizQuestions = quizArc ? getArcQuiz(quizArc) : [];
   const dueFlashcards = dueCards(FLASHCARD_DECK, cardReviews, Date.now());
+  const badgeStatuses = getBadgeStatus({ xp, streak, completedMissions, mastery, quizResults, cardReviews });
   const quizFirstCompletion = quizArc ? !(quizResults[quizArc] ?? false) : false;
   const quizAwardedXp = quizFirstCompletion && quizSession ? (quizScore(quizSession, quizQuestions).perfect ? 25 : 10) : 0;
 
@@ -1534,6 +1544,8 @@ export default function Home() {
         </div>
 
         <CoverageDashboard mastery={mastery} />
+        <ReadinessReport mastery={mastery} />
+        <BadgesPanel statuses={badgeStatuses} />
         <div className="mt-6 flex flex-col justify-between gap-4 rounded-xl border border-slate-800 bg-slate-900/60 p-5 sm:flex-row sm:items-center"><div><p className="font-bold">Keep your streak alive</p><p className="mt-1 text-sm text-slate-400">A quick review is worth 5 XP while you warm up.</p></div><button className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-bold text-slate-200 transition hover:border-cyan-300/50 hover:text-cyan-200" onClick={completeReview} type="button">Log 5 XP review</button></div>
       </section>
     </main>

@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
+import { BADGE_XP, getBadgeStatus } from "./badges";
 import { ENCOR_MISSION_ARCS } from "./encor-catalog";
 import { nextCardState, type CardState } from "./flashcards";
 import {
@@ -21,6 +22,8 @@ type ProgressData = {
   mastery: MasteryMap;
   quizResults: Record<string, QuizResult>;
   cardReviews: Record<string, CardState>;
+  /** Badge ids earned so far (each awards BADGE_XP exactly once). */
+  badges: string[];
 };
 
 export const INITIAL_PROGRESS: ProgressData = {
@@ -31,6 +34,7 @@ export const INITIAL_PROGRESS: ProgressData = {
   mastery: {},
   quizResults: {},
   cardReviews: {},
+  badges: [],
 };
 
 type ProgressState = ProgressData & {
@@ -42,6 +46,8 @@ type ProgressState = ProgressData & {
   recordQuizResult: (arcId: string, correct: number, total: number) => void;
   /** SM-2-lite flashcard review: 5 XP when a due card is remembered. */
   reviewFlashcard: (cardId: string, remembered: boolean) => void;
+  /** Award newly earned badges (+BADGE_XP each); a no-op when none are new. */
+  syncBadges: () => void;
   reset: () => void;
 };
 
@@ -98,6 +104,20 @@ export const useProgressStore = create<ProgressState>()(
             xp: remembered && wasDue ? state.xp + 5 : state.xp,
           };
         }),
+      syncBadges: () =>
+        set((state) => {
+          const earned = getBadgeStatus(state)
+            .filter((entry) => entry.earned)
+            .map((entry) => entry.badge.id);
+          const fresh = earned.filter((id) => !state.badges.includes(id));
+          // Returning the same state reference keeps zustand from notifying.
+          if (fresh.length === 0) return state;
+          return {
+            ...state,
+            badges: [...state.badges, ...fresh],
+            xp: state.xp + fresh.length * BADGE_XP,
+          };
+        }),
       reset: () => set(INITIAL_PROGRESS),
     }),
     {
@@ -112,15 +132,17 @@ export const useProgressStore = create<ProgressState>()(
         mastery: state.mastery,
         quizResults: state.quizResults,
         cardReviews: state.cardReviews,
+        badges: state.badges,
       }),
       merge: (persisted, current) => ({
         ...current,
         ...(persisted as Partial<ProgressData>),
         completedMissions: (persisted as Partial<ProgressData>).completedMissions ?? current.completedMissions,
-        // Old saves predate mastery/quizzes/cards — start with empty maps.
+        // Old saves predate mastery/quizzes/cards/badges — start with empty maps.
         mastery: (persisted as Partial<ProgressData>).mastery ?? current.mastery,
         quizResults: (persisted as Partial<ProgressData>).quizResults ?? current.quizResults,
         cardReviews: (persisted as Partial<ProgressData>).cardReviews ?? current.cardReviews,
+        badges: (persisted as Partial<ProgressData>).badges ?? current.badges,
       }),
     },
   ),

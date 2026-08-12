@@ -123,4 +123,45 @@ describe("progress", () => {
     useProgressStore.getState().reviewFlashcard("card-1", true);
     expect(useProgressStore.getState().xp).toBe(5);
   });
+
+  it("starts with no badges", () => {
+    expect(useProgressStore.getState().badges).toEqual([]);
+  });
+
+  it("awards badge XP exactly once via syncBadges", () => {
+    // One completed mission earns CLI Apprentice (and VLAN Initiate here).
+    useProgressStore.getState().awardMission("vlan-that-vanished", 150);
+    useProgressStore.getState().syncBadges();
+
+    const { badges, xp } = useProgressStore.getState();
+    expect(badges).toContain("cli-apprentice");
+    expect(badges).toContain("vlan-initiate");
+    expect(xp).toBe(150 + badges.length * 20);
+
+    // A second sync finds nothing new — no double XP, no duplicate ids.
+    useProgressStore.getState().syncBadges();
+    expect(useProgressStore.getState().badges).toEqual(badges);
+    expect(useProgressStore.getState().xp).toBe(xp);
+  });
+
+  it("earns new badges when new milestones are reached", () => {
+    useProgressStore.getState().awardMission("stp-storm", 100);
+    useProgressStore.getState().syncBadges();
+    const firstCount = useProgressStore.getState().badges.length;
+
+    for (let i = 0; i < 4; i++) useProgressStore.getState().awardMission(`arc-${i}`, 100);
+    useProgressStore.getState().syncBadges();
+
+    const after = useProgressStore.getState();
+    expect(after.badges.length).toBeGreaterThan(firstCount);
+    expect(after.badges).toContain("troubleshooting-specialist");
+  });
+
+  it("persists earned badges", () => {
+    useProgressStore.getState().awardMission("vlan-that-vanished", 150);
+    useProgressStore.getState().syncBadges();
+
+    const persisted = JSON.parse(values.get("netquest-progress") ?? "{}") as { state: { badges: string[] } };
+    expect(persisted.state.badges).toContain("cli-apprentice");
+  });
 });
