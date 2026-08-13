@@ -25,8 +25,8 @@ export type LabStep = {
   kind: LabStepKind;
   title: string;
   prompt: string;
-  /** For inspect/verify: accepted show commands (alternate phrasings OK). */
-  commands?: string[];
+  /** For inspect/verify: accepted show commands (alternate phrasings OK), or a variant-aware function. */
+  commands?: string[] | ((variant: LabVariant) => string[]);
   /** Shown when an inspect/verify command runs (may depend on the variant). */
   output?: (variant: LabVariant) => string;
   /** For diagnose: the candidate explanations, one of which is correct. */
@@ -152,13 +152,15 @@ export function runLabCommand(state: LabState, template: LabTemplate, rawCommand
   const variant = getLabVariant(template, state.variantId);
 
   if (command === "help" || command === "?") {
+    const commands = typeof step.commands === "function" ? step.commands(variant) : (step.commands ?? []);
     const accepted = typeof step.acceptedCommands === "function" ? step.acceptedCommands(variant) : (step.acceptedCommands ?? []);
-    const hint = step.commands?.length ? step.commands[0] : accepted.length ? `e.g. ${accepted[0]}` : "Look at the prompt — which command inspects this?";
+    const hint = commands.length ? commands[0] : accepted.length ? `e.g. ${accepted[0]}` : "Look at the prompt — which command inspects this?";
     return { ...state, clean: false, cliHistory: [...state.cliHistory, { input: rawCommand, output: `Try: ${hint}`, prompt: "R1#" }] };
   }
 
   if (step.kind === "inspect" || step.kind === "verify") {
-    const match = (step.commands ?? []).find((candidate) => candidate.trim().toLowerCase().replace(/\s+/g, " ") === command);
+    const commands = typeof step.commands === "function" ? step.commands(variant) : (step.commands ?? []);
+    const match = commands.find((candidate) => candidate.trim().toLowerCase().replace(/\s+/g, " ") === command);
     if (match) {
       const next = advance(state, template, step.kind === "verify" ? "Verification output shown — confirm the fix." : "Inspection output shown.", "info");
       return {
@@ -240,12 +242,15 @@ export function revealLabAnswer(state: LabState, template: LabTemplate): LabStat
       };
     }
   }
-  if ((step.kind === "inspect" || step.kind === "verify") && step.commands?.length) {
-    return {
-      ...state,
-      clean: false,
-      eventLog: [...state.eventLog, event(`Try typing: ${step.commands[0]}`, "info")],
-    };
+  if ((step.kind === "inspect" || step.kind === "verify")) {
+    const commands = typeof step.commands === "function" ? step.commands(getLabVariant(template, state.variantId)) : (step.commands ?? []);
+    if (commands.length) {
+      return {
+        ...state,
+        clean: false,
+        eventLog: [...state.eventLog, event(`Try typing: ${commands[0]}`, "info")],
+      };
+    }
   }
   return state;
 }

@@ -1,4 +1,5 @@
 import type { LabTemplate } from "./labs";
+import { LAB_TEMPLATES_EXTRA } from "./lab-templates-extra";
 
 /**
  * The starter lab catalog. Each lab has at least two variants that change
@@ -306,4 +307,5 @@ export const LAB_TEMPLATES: LabTemplate[] = [
       },
     ],
   },
+  ...LAB_TEMPLATES_EXTRA,
 ];
