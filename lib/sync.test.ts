@@ -20,6 +20,7 @@ function snap(overrides: Partial<ProgressSnapshot> = {}): ProgressSnapshot {
     cardReviews: {},
     badges: [],
     daily: null,
+    dailyHistory: [],
     bossRecords: { battles: 0, victories: 0, bestAccuracy: 0 },
     lastSyncedAt: null,
     updatedAt: 0,
@@ -91,6 +92,14 @@ describe("mergeProgress", () => {
       snap({ daily: { date: "2026-08-13", arcId: "edge-services", done: true } }),
     );
     expect(newer.daily?.date).toBe("2026-08-13");
+  });
+
+  it("unions the daily-challenge streak history", () => {
+    const merged = mergeProgress(
+      snap({ dailyHistory: ["2026-08-10", "2026-08-11"] }),
+      snap({ dailyHistory: ["2026-08-11", "2026-08-12"] }),
+    );
+    expect(merged.dailyHistory).toEqual(["2026-08-10", "2026-08-11", "2026-08-12"]);
   });
 
   it("merges boss records with the best of each stat", () => {

@@ -173,17 +173,20 @@ describe("progress", () => {
       expect(useProgressStore.getState().xp).toBe(40);
       expect(useProgressStore.getState().streak).toBe(1);
       expect(useProgressStore.getState().daily).toEqual({ date: "2026-08-12", arcId: "stp-storm", done: true });
+      expect(useProgressStore.getState().dailyHistory).toEqual(["2026-08-12"]);
 
-      // A second claim the same day awards nothing.
+      // A second claim the same day awards nothing and never duplicates history.
       useProgressStore.getState().claimDaily("stp-storm");
       expect(useProgressStore.getState().xp).toBe(40);
+      expect(useProgressStore.getState().dailyHistory).toEqual(["2026-08-12"]);
 
-      // A new day opens a fresh claim.
+      // A new day opens a fresh claim and appends to the streak history.
       vi.setSystemTime(new Date(2026, 7, 13));
       useProgressStore.getState().claimDaily("stp-storm");
       expect(useProgressStore.getState().xp).toBe(80);
       expect(useProgressStore.getState().streak).toBe(2);
       expect(useProgressStore.getState().daily?.date).toBe("2026-08-13");
+      expect(useProgressStore.getState().dailyHistory).toEqual(["2026-08-12", "2026-08-13"]);
     } finally {
       vi.useRealTimers();
     }
@@ -234,9 +237,10 @@ describe("progress", () => {
       useProgressStore.getState().recordBossResult("stp-storm", true, 1);
 
       const persisted = JSON.parse(values.get("netquest-progress") ?? "{}") as {
-        state: { daily: { date: string }; bossRecords: { victories: number } };
+        state: { daily: { date: string }; dailyHistory: string[]; bossRecords: { victories: number } };
       };
       expect(persisted.state.daily.date).toBe("2026-08-12");
+      expect(persisted.state.dailyHistory).toEqual(["2026-08-12"]);
       expect(persisted.state.bossRecords.victories).toBe(1);
     } finally {
       vi.useRealTimers();
@@ -254,6 +258,7 @@ describe("progress", () => {
       cardReviews: {},
       badges: ["cli-apprentice"],
       daily: null,
+      dailyHistory: [],
       bossRecords: { battles: 1, victories: 1, bestAccuracy: 1 },
       lastSyncedAt: 1234,
     });
@@ -277,6 +282,7 @@ describe("progress", () => {
       cardReviews: {},
       badges: [],
       daily: null,
+      dailyHistory: [],
       bossRecords: { battles: 0, victories: 0, bestAccuracy: 0 },
       lastSyncedAt: before.lastSyncedAt,
     });
@@ -300,6 +306,7 @@ describe("progress", () => {
       cardReviews: {},
       badges: [],
       daily: null,
+      dailyHistory: [],
       bossRecords: { battles: 0, victories: 0, bestAccuracy: 0 },
       lastSyncedAt: 99,
     });

@@ -29,6 +29,7 @@ export function buildSnapshot(state: ProgressData, now: number = Date.now()): Pr
     cardReviews: state.cardReviews,
     badges: state.badges,
     daily: state.daily,
+    dailyHistory: state.dailyHistory ?? [],
     bossRecords: state.bossRecords,
     lastSyncedAt: state.lastSyncedAt,
     updatedAt: now,
@@ -97,6 +98,8 @@ export function mergeProgress(left: ProgressSnapshot, right: ProgressSnapshot): 
     cardReviews,
     badges: union(left.badges, right.badges),
     daily: mergeDaily(left.daily, right.daily),
+    // Claimed days only ever grow; the `?? []` keeps old cloud blobs compatible.
+    dailyHistory: union(left.dailyHistory ?? [], right.dailyHistory ?? []),
     bossRecords: mergeBossRecords(left.bossRecords, right.bossRecords),
     lastSyncedAt: Math.max(left.lastSyncedAt ?? 0, right.lastSyncedAt ?? 0) || null,
     updatedAt: Math.max(left.updatedAt, right.updatedAt),

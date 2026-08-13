@@ -43,6 +43,8 @@ export type ProgressData = {
   badges: string[];
   /** Today's daily challenge, once claimed. */
   daily: DailyState | null;
+  /** Calendar-day keys (YYYY-MM-DD) with a claimed daily challenge — the streak history. */
+  dailyHistory: string[];
   /** Lifetime boss-battle stats. */
   bossRecords: BossRecords;
   /** When the store last converged with the cloud (ms epoch). */
@@ -65,6 +67,7 @@ export const INITIAL_PROGRESS: ProgressData = {
   cardReviews: {},
   badges: [],
   daily: null,
+  dailyHistory: [],
   bossRecords: { battles: 0, victories: 0, bestAccuracy: 0 },
   lastSyncedAt: null,
   syncStatus: "idle",
@@ -167,6 +170,9 @@ export const useProgressStore = create<ProgressState>()(
           return {
             ...state,
             daily: { date: today, arcId, done: true },
+            dailyHistory: state.dailyHistory.includes(today)
+              ? state.dailyHistory
+              : [...state.dailyHistory, today],
             xp: state.xp + DAILY_XP,
             streak: state.streak + 1,
           };
@@ -202,6 +208,7 @@ export const useProgressStore = create<ProgressState>()(
             cardReviews: state.cardReviews,
             badges: state.badges,
             daily: state.daily,
+            dailyHistory: state.dailyHistory,
             bossRecords: state.bossRecords,
           };
           // Returning the same reference when nothing changed keeps zustand
@@ -230,6 +237,7 @@ export const useProgressStore = create<ProgressState>()(
         cardReviews: state.cardReviews,
         badges: state.badges,
         daily: state.daily,
+        dailyHistory: state.dailyHistory,
         bossRecords: state.bossRecords,
         lastSyncedAt: state.lastSyncedAt,
       }),
@@ -243,6 +251,8 @@ export const useProgressStore = create<ProgressState>()(
         cardReviews: (persisted as Partial<ProgressData>).cardReviews ?? current.cardReviews,
         badges: (persisted as Partial<ProgressData>).badges ?? current.badges,
         daily: (persisted as Partial<ProgressData>).daily ?? current.daily,
+        // Old saves predate the streak history — start empty.
+        dailyHistory: (persisted as Partial<ProgressData>).dailyHistory ?? current.dailyHistory,
         bossRecords: (persisted as Partial<ProgressData>).bossRecords ?? current.bossRecords,
         lastSyncedAt: (persisted as Partial<ProgressData>).lastSyncedAt ?? current.lastSyncedAt,
       }),

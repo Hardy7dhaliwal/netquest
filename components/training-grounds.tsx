@@ -14,6 +14,7 @@ import {
 } from "@/lib/boss";
 import { useProgressStore } from "@/lib/progress-store";
 import Gauntlet, { type GauntletResult } from "./gauntlet";
+import StreakCalendar from "./streak-calendar";
 
 type Active = { mode: "daily" } | { mode: "boss"; arcId: string; seed: string; tierId: BossTierId };
 
@@ -23,6 +24,7 @@ export default function TrainingGrounds() {
   const [tierId, setTierId] = useState<BossTierId>("veteran");
 
   const daily = useProgressStore((s) => s.daily);
+  const dailyHistory = useProgressStore((s) => s.dailyHistory);
   const bossRecords = useProgressStore((s) => s.bossRecords);
   const claimDaily = useProgressStore((s) => s.claimDaily);
   const recordBossResult = useProgressStore((s) => s.recordBossResult);
@@ -131,6 +133,8 @@ export default function TrainingGrounds() {
           </div>
         </div>
       </div>
+
+      <StreakCalendar claimedDates={dailyHistory} />
 
       {active?.mode === "daily" && (
         <Gauntlet
