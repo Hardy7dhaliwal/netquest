@@ -184,6 +184,30 @@ export const EXTRA_QUIZ_QUESTIONS: Record<string, QuizQuestion[]> = {
       explain: "MST runs one instance per mapping group (e.g. instance 1 → VLANs 1-10), drastically cutting BPDU and state overhead versus per-VLAN PVST+.",
       wrongGuidance: "One-instance-per-VLAN is PVST+. MST's whole point is fewer instances covering groups of VLANs.",
     },
+    {
+      id: "x-stp-7",
+      prompt: "Two switches have MST configured but show different root bridges for the same instance despite similar configs. Which region attributes must match for them to share one region?",
+      options: [
+        { value: "all-three", title: "Region name, revision number, AND the VLAN-to-instance map", note: "All three define the region boundary" },
+        { value: "name-only", title: "Only the region name", note: "A matching name alone does not merge the region" },
+        { value: "revision-only", title: "Only the revision number", note: "Revision alone means nothing without the map and name" },
+      ],
+      correct: "all-three",
+      explain: "An MST region is defined by the triplet (name, revision, VLAN→instance map); any difference splits the region, so the same instance number runs independently on each side.",
+      wrongGuidance: "All three must match — a mismatch in any one silently creates a region boundary and diverging roots.",
+    },
+    {
+      id: "x-stp-8",
+      prompt: "Which command maps VLANs to an MST instance in global configuration?",
+      options: [
+        { value: "mst-vlan", title: "spanning-tree mst 1 vlan 1-10", note: "instance first, then the VLANs" },
+        { value: "vlan-instance", title: "spanning-tree vlan 1-10 instance 1", note: "The keyword order is mst <instance> vlan <range>" },
+        { value: "region", title: "spanning-tree mst region name CORE", note: "That names the region — mapping is a separate command" },
+      ],
+      correct: "mst-vlan",
+      explain: "spanning-tree mst <instance> vlan <range> assigns VLANs to an instance; combined with the region name/revision/map it defines how the region groups traffic.",
+      wrongGuidance: "The syntax is spanning-tree mst <instance-id> vlan <range> — instance first, then VLANs; the region command only names the region.",
+    },
   ],
 
   // ─── The Bundled Bottleneck (3.1.b) ───────────────────────────────────────
@@ -359,6 +383,30 @@ export const EXTRA_QUIZ_QUESTIONS: Record<string, QuizQuestion[]> = {
       correct: "normal",
       explain: "On broadcast multi-access segments, non-DR/BDR neighbors stay Two-Way with each other; FULL is only with the DR and BDR.",
       wrongGuidance: "Two-Way is the healthy steady state between regular neighbors on Ethernet — misdiagnosing it wastes time.",
+    },
+    {
+      id: "x-ospf-8",
+      prompt: "Two IPv6 routers share a subnet but never form an OSPF adjacency. What does OSPFv3 use for neighbor discovery?",
+      options: [
+        { value: "link-local", title: "Link-local IPv6 addresses", note: "OSPFv3 adjacencies run over link-local" },
+        { value: "global", title: "The global unicast addresses of the interfaces", note: "Global addresses are for reachability, not hello sourcing" },
+        { value: "mac", title: "The routers' MAC addresses", note: "MACs are not addresses OSPFv3 speaks over" },
+      ],
+      correct: "link-local",
+      explain: "OSPFv3 forms adjacencies over link-local IPv6 addresses and sources hellos from them — the global addresses are routing targets, not adjacency endpoints.",
+      wrongGuidance: "If the link-locals are missing or the interface isn't enabled for OSPFv3, no adjacency forms even when the global IPv6 addresses are on the same subnet.",
+    },
+    {
+      id: "x-ospf-9",
+      prompt: "How is an interface enabled in OSPFv3 (unlike the network statement style of OSPFv2)?",
+      options: [
+        { value: "iface-cmd", title: "ipv6 ospf 1 area 0 on the interface", note: "OSPFv3 enables per-interface under the ipv6 router ospf process" },
+        { value: "network", title: "network 2001:db8::/64 area 0 under the process", note: "That is the OSPFv2 network-statement pattern" },
+        { value: "wildcard", title: "A wildcard-masked network statement for IPv6", note: "IPv6 uses no wildcard-mask network statements" },
+      ],
+      correct: "iface-cmd",
+      explain: "OSPFv3 runs under ipv6 router ospf and enables interfaces directly (ipv6 ospf <pid> area <n>), with address-family ipv6 carrying the process — no network/wildcard statement.",
+      wrongGuidance: "The network <prefix> <wildcard> area <n> pattern is OSPFv2; OSPFv3 enables the interface itself inside the process.",
     },
   ],
 
@@ -564,6 +612,30 @@ export const EXTRA_QUIZ_QUESTIONS: Record<string, QuizQuestion[]> = {
       explain: "MSDP lets one domain's RP advertise its active sources to another domain's RP, so receivers can build trees to sources they'd otherwise never learn about.",
       wrongGuidance: "MSDP is the source-discovery bridge between PIM domains — RPF and IGMP are separate, local mechanisms.",
     },
+    {
+      id: "x-edge-services-7",
+      prompt: "In a PTP (IEEE 1588) deployment, which clock type re-times the sync signal on every hop it passes?",
+      options: [
+        { value: "boundary", title: "Boundary clock — a mini-grandmaster per hop", note: "It regenerates sync so error doesn't accumulate" },
+        { value: "transparent", title: "Transparent clock — measures and corrects transit delay", note: "It corrects, it does not re-time" },
+        { value: "grandmaster", title: "Grandmaster — the network's timing source", note: "One grandmaster serves the domain; it doesn't re-time per hop" },
+      ],
+      correct: "boundary",
+      explain: "A boundary clock terminates sync on one port and re-times it out another, so jitter/error does not accumulate across many hops — the standard campus/factory pattern.",
+      wrongGuidance: "A transparent clock only adds a delay correction; the grandmaster is the source. Re-timing per hop is the boundary clock's role.",
+    },
+    {
+      id: "x-edge-services-8",
+      prompt: "Two switches in the same PTP domain both claim grandmaster. Which attributes break the tie?",
+      options: [
+        { value: "priority", title: "priority1, then clock class/quality, then priority2", note: "BMCA selects the best master by these attributes" },
+        { value: "ip", title: "The higher IP address wins", note: "IP addresses do not select the grandmaster" },
+        { value: "domain", title: "The smaller domain number wins", note: "The domain must match for sync to happen at all" },
+      ],
+      correct: "priority",
+      explain: "The Best Master Clock Algorithm compares priority1 first, then clock class (quality), then priority2 — the winner is the grandmaster for the domain.",
+      wrongGuidance: "Grandmaster selection is the BMCA on priority/clock-quality — addresses and domain numbers don't elect it.",
+    },
   ],
 
   // ─── Tunnel Vision (2.2.a/b) ──────────────────────────────────────────────
@@ -627,6 +699,30 @@ export const EXTRA_QUIZ_QUESTIONS: Record<string, QuizQuestion[]> = {
       correct: "gre-flow",
       explain: "The crypto ACL must match the GRE packets (protocol 47) between the WAN addresses — encrypting the tunnel carries the private traffic inside.",
       wrongGuidance: "Match the outer GRE flow, not the inner private IPs — they are payload, invisible to the crypto map.",
+    },
+    {
+      id: "x-tunnel-6",
+      prompt: "Two VRFs must share one specific route without leaking the rest of either table. Which mechanism does this precisely?",
+      options: [
+        { value: "selective-rt", title: "Selective route-target import/export between the VRFs", note: "RT matching controls exactly which routes leak" },
+        { value: "static-only", title: "A static route with a next-hop in the global table", note: "That routes via the global table, not into the other VRF" },
+        { value: "trunk", title: "A trunk carrying both VLANs", note: "L2 trunking has nothing to do with VRF route exchange" },
+      ],
+      correct: "selective-rt",
+      explain: "Import/export route targets define which VPN routes a VRF accepts — matching a single route's RT leaks exactly that prefix between VRFs.",
+      wrongGuidance: "VRF-to-VRF exchange is route-target matching (or explicit route leaking); a static global next-hop or a trunk bypasses the VRF tables entirely.",
+    },
+    {
+      id: "x-tunnel-7",
+      prompt: "show crypto isakmp sa shows QM_IDLE, but show crypto ipsec sa shows no active IPsec SAs. Which phase is broken?",
+      options: [
+        { value: "phase2", title: "Phase 2 — the IPsec SAs were never negotiated", note: "Phase 1 is up (QM_IDLE); the data SAs are missing" },
+        { value: "phase1", title: "Phase 1 — the peers never authenticated", note: "QM_IDLE means phase 1 completed" },
+        { value: "transform", title: "The transform set is not defined", note: "A missing transform set would fail the phase-2 proposal — the symptom is still phase 2" },
+      ],
+      correct: "phase2",
+      explain: "Phase 1 up (QM_IDLE) with no IPsec SAs means the phase-2 exchange failed — classically the crypto ACL or transform-set proposal mismatch.",
+      wrongGuidance: "QM_IDLE proves phase 1 succeeded; an empty crypto ipsec sa table points the failure at phase 2 (map/ACL/transform match).",
     },
   ],
 
@@ -860,6 +956,42 @@ export const EXTRA_QUIZ_QUESTIONS: Record<string, QuizQuestion[]> = {
       explain: "ERSPAN wraps mirrored traffic in GRE so it can traverse routed (L3) networks — local SPAN and RSPAN are L2-bound.",
       wrongGuidance: "SPAN is local and RSPAN rides a session VLAN across L2 — crossing a routed core is exactly ERSPAN's job.",
     },
+    {
+      id: "x-signal-6",
+      prompt: "A NOC polls a router's interface counters but gets no response, while the device clearly forwards traffic. Which SNMP element is the first thing to verify?",
+      options: [
+        { value: "community", title: "The community string / version matches what the device accepts", note: "v2c uses a plaintext community; v3 uses a user" },
+        { value: "traps", title: "Whether traps are enabled", note: "Traps push; polling is a get — traps don't block polls" },
+        { value: "uptime", title: "Whether the device has restarted", note: "Uptime wouldn't silence a poll for a forwarding device" },
+      ],
+      correct: "community",
+      explain: "SNMP polling fails first at authentication: a v2c get must use an accepted community (or a valid v3 user), typically also constrained by an ACL on the device.",
+      wrongGuidance: "Traps and uptime are irrelevant to a poll failing — the get request itself is being rejected, so check community/version.",
+    },
+    {
+      id: "x-signal-7",
+      prompt: "A device is set to logging trap 4. Which syslog events reach the collector?",
+      options: [
+        { value: "severe", title: "Severities 0–4 (emergency through warnings)", note: "A trap level of N forwards everything 0..N" },
+        { value: "exact", title: "Only severity 4 messages", note: "The level is a ceiling, not an exact match" },
+        { value: "minor", title: "Severities 5–7 (notifications and above)", note: "That inverts the severity ordering" },
+      ],
+      correct: "severe",
+      explain: "Syslog severity runs 0 (emergency) → 7 (debug); logging trap 4 forwards everything from 0 through 4 — warnings and worse.",
+      wrongGuidance: "The configured level is the highest severity forwarded — lower numbers are more severe and are all included.",
+    },
+    {
+      id: "x-signal-8",
+      prompt: "Which statement correctly contrasts SNMP v2c and v3?",
+      options: [
+        { value: "v3-auth", title: "v3 adds user-based authentication and optional encryption; v2c uses plaintext communities", note: "USM in v3 vs the community string in v2c" },
+        { value: "same", title: "They are identical apart from the port number", note: "Both run over UDP 161/162 — the difference is security" },
+        { value: "v2c-enc", title: "v2c encrypts payloads and v3 does not", note: "v2c sends communities in the clear; v3 is the secure option" },
+      ],
+      correct: "v3-auth",
+      explain: "SNMPv3 (USM) authenticates by user with optional AES/DES privacy, while v2c relies on a shared community string sent in plaintext.",
+      wrongGuidance: "The security model is the whole point of v3 — user auth + encryption vs plaintext v2c communities.",
+    },
   ],
 
   // ─── Lock the Control Plane (5.1.a–5.4.d) ─────────────────────────────────
@@ -935,6 +1067,42 @@ export const EXTRA_QUIZ_QUESTIONS: Record<string, QuizQuestion[]> = {
       correct: "edr",
       explain: "Endpoint detection & response plus NAC quarantine the infected device and cut its network access — containment, not just detection.",
       wrongGuidance: "A perimeter firewall rarely sees internal east-west traffic, and logging alone does nothing to stop lateral movement.",
+    },
+    {
+      id: "x-lock-7",
+      prompt: "Policy must follow a user's security group across switches that cannot carry SGTs in the frame. Which mechanism propagates the tag?",
+      options: [
+        { value: "sxp", title: "SXP — the SGT Exchange Protocol carries tags between devices", note: "SXP bridges hardware that can't embed SGTs" },
+        { value: "macsec", title: "MACsec — link encryption carries the tag", note: "MACsec encrypts; it does not propagate SGTs" },
+        { value: "8021x", title: "802.1X port authentication", note: "802.1X authenticates admission; it doesn't carry group tags" },
+      ],
+      correct: "sxp",
+      explain: "SXP passes Security Group Tags between TrustSec devices over TCP (64999) so endpoints and switches that can't insert tags still learn the group mapping.",
+      wrongGuidance: "MACsec protects the link and 802.1X controls admission — group-tag propagation is SXP's job.",
+    },
+    {
+      id: "x-lock-8",
+      prompt: "Two switches have MACsec configured but the link still passes plaintext. Which agreement must match on both ends for the session to activate?",
+      options: [
+        { value: "key-cipher", title: "The key (PSK/key chain) and the cipher suite", note: "MKA needs matching credentials and algorithms" },
+        { value: "vlan", title: "The native VLAN number", note: "VLANs don't gate MACsec session establishment" },
+        { value: "routing", title: "A routing protocol adjacency", note: "MACsec is L2 — routing state is irrelevant" },
+      ],
+      correct: "key-cipher",
+      explain: "MACsec's MKA session needs both peers to share the same key (pre-shared key or 802.1X-derived) and a compatible cipher suite — otherwise no SecY session comes up.",
+      wrongGuidance: "L2 details like VLANs and routing don't gate MKA — the key and cipher suite must match for the session to encrypt.",
+    },
+    {
+      id: "x-lock-9",
+      prompt: "A legacy firewall permits 443, and malware rides inside HTTPS. Which NGFW capability combination closes that gap?",
+      options: [
+        { value: "app-ssl-ips", title: "Application identification + SSL/TLS inspection + IPS", note: "See the app inside the encrypted flow and block the exploit" },
+        { value: "more-acls", title: "More permissive ACL entries for known servers", note: "ACLs key on ports — exactly the gap the malware uses" },
+        { value: "nat", title: "More aggressive NAT", note: "NAT changes addressing; it does not inspect payloads" },
+      ],
+      correct: "app-ssl-ips",
+      explain: "NGFWs identify the application inside the port, decrypt/inspect the TLS stream, and run IPS signatures — port-based ACLs alone can't see the malicious content.",
+      wrongGuidance: "Port-based ACLs and NAT operate on headers — the NGFW value is application awareness plus SSL inspection plus IPS.",
     },
   ],
 

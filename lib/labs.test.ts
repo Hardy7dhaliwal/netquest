@@ -412,4 +412,101 @@ describe("gap-topic labs", () => {
     const b = runLab(template, "b", ["cat fleet.txt"], "mode", "chef-client --runlist 'role[network]'", "chef-client --runlist 'role[network]'");
     expect(b.status).toBe("complete");
   });
+
+  it("completes the OSPFv3 lab once the interface is enabled in the process", () => {
+    const template = findLab("lab-ospfv3");
+    const a = runLab(template, "a", ["show ipv6 ospf 1 neighbor"], "not-enabled", "ipv6 ospf 1 area 0", "show ipv6 ospf 1 neighbor");
+    expect(a.status).toBe("complete");
+    expect(a.clean).toBe(true);
+    const b = runLab(template, "b", ["show ipv6 ospf 10 neighbor"], "not-enabled", "ipv6 ospf 10 area 0", "show ipv6 ospf 10 neighbor");
+    expect(b.status).toBe("complete");
+    expect(b.clean).toBe(true);
+  });
+
+  it("rejects the IPv4 network statement as the OSPFv3 fix", () => {
+    const template = findLab("lab-ospfv3");
+    let state = startLab(template, "a");
+    state = runLabCommand(state, template, "show ipv6 ospf 1 neighbor");
+    state = answerLabDiagnose(state, template, "not-enabled");
+    state = runLabCommand(state, template, "network 2001:db8:1::/64 area 0");
+    expect(state.stepIndex).toBe(2);
+    expect(state.clean).toBe(false);
+  });
+
+  it("completes the SNMP/syslog lab with the matching community or trap level", () => {
+    const template = findLab("lab-snmp-syslog");
+    const a = runLab(template, "a", ["show snmp community"], "mismatch", "snmp-server community netops-ro ro", "show snmp community");
+    expect(a.status).toBe("complete");
+    const b = runLab(template, "b", ["show logging"], "mismatch", "logging trap 5", "show logging");
+    expect(b.status).toBe("complete");
+  });
+
+  it("rejects the other variant's SNMP/syslog fix", () => {
+    const template = findLab("lab-snmp-syslog");
+    let state = startLab(template, "a");
+    state = runLabCommand(state, template, "show snmp community");
+    state = answerLabDiagnose(state, template, "mismatch");
+    state = runLabCommand(state, template, "logging trap 5");
+    expect(state.stepIndex).toBe(2);
+  });
+
+  it("completes the NTP/PTP lab once the time source is fixed", () => {
+    const template = findLab("lab-ntp-ptp");
+    const a = runLab(template, "a", ["show ntp status"], "bad-source", "ntp server 10.10.0.1", "show ntp status");
+    expect(a.status).toBe("complete");
+    const b = runLab(template, "b", ["show ptp clock"], "bad-source", "ptp priority1 127", "show ptp clock");
+    expect(b.status).toBe("complete");
+  });
+
+  it("completes the MST lab once the region attributes align", () => {
+    const template = findLab("lab-mst");
+    const a = runLab(template, "a", ["show spanning-tree mst configuration"], "region", "spanning-tree mst 1 vlan 1-10", "show spanning-tree mst");
+    expect(a.status).toBe("complete");
+    const b = runLab(template, "b", ["show spanning-tree mst configuration"], "region", "revision 2", "show spanning-tree mst");
+    expect(b.status).toBe("complete");
+  });
+
+  it("rejects the rapid-PVST distractor in the MST lab", () => {
+    const template = findLab("lab-mst");
+    let state = startLab(template, "a");
+    state = runLabCommand(state, template, "show spanning-tree mst configuration");
+    state = answerLabDiagnose(state, template, "region");
+    state = runLabCommand(state, template, "spanning-tree mode rapid-pvst");
+    expect(state.stepIndex).toBe(2);
+    expect(state.clean).toBe(false);
+  });
+
+  it("completes the VRF lab with the matching route-target", () => {
+    const template = findLab("lab-vrf");
+    const a = runLab(template, "a", ["show ip vrf"], "rt-mismatch", "route-target export 65000:100", "show ip route vrf CUST-B");
+    expect(a.status).toBe("complete");
+    expect(a.clean).toBe(true);
+    const b = runLab(template, "b", ["show ip vrf"], "rt-mismatch", "route-target import 65000:100", "show ip route vrf CUST-B");
+    expect(b.status).toBe("complete");
+    expect(b.clean).toBe(true);
+  });
+
+  it("completes the GRE-over-IPsec lab once the crypto ACL matches the GRE flow", () => {
+    const template = findLab("lab-gre-ipsec");
+    const a = runLab(template, "a", ["show crypto isakmp sa"], "acl-flow", "access-list 101 permit gre host 203.0.113.1 host 203.0.113.2", "show crypto ipsec sa");
+    expect(a.status).toBe("complete");
+    const b = runLab(template, "b", ["show crypto isakmp sa"], "acl-flow", "access-list 102 permit gre host 198.51.100.5 host 198.51.100.6", "show crypto ipsec sa");
+    expect(b.status).toBe("complete");
+  });
+
+  it("completes the TrustSec/MACsec lab once key or cipher suite aligns", () => {
+    const template = findLab("lab-trustsec-macsec");
+    const a = runLab(template, "a", ["show mka sessions"], "key-cipher", "key string Cisco123", "show mka sessions");
+    expect(a.status).toBe("complete");
+    const b = runLab(template, "b", ["show mka sessions"], "key-cipher", "macsec cipher-suite gcm-aes-256", "show mka sessions");
+    expect(b.status).toBe("complete");
+  });
+
+  it("covers the deep-dive gap objectives with a lab", () => {
+    const gapObjectives = ["3.2.b", "4.1", "3.3.a", "3.1.c", "2.2.a", "2.2.b", "5.4.d"];
+    const covered = new Set(LAB_TEMPLATES.flatMap((template) => template.objectiveIds));
+    for (const objective of gapObjectives) {
+      expect(covered.has(objective), `objective ${objective} should have a lab`).toBe(true);
+    }
+  });
 });

@@ -296,18 +296,20 @@ export const CURRICULUM_PLANS: Record<string, ObjectivePlan> = {
   },
   "3.1.c": {
     objectiveId: "3.1.c",
-    subskills: ["RSTP operation", "MST instances", "Root guard and BPDU guard"],
+    subskills: ["RSTP operation", "MST regions, instances, and mapping", "Root guard and BPDU guard"],
     lesson:
-      "RSTP converges fast via proposal/agreement. MST groups VLANs into instances to scale. Root guard blocks a port from becoming the root's path (rejects superior BPDUs); BPDU guard err-disables a port that receives a BPDU where none should arrive (access ports).",
+      "RSTP converges fast via proposal/agreement. MST groups VLANs into instances to scale: switches in a region agree on a name, revision, and VLAN→instance map; a region boundary runs one spanning tree per instance. Root guard blocks a port from becoming the root's path (rejects superior BPDUs); BPDU guard err-disables a port that receives a BPDU where none should arrive (access ports). A mismatched region (different name, revision, or mapping) silently splits the region, so the same instance numbers diverge on either side of the boundary.",
     scenarios: [
       "A rogue switch with lower priority hijacks root — which guard stops it, and what does the port do?",
       "VLANs must be load-balanced across two uplinks — how does MST instance mapping achieve this?",
+      "Two switches show different MST root bridges for the same instance despite identical-looking configs — which region attribute (name, revision, VLAN map) must match for them to share a region?",
     ],
     misconceptions: [
       "Root guard and BPDU guard are interchangeable — root guard protects against a new root via a port; BPDU guard shuts down ports receiving any BPDU.",
       "MST is 'RSTP for one VLAN' — MST runs one instance per mapping group of VLANs, not per VLAN.",
+      "Only the region name matters for MST — the revision number and the VLAN→instance mapping must also match, or switches treat each other as different regions.",
     ],
-    handsOn: "Configure MST region/instance mapping plus root guard and BPDU guard, and verify with show spanning-tree mst.",
+    handsOn: "Configure MST region/instance mapping plus root guard and BPDU guard, and verify with show spanning-tree mst — then diagnose a region mismatch from the boundary report.",
   },
   "3.2.a": {
     objectiveId: "3.2.a",
@@ -325,18 +327,20 @@ export const CURRICULUM_PLANS: Record<string, ObjectivePlan> = {
   },
   "3.2.b": {
     objectiveId: "3.2.b",
-    subskills: ["Adjacency formation and states", "Areas and summarization", "Filtering and passive interfaces"],
+    subskills: ["Adjacency formation and states", "Areas and summarization", "Filtering and passive interfaces", "OSPFv3 (IPv6) configuration"],
     lesson:
-      "OSPF adjacencies progress Down→Init→Two-Way→ExStart→Exchange→Loading→FULL and require matching area, hello/dead timers, and network type. Area 0 is the backbone. Summarization (area X range) and filtering (distribute-list, passive-interface) control route propagation and CPU load.",
+      "OSPF adjacencies progress Down→Init→Two-Way→ExStart→Exchange→Loading→FULL and require matching area, hello/dead timers, and network type. Area 0 is the backbone. Summarization (area X range) and filtering (distribute-list, passive-interface) control route propagation and CPU load. OSPFv3 is the IPv6 incarnation: it runs inside ipv6 router ospf, uses link-local addresses for adjacencies, and enables per-process address families (address-family ipv6) — the LSA types and state machine carry over from OSPFv2.",
     scenarios: [
       "Two routers are stuck in ExStart/Exchange — which parameter mismatch is it (MTU) and how do you confirm?",
       "A redistributed network must be summarized at the ABR and hidden from one neighbor — which two commands?",
+      "Two IPv6 routers never form an adjacency even though addresses are in the same subnet — what does OSPFv3 use for neighbor discovery (link-local) and which process command enables it?",
     ],
     misconceptions: [
       "Stuck in Two-Way is a failure — Two-Way is normal between non-DR neighbors on broadcast segments; FULL is expected only with the DR/BDR.",
       "passive-interface stops the router from sending anything — it suppresses hello updates on that interface while the network statement stays.",
+      "OSPFv3 is configured exactly like OSPFv2 — OSPFv3 runs under ipv6 router ospf and forms adjacencies over link-local addresses; there is no per-interface network statement, the process enables interfaces directly.",
     ],
-    handsOn: "Troubleshoot an OSPF adjacency stuck below FULL (timer/area/MTU), then configure a summary and a passive interface, and verify with show ip ospf neighbor.",
+    handsOn: "Troubleshoot an OSPF adjacency stuck below FULL (timer/area/MTU), then configure a summary and a passive interface, and verify with show ip ospf neighbor. For OSPFv3, configure ipv6 router ospf + address-family and verify with show ipv6 ospf neighbor.",
   },
   "3.2.c": {
     objectiveId: "3.2.c",
@@ -370,18 +374,20 @@ export const CURRICULUM_PLANS: Record<string, ObjectivePlan> = {
   },
   "3.3.a": {
     objectiveId: "3.3.a",
-    subskills: ["NTP client/server and stratum", "PTP (IEEE 1588)", "Time sync verification"],
+    subskills: ["NTP client/server and stratum", "PTP (IEEE 1588) roles and clock types", "Time sync verification"],
     lesson:
-      "NTP synchronizes clocks over UDP 123; stratum ranks clock quality (1 = authoritative). Devices act as clients, servers, or peers. PTP (IEEE 1588) provides microsecond precision for industrial/AV networks using a grandmaster clock and boundary/transparent clocks.",
+      "NTP synchronizes clocks over UDP 123; stratum ranks clock quality (1 = authoritative). Devices act as clients, servers, or peers. PTP (IEEE 1588) provides microsecond precision for industrial/AV networks using a grandmaster clock and boundary/transparent clocks. A grandmaster is the timing source (chosen by priority + clock quality); a boundary clock re-times sync on each hop; a transparent clock measures and corrects delay without re-timing. PTP configs name the domain, role, and priority — interpreting them means reading who is grandmaster and how accuracy is preserved hop-by-hop.",
     scenarios: [
       "Logs from two devices disagree on event times — which NTP settings and commands do you check (server, stratum, offset)?",
       "A real-time application needs sub-millisecond sync — why PTP instead of NTP, and what roles exist?",
+      "A PTP network shows the same clock domain but two devices claim grandmaster — which PTP attribute (priority1/2, clock class) breaks the tie?",
     ],
     misconceptions: [
       "Higher stratum is better — lower stratum numbers are closer to the authoritative source and more accurate.",
       "NTP and PTP are interchangeable — NTP is millisecond-grade for IT; PTP is microsecond-grade for specialized networks.",
+      "A boundary clock and a transparent clock do the same thing — a boundary clock re-times (a mini-grandmaster per hop); a transparent clock only measures and corrects transit delay.",
     ],
-    handsOn: "Configure an NTP client to a server, verify with show ntp status/associations, and interpret the stratum and offset.",
+    handsOn: "Configure an NTP client to a server, verify with show ntp status/associations, interpret stratum and offset, and read a PTP config (domain, role, priority) to identify the grandmaster.",
   },
   "3.3.b": {
     objectiveId: "3.3.b",
@@ -432,18 +438,20 @@ export const CURRICULUM_PLANS: Record<string, ObjectivePlan> = {
   // ─── Network Assurance (10%) ──────────────────────────────────────────────
   "4.1": {
     objectiveId: "4.1",
-    subskills: ["ping and traceroute", "debug and conditional debug", "SNMP and syslog"],
+    subskills: ["ping and traceroute", "debug and conditional debug", "SNMP v2c/v3 polling", "Syslog severity and forwarding"],
     lesson:
-      "Assurance tools find where a network breaks: ping proves reachability, traceroute shows the path and per-hop delay, debug (ideally conditional) reveals protocol behavior, and SNMP/syslog provide ongoing health monitoring and event logs. Conditional debug avoids flooding the console by filtering to one neighbor or prefix.",
+      "Assurance tools find where a network breaks: ping proves reachability, traceroute shows the path and per-hop delay, debug (ideally conditional) reveals protocol behavior, and SNMP/syslog provide ongoing health monitoring and event logs. Conditional debug avoids flooding the console by filtering to one neighbor or prefix. SNMP polls counters (get requests, communities for v2c or users for v3) and can push traps/informs; syslog streams severity-tagged events (0 emergency → 7 debug) to a collector — the pair is 'push events, poll counters'.",
     scenarios: [
       "Ping to a remote host works but an application times out — which tool isolates the path vs the endpoint?",
       "An OSPF neighbor flaps — which conditional debug captures only that neighbor without drowning the console?",
+      "A NOC polls a router's interface counters but gets no response, while the device clearly forwards traffic — which SNMP element (community, version, or access-list) is the first thing to verify?",
     ],
     misconceptions: [
       "A successful ping means the whole path is fine — ping verifies ICMP; application traffic can still fail (MTU, ACL, QoS).",
       "debug is fine to leave on — debug is CPU-heavy; always use conditional debug and disable it when done.",
+      "SNMP only means traps — SNMP does both polling (get/response, the NOC pulls counters) and pushing (traps, the device pushes events); syslog is the separate event-streaming channel.",
     ],
-    handsOn: "Run ping and traceroute to locate a failure hop, then use a conditional debug to capture OSPF events for a single neighbor.",
+    handsOn: "Run ping and traceroute to locate a failure hop, use a conditional debug to capture OSPF events for a single neighbor, and verify an SNMP community answers a poll while syslog forwards events at severity 6.",
   },
   "4.2": {
     objectiveId: "4.2",
@@ -639,17 +647,20 @@ export const CURRICULUM_PLANS: Record<string, ObjectivePlan> = {
   },
   "5.4.d": {
     objectiveId: "5.4.d",
-    subskills: ["TrustSec and SGTs", "MACsec (802.1AE)", "Cisco TrustSec architecture"],
+    subskills: ["TrustSec and SGTs", "SXP propagation", "MACsec (802.1AE) key agreement"],
     lesson:
-      "TrustSec uses Security Group Tags (SGTs) to enforce policy by group membership end-to-end, propagated via SXP where hardware doesn't carry tags. MACsec (802.1AE) encrypts and authenticates traffic hop-by-hop at Layer 2 between directly connected devices — link encryption, not end-to-end.",
+      "TrustSec uses Security Group Tags (SGTs) to enforce policy by group membership end-to-end, propagated via SXP (SGT Exchange Protocol) where hardware doesn't carry tags in the frame. MACsec (802.1AE) encrypts and authenticates traffic hop-by-hop at Layer 2 between directly connected devices — link encryption, not end-to-end. MACsec peers use a pre-shared key or 802.1X-derived keys; both ends must agree on the key chain and cipher suite or the link never encrypts.",
     scenarios: [
       "Policy must follow a user's group across a network — how do SGTs and SXP deliver that vs static IP ACLs?",
       "Two switches must protect the link between them from eavesdropping — which technology (MACsec) and what does it NOT cover?",
+      "Two switches with MACsec configured still pass plaintext — which agreement (key chain/psk, cipher suite) must match on both ends for the session to come up?",
     ],
     misconceptions: [
       "TrustSec and MACsec are the same — TrustSec is group-based policy (SGTs); MACsec is L2 link encryption.",
       "MACsec protects traffic end to end — it protects each hop; traffic is decrypted/re-encrypted at every device.",
+      "MACsec needs no key agreement — both peers must share a key (psk or 802.1X-derived) and a compatible cipher suite or the session never activates.",
     ],
+    handsOn: "Configure an SGT-to-group mapping and an SXP connection, then bring up a MACsec session between two switches with a shared key chain and verify with show mka sessions.",
   },
 
   // ─── Automation and AI (15%) ──────────────────────────────────────────────
