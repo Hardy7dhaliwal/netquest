@@ -31,6 +31,7 @@ import ReadinessReport from "@/components/readiness-report";
 import BadgesPanel from "@/components/badges-panel";
 import TrainingGrounds from "@/components/training-grounds";
 import SyncPanel from "@/components/sync-panel";
+import AccountButton from "@/components/account-button";
 import ArcQuiz from "@/components/arc-quiz";
 import FlashcardReview from "@/components/flashcard-review";
 import RescueLauncher from "@/components/rescue-launcher";
@@ -1451,9 +1452,10 @@ export default function Home() {
             <h1 className="mt-4 text-5xl font-black tracking-tight sm:text-6xl">NetQuest</h1>
             <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-300">Learn enterprise networking by inspecting, configuring, and watching a broken network come back to life.</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <button className="rounded-lg bg-cyan-300 px-5 py-3 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 hover:bg-cyan-200 focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:ring-offset-2 focus:ring-offset-slate-950" onClick={openMission} type="button">Start / resume mission <span aria-hidden="true">→</span></button>
             <button className="rounded-lg border border-cyan-300/40 px-5 py-3 text-sm font-bold text-cyan-200 transition hover:bg-cyan-300/10" onClick={() => openQuiz("vlan-that-vanished")} type="button">{quizResults["vlan-that-vanished"]?.perfect ? "★ " : ""}VLAN quiz</button>
+            <AccountButton />
           </div>
         </div>
         <div className="mt-12 grid gap-4 sm:grid-cols-3">

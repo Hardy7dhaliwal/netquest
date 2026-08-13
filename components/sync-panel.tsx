@@ -144,7 +144,7 @@ export default function SyncPanel() {
 
   if (!isSyncConfigured) {
     return (
-      <section className="mt-6 rounded-xl border border-slate-800 bg-slate-900/60 p-5 sm:p-6">
+      <section id="cloud-sync" className="mt-6 scroll-mt-6 rounded-xl border border-slate-800 bg-slate-900/60 p-5 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">Cloud sync</p>
@@ -162,7 +162,7 @@ export default function SyncPanel() {
   }
 
   return (
-    <section className="mt-6 rounded-xl border border-slate-800 bg-slate-900/60 p-5 sm:p-6">
+    <section id="cloud-sync" className="mt-6 scroll-mt-6 rounded-xl border border-slate-800 bg-slate-900/60 p-5 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">Cloud sync</p>
