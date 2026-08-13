@@ -565,4 +565,90 @@ describe("gap-topic labs", () => {
       expect(covered.has(objective), `objective ${objective} should have a lab`).toBe(true);
     }
   });
+
+  it("completes the zone-design lab once the ACL is enforced on the right boundary", () => {
+    const template = findLab("lab-sec-design");
+    const a = runLab(template, "a", ["show access-lists"], "placement", "ip access-group 110 in", "show ip interface gi0/2");
+    expect(a.status).toBe("complete");
+    expect(a.clean).toBe(true);
+    const b = runLab(template, "b", ["show access-lists"], "placement", "ip access-group 120 in", "show ip interface gi0/4");
+    expect(b.status).toBe("complete");
+    expect(b.clean).toBe(true);
+  });
+
+  it("rejects the other variant's ACL in the zone-design lab", () => {
+    const template = findLab("lab-sec-design");
+    let state = startLab(template, "a");
+    state = runLabCommand(state, template, "show access-lists");
+    state = answerLabDiagnose(state, template, "placement");
+    state = runLabCommand(state, template, "ip access-group 120 in"); // variant B's fix
+    expect(state.stepIndex).toBe(2); // still on configure
+    expect(state.clean).toBe(false);
+  });
+
+  it("completes the 802.1X lab once authentication is enforced", () => {
+    const template = findLab("lab-8021x-nac");
+    const a = runLab(template, "a", ["show authentication sessions"], "bypass", "authentication port-control auto", "show authentication sessions");
+    expect(a.status).toBe("complete");
+    expect(a.clean).toBe(true);
+    const b = runLab(template, "b", ["show dot1x all"], "bypass", "dot1x system-auth-control", "show dot1x all");
+    expect(b.status).toBe("complete");
+    expect(b.clean).toBe(true);
+  });
+
+  it("rejects the other variant's 802.1X fix", () => {
+    const template = findLab("lab-8021x-nac");
+    let state = startLab(template, "a");
+    state = runLabCommand(state, template, "show authentication sessions");
+    state = answerLabDiagnose(state, template, "bypass");
+    state = runLabCommand(state, template, "dot1x system-auth-control"); // variant B's fix
+    expect(state.stepIndex).toBe(2);
+    expect(state.clean).toBe(false);
+  });
+
+  it("completes the NGFW SSL lab once deep inspection is enabled", () => {
+    const template = findLab("lab-ngfw-ssl");
+    const a = runLab(template, "a", ["show service-policy inspect"], "ssl-gap", "inspect https", "show service-policy inspect");
+    expect(a.status).toBe("complete");
+    expect(a.clean).toBe(true);
+    const b = runLab(template, "b", ["show run ssl"], "ssl-gap", "ssl trust-point NGFW-CA", "show run ssl");
+    expect(b.status).toBe("complete");
+    expect(b.clean).toBe(true);
+  });
+
+  it("rejects the other variant's NGFW fix", () => {
+    const template = findLab("lab-ngfw-ssl");
+    let state = startLab(template, "a");
+    state = runLabCommand(state, template, "show service-policy inspect");
+    state = answerLabDiagnose(state, template, "ssl-gap");
+    state = runLabCommand(state, template, "ssl trust-point NGFW-CA"); // variant B's fix
+    expect(state.stepIndex).toBe(2);
+  });
+
+  it("completes the SXP/SGT lab once the tag reaches enforcement", () => {
+    const template = findLab("lab-sxp-sgt");
+    const a = runLab(template, "a", ["show cts sxp connections"], "sgt-missing", "cts sxp connection peer 192.0.2.2 source GigabitEthernet0/2 password Cisco123", "show cts sxp connections");
+    expect(a.status).toBe("complete");
+    expect(a.clean).toBe(true);
+    const b = runLab(template, "b", ["show cts role-based sgt-map"], "sgt-missing", "cts role-based sgt-map 10.1.1.0 255.255.255.0 sgt 40", "show cts role-based sgt-map");
+    expect(b.status).toBe("complete");
+    expect(b.clean).toBe(true);
+  });
+
+  it("rejects the other variant's SXP/SGT fix", () => {
+    const template = findLab("lab-sxp-sgt");
+    let state = startLab(template, "a");
+    state = runLabCommand(state, template, "show cts sxp connections");
+    state = answerLabDiagnose(state, template, "sgt-missing");
+    state = runLabCommand(state, template, "cts role-based sgt-map 10.1.1.0 255.255.255.0 sgt 40"); // variant B's fix
+    expect(state.stepIndex).toBe(2);
+  });
+
+  it("covers every 5.4 security objective with a lab", () => {
+    const security = ["5.4.a", "5.4.b", "5.4.c", "5.4.d"];
+    const covered = new Set(LAB_TEMPLATES.flatMap((template) => template.objectiveIds));
+    for (const objective of security) {
+      expect(covered.has(objective), `objective ${objective} should have a lab`).toBe(true);
+    }
+  });
 });

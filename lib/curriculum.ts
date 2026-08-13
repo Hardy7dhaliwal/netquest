@@ -626,6 +626,7 @@ export const CURRICULUM_PLANS: Record<string, ObjectivePlan> = {
       "The firewall is the security — east-west traffic inside the network needs segmentation too.",
       "Segmentation is only about IP ACLs — SGTs and VRFs segment with identity, not just address lists.",
     ],
+    handsOn: "Interpret a three-tier zone design and fix a misplaced control: read show access-lists and show ip interface to find which boundary the deny ACL protects, move it inbound on the correct interface, and verify rising deny counters (lab-sec-design).",
   },
   "5.4.b": {
     objectiveId: "5.4.b",
@@ -640,6 +641,7 @@ export const CURRICULUM_PLANS: Record<string, ObjectivePlan> = {
       "Endpoint security is just antivirus — modern defense adds EDR behavior detection and network enforcement.",
       "802.1X replaces firewalls — it controls admission at the port; it doesn't filter traffic between zones.",
     ],
+    handsOn: "Close an 802.1X admission hole: read show authentication sessions and show dot1x all to spot a force-authorized port or a disabled system-auth-control, enforce authentication, and verify the port now demands credentials (lab-8021x-nac).",
   },
   "5.4.c": {
     objectiveId: "5.4.c",
@@ -656,6 +658,7 @@ export const CURRICULUM_PLANS: Record<string, ObjectivePlan> = {
       "SSL inspection is free — it requires the trust store/cert handling and carries performance cost.",
       "Allowing a port lets the NGFW see the traffic — without app-ID and SSL decryption, 'allow 443' is exactly the blind spot NGFWs exist to close.",
     ],
+    handsOn: "Close the encrypted-flow blind spot: read show service-policy inspect and show run ssl to find why TLS is allowed but opaque, enable HTTPS inspection or bind the CA trust point, and verify decrypted-session counters (lab-ngfw-ssl).",
   },
   "5.4.d": {
     objectiveId: "5.4.d",
@@ -672,7 +675,7 @@ export const CURRICULUM_PLANS: Record<string, ObjectivePlan> = {
       "MACsec protects traffic end to end — it protects each hop; traffic is decrypted/re-encrypted at every device.",
       "MACsec needs no key agreement — both peers must share a key (psk or 802.1X-derived) and a compatible cipher suite or the session never activates.",
     ],
-    handsOn: "Configure an SGT-to-group mapping and an SXP connection, then bring up a MACsec session between two switches with a shared key chain and verify with show mka sessions.",
+    handsOn: "Trace an SGT to its enforcement point: read show cts sxp connections and show cts role-based sgt-map, fix a down SXP session or a missing role-based map so the tag propagates, and verify the active binding (lab-sxp-sgt). Then bring up a MACsec session between two switches with a shared key chain and verify with show mka sessions (lab-trustsec-macsec).",
   },
 
   // ─── Automation and AI (15%) ──────────────────────────────────────────────
