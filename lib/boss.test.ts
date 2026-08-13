@@ -65,6 +65,17 @@ describe("boss engine", () => {
     expect(veteran.questions).toBe(BOSS_QUESTIONS);
   });
 
+  it("fields a full Elite battle on every playable arc", () => {
+    for (const fight of getBossFights()) {
+      const bank = getArcQuiz(fight.arcId);
+      expect(bank.length, `${fight.arcId} bank too small`).toBeGreaterThanOrEqual(8);
+      const elite = getBossBattle(fight.arcId, "elite-check", 8);
+      expect(elite).toHaveLength(8);
+      // No repeats within the battle.
+      expect(new Set(elite.map((q) => q.id)).size).toBe(8);
+    }
+  });
+
   it("samples the tier's question count from the arc's bank", () => {
     const bank = getArcQuiz("stp-storm");
     const elite = getBossBattle("stp-storm", "seed-1", 8);

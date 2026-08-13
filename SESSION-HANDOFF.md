@@ -10,7 +10,7 @@ Last updated: 2026-08-12
 
 - **Phase 1 (prototype) is complete** — The VLAN That Vanished with React Flow topology, Framer Motion packet animation, CLI, event log, XP, and persistence.
 - **Phase 2 (MVP) is complete** — all **14 field arcs + 3 beginner missions** are built and playable; the ENCOR v1.2 blueprint is **47/47 objectives, 100% exam weight covered**. The full learning loop is live: mastery (incl. the previously-unreachable 95 "Under Pressure" band, now earned by boss wins), rescue engine, glossary, arc quizzes, flashcards, badges, exam-readiness report, daily challenge, boss battles with tiers, streak calendar, and **cross-device cloud sync** (Supabase magic-link auth).
-- **Validation baseline: 373/373 tests green (31 files), `tsc --noEmit` clean.** (ESLint hangs in this environment — see §5.)
+- **Validation baseline: 375/375 tests green (31 files), `tsc --noEmit` clean.** (ESLint hangs in this environment — see §5.)
 - **Repo: 7 commits on `main`, pushed to GitHub** (`github.com/Hardy7dhaliwal/netquest`). Working tree clean.
 
 ## 2. Done so far (milestones)

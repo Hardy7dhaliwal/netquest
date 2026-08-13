@@ -74,7 +74,7 @@ lib/supabase-server.ts       Server client for the magic-link callback route
 lib/encor-catalog.ts         ENCOR v1.2 blueprint: 6 domains, 47 objectives, 14 arcs
 lib/progress-store.ts        zustand + localStorage: XP, streak, mastery, badges, sync fields
 lib/<arc>-mission.ts         14 field-mission engines + 3 beginner engines (deterministic)
-lib/*.test.ts                373 unit tests across 31 files
+lib/*.test.ts                375 unit tests across 31 files
 components/*.tsx             Mission renderers + topology, console-panel, hint-ladder, glossary,
                              coverage-dashboard, mastery-panel, badges-panel, readiness-report,
                              arc-quiz, flashcard-review, gauntlet, training-grounds,
@@ -96,7 +96,7 @@ Conventions (keep these when adding features):
 ```bash
 npm install
 npm run dev       # start dev server
-npm test          # vitest (373 unit tests)
+npm test          # vitest (375 unit tests)
 npm run build     # production build
 npm run lint      # eslint (see known notes)
 ```
@@ -105,7 +105,7 @@ npm run lint      # eslint (see known notes)
 
 ## Testing
 
-373 deterministic unit tests across 31 files:
+375 deterministic unit tests across 31 files:
 
 | Area | Files | Tests |
 | --- | --- | ---: |
@@ -113,7 +113,7 @@ npm run lint      # eslint (see known notes)
 | Field engines | mission (VLAN), stp, etherchannel, ospf, edge, gateway, edge-services | 93 |
 | Overlay arcs | tunnel-vision, fabric-express, sdwan, campus-fabric | 66 |
 | Assurance + finale | signal-detective, lock-control-plane, automator-prime | 60 |
-| Learning systems | rescue, rescues, glossary, mastery, quiz, flashcards, badges, readiness, boss, streak | 90 |
+| Learning systems | rescue, rescues, glossary, mastery, quiz, flashcards, badges, readiness, boss, streak | 92 |
 | Core + sync | progress-store, encor-catalog, sync, smoke | 47 |
 
 ## Known notes

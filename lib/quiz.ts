@@ -1,11 +1,13 @@
 import { ENCOR_MISSION_ARCS } from "./encor-catalog";
 import { RESCUES } from "./rescues";
+import { EXTRA_QUIZ_QUESTIONS } from "./quiz-extra";
 
 /**
- * Per-arc mini-quizzes (curriculum "Required Content Per Mission Arc" #7).
- * Questions are derived from the vetted rescue `checkpoint` steps — each already
- * carries unique options, a correct answer, an explanation, and wrong guidance —
- * so the quiz pool is deterministic, accurate, and free of new content authoring.
+ * Per-arc question bank (curriculum "Required Content Per Mission Arc" #7),
+ * shared by the arc quizzes, boss battles, and the daily challenge.
+ * The core questions are derived from the vetted rescue `checkpoint` steps;
+ * EXTRA_QUIZ_QUESTIONS (lib/quiz-extra.ts) tops every arc up to 8+ so even the
+ * smallest arcs can field a full Elite (8-question) boss fight.
  */
 
 export type QuizOption = {
@@ -63,7 +65,7 @@ export function getArcQuiz(arcId: string): QuizQuestion[] {
       });
     });
   }
-  return questions;
+  return [...questions, ...(EXTRA_QUIZ_QUESTIONS[arcId] ?? [])];
 }
 
 export type QuizPhase = "answering" | "feedback" | "done";

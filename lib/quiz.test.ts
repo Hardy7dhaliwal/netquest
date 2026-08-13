@@ -21,6 +21,13 @@ describe("quiz engine", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
+  it("gives every playable arc a full Elite-sized bank (8+ questions)", () => {
+    for (const arc of ENCOR_MISSION_ARCS) {
+      if (arc.status !== "available" && arc.status !== "complete") continue;
+      expect(getArcQuiz(arc.id).length, `${arc.id} bank too small for an Elite battle`).toBeGreaterThanOrEqual(8);
+    }
+  });
+
   it("shuffles nothing — the quiz is deterministic", () => {
     expect(getArcQuiz("stp-storm")).toEqual(getArcQuiz("stp-storm"));
     expect(getArcQuiz("stp-storm")[0].prompt).toContain("bridge ID");
