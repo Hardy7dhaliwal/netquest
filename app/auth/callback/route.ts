@@ -15,8 +15,15 @@ export async function GET(request: Request) {
   if (code) {
     const cookieStore = await cookies();
     const supabase = createClient(cookieStore);
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) return NextResponse.redirect(`${origin}/`);
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+    if (!error) {
+      // A magic link returns a session (user is signed in). A first-time signup
+      // confirmation ("Confirm email" enabled in Supabase) succeeds without a
+      // session, so the user still needs one more sign-in link — surface both
+      // outcomes instead of silently dropping them back on the dashboard.
+      const status = data.session ? "signedin" : "confirmed";
+      return NextResponse.redirect(`${origin}/?auth=${status}`);
+    }
   }
 
   return NextResponse.redirect(`${origin}/?auth=error`);

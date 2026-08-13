@@ -32,6 +32,7 @@ import BadgesPanel from "@/components/badges-panel";
 import TrainingGrounds from "@/components/training-grounds";
 import SyncPanel from "@/components/sync-panel";
 import AccountButton from "@/components/account-button";
+import AuthBanner from "@/components/auth-banner";
 import ArcQuiz from "@/components/arc-quiz";
 import FlashcardReview from "@/components/flashcard-review";
 import RescueLauncher from "@/components/rescue-launcher";
@@ -1470,6 +1471,7 @@ export default function Home() {
             <AccountButton />
           </div>
         </div>
+        <AuthBanner />
         <div className="mt-12 grid gap-4 sm:grid-cols-3">
           <div className="rounded-xl border border-cyan-300/20 bg-cyan-300/5 p-5"><p className="text-sm text-slate-400">Current mission</p><p className="mt-2 font-bold">The VLAN That Vanished</p><p className="mt-2 text-sm text-cyan-300">150 XP available</p></div>
           <div className="rounded-xl border border-slate-800 bg-slate-900 p-5"><p className="text-sm text-slate-400">Your progress</p><p className="mt-2 font-bold">Level {getLevel(xp)}</p><p className="mt-2 text-sm text-slate-300">{xp} XP · {streak}-day streak</p></div>
@@ -1565,7 +1567,7 @@ export default function Home() {
         <TrainingGrounds />
         <SyncPanel />
         <div className="mt-6 flex flex-col justify-between gap-4 rounded-xl border border-slate-800 bg-slate-900/60 p-5 sm:flex-row sm:items-center"><div><p className="font-bold">Keep your streak alive</p><p className="mt-1 text-sm text-slate-400">A quick review is worth 5 XP while you warm up.</p></div><button className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-bold text-slate-200 transition hover:border-cyan-300/50 hover:text-cyan-200" onClick={completeReview} type="button">Log 5 XP review</button></div>
-        <footer className="mt-4 text-center text-xs text-slate-600">NetQuest · deploy-probe-v1</footer>
+        <footer className="mt-4 text-center text-xs text-slate-600">NetQuest</footer>
       </section>
     </main>
   );
