@@ -520,6 +520,42 @@ export const EXTRA_QUIZ_QUESTIONS: Record<string, QuizQuestion[]> = {
       explain: "Weight and local preference are compared before AS path length — so a higher weight or local pref on path A explains why it beats B's shorter AS path.",
       wrongGuidance: "MED is a later tiebreaker and '>' marks the best path — only weight/local-pref (earlier attributes) can override a shorter AS path.",
     },
+    {
+      id: "x-edge-8",
+      prompt: "Two eBGP paths to the same prefix tie on weight, local preference, AS path length, and MED. Which path does Cisco BGP prefer next?",
+      options: [
+        { value: "oldest", title: "The path that was received first (the oldest path)", note: "Received-time is the tiebreaker after MED and eBGP-over-iBGP" },
+        { value: "newest", title: "The path that was received most recently", note: "BGP prefers the OLDEST path to avoid needless flaps" },
+        { value: "prepended", title: "The path with the most AS-path prepending", note: "Prepending lengthens the AS path — it would have lost earlier" },
+      ],
+      correct: "oldest",
+      explain: "Once the primary attributes and eBGP-over-iBGP tie, Cisco BGP prefers the path that was received first (oldest) — stability beats recency.",
+      wrongGuidance: "BGP favors the oldest established path as a flap-prevention tiebreaker — the newest path is not preferred, it's the source of churn.",
+    },
+    {
+      id: "x-edge-9",
+      prompt: "Two eBGP paths still tie after the oldest-path check (same session, same time). Which attribute breaks the tie?",
+      options: [
+        { value: "router-id", title: "The path from the neighbor with the lowest BGP router ID", note: "Lower router ID wins after oldest-path" },
+        { value: "ip-addr", title: "The path from the neighbor with the highest IP address", note: "IP address only matters when the router IDs are identical" },
+        { value: "local-pref", title: "A second comparison of local preference", note: "Local preference already tied — attributes are not re-compared" },
+      ],
+      correct: "router-id",
+      explain: "After oldest-path, BGP prefers the route from the neighbor with the lowest router ID; only if the router IDs match does it fall to the lowest neighbor IP.",
+      wrongGuidance: "Router ID (not IP) is the next tiebreaker — the neighbor-address comparison only applies when the router IDs are identical.",
+    },
+    {
+      id: "x-edge-10",
+      prompt: "Two iBGP paths via different route reflectors tie on every earlier attribute and the router ID. Which path wins?",
+      options: [
+        { value: "cluster-list", title: "The path with the shortest cluster list", note: "Fewer reflector hops = the more direct path" },
+        { value: "med", title: "The path with the lower MED", note: "MED is compared long before cluster-list" },
+        { value: "origin", title: "The path with the better origin code", note: "Origin is compared before MED, so it already tied" },
+      ],
+      correct: "cluster-list",
+      explain: "For iBGP paths reflected through route reflectors, a shorter cluster list is preferred — it means the path crossed fewer reflectors and is more direct.",
+      wrongGuidance: "Cluster-list is the reflector-path tiebreaker that comes at the very end of the algorithm — MED and origin are decided far earlier.",
+    },
   ],
 
   // ─── Gateway at Dawn (1.1.a/b, 3.3.c) ─────────────────────────────────────
