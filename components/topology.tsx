@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ComponentType, type SVGProps } from "react";
 import {
   Background,
   BaseEdge,
@@ -21,8 +21,10 @@ import {
 import { MotionConfig, motion, useAnimationControls } from "framer-motion";
 import type { PacketStatus } from "@/lib/mission";
 
+type DeviceKind = "pc" | "switch" | "router";
+
 type DeviceData = {
-  icon: string;
+  kind: DeviceKind;
   label: string;
   detail: string;
   hover: { role: string; lines: string[] };
@@ -36,7 +38,7 @@ const NODES: DeviceNode[] = [
     type: "device",
     position: { x: 20, y: 120 },
     data: {
-      icon: "▣",
+      kind: "pc",
       label: "PC-Sales",
       detail: "10.20.0.10 · VLAN 20",
       hover: {
@@ -50,7 +52,7 @@ const NODES: DeviceNode[] = [
     type: "device",
     position: { x: 220, y: 120 },
     data: {
-      icon: "◇",
+      kind: "switch",
       label: "SW1",
       detail: "Gi0/1 trunk",
       hover: {
@@ -64,7 +66,7 @@ const NODES: DeviceNode[] = [
     type: "device",
     position: { x: 420, y: 120 },
     data: {
-      icon: "◇",
+      kind: "switch",
       label: "SW2",
       detail: "Gi0/1 trunk",
       hover: {
@@ -78,7 +80,7 @@ const NODES: DeviceNode[] = [
     type: "device",
     position: { x: 620, y: 120 },
     data: {
-      icon: "◎",
+      kind: "router",
       label: "GW1",
       detail: "10.20.0.1",
       hover: {
@@ -217,13 +219,69 @@ const BLOCKED_PATH = [NODE_CENTER_X.pc, NODE_CENTER_X.sw1, NODE_CENTER_X.sw2];
 // player's zoom/pan survives those remounts instead of snapping back to fit.
 let lastViewport: Viewport | null = null;
 
+function PcIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" viewBox="0 0 24 24" {...props}>
+      <rect height="11" rx="1.5" width="17" x="3.5" y="5" />
+      <path d="M8.5 19.5h7M12 16v3.5" />
+      <rect height="1.5" rx="0.5" width="8" x="8" y="8" />
+    </svg>
+  );
+}
+
+function SwitchIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" viewBox="0 0 24 24" {...props}>
+      <rect height="13" rx="2" width="18" x="3" y="5.5" />
+      <path d="M4 8.5h16" />
+      <circle cx="7.5" cy="12" r="1.1" fill="currentColor" stroke="none" />
+      <circle cx="11" cy="12" r="1.1" fill="currentColor" stroke="none" />
+      <circle cx="14.5" cy="12" r="1.1" fill="currentColor" stroke="none" />
+      <circle cx="18" cy="12" r="1.1" fill="currentColor" stroke="none" />
+      <circle cx="7" cy="6.8" r="0.9" fill="#34d399" stroke="none" />
+      <circle cx="9.5" cy="6.8" r="0.9" fill="#34d399" stroke="none" />
+    </svg>
+  );
+}
+
+function RouterIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" viewBox="0 0 24 24" {...props}>
+      <circle cx="12" cy="12" r="7" />
+      <path d="M8.5 12h7M12 8.5v7" />
+      <circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none" />
+      <path d="M4 4.5h4M5.5 3v3M16 4.5h4M17.5 3v3" />
+    </svg>
+  );
+}
+
+function PacketIcon({ status }: { status: "success" | "blocked" }) {
+  const color = status === "success" ? "#34d399" : "#fb7185";
+  return (
+    <svg fill="none" stroke={color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.4" viewBox="0 0 24 24">
+      <rect height="13" rx="2.5" width="18" x="3" y="5.5" />
+      <path d="M4.5 8.5 12 13l7.5-4.5" />
+      <circle cx="12" cy="12.5" r="1" fill={color} stroke="none" />
+    </svg>
+  );
+}
+
+const DEVICE_ICONS: Record<DeviceKind, ComponentType<SVGProps<SVGSVGElement>>> = {
+  pc: PcIcon,
+  switch: SwitchIcon,
+  router: RouterIcon,
+};
+
 function DeviceNode({ data }: NodeProps<DeviceNode>) {
+  const Icon = DEVICE_ICONS[data.kind];
   return (
     <>
       <Handle className="!h-2 !w-2 !border-cyan-200 !bg-cyan-400" position={Position.Left} type="target" />
       <div className="group relative">
         <div className="min-w-[120px] rounded-2xl border border-cyan-300/30 bg-slate-950 px-3 py-3 text-center shadow-[0_0_25px_rgba(103,232,249,0.08)] transition-colors duration-150 group-hover:border-cyan-300/60">
-          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl border border-cyan-300/30 bg-cyan-300/10 text-xl text-cyan-200 transition-colors duration-150 group-hover:bg-cyan-300/20">{data.icon}</div>
+          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl border border-cyan-300/30 bg-cyan-300/10 text-cyan-200 transition-colors duration-150 group-hover:bg-cyan-300/20">
+            <Icon className="h-7 w-7" />
+          </div>
           <p className="mt-2 text-xs font-bold text-slate-100">{data.label}</p>
           <p className="mt-1 whitespace-nowrap text-[10px] text-slate-500">{data.detail}</p>
         </div>
@@ -374,12 +432,12 @@ export default function Topology({ packetStatus }: { packetStatus: PacketStatus 
             {packetStatus !== "idle" && (
               <motion.div
                 animate={controls}
-                className={`pointer-events-none absolute z-10 h-3 w-3 rounded-full shadow-[0_0_16px_currentColor] ${packetStatus === "success" ? "text-emerald-300" : "text-rose-300"}`}
+                className={`pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_0_8px_currentColor] ${packetStatus === "success" ? "text-emerald-300" : "text-rose-300"}`}
                 initial={{ left: `${path[0]}px`, opacity: 1 }}
                 style={{ top: `${LINK_Y}px` }}
                 title={packetStatus === "success" ? "Packet reached GW1" : "Packet stopped at the trunk"}
               >
-                <span className={`block h-full w-full rounded-full ${packetStatus === "success" ? "bg-emerald-300" : "bg-rose-300"}`} />
+                <PacketIcon status={packetStatus} />
               </motion.div>
             )}
           </ReactFlow>
