@@ -58,6 +58,7 @@ import PacketTrailMission from "@/components/packet-trail-mission";
 import { HintLadder } from "@/components/hint-ladder";
 import { CommandReference } from "@/components/command-reference";
 import { GlossaryText } from "@/components/glossary-text";
+import { Wordmark } from "@/components/wordmark";
 import { CLI_BASICS_STEPS, resetCliBasicsMission, startCliBasicsMission, type CliBasicsMissionState } from "@/lib/cli-basics-mission";
 import { SHOW_PING_STEPS, resetShowAndPingMission, startShowAndPingMission, type ShowAndPingMissionState } from "@/lib/show-and-ping-mission";
 import { PACKET_TRAIL_STOPS, resetPacketTrailMission, startPacketTrailMission, type PacketTrailMissionState } from "@/lib/packet-trail-mission";
@@ -91,10 +92,12 @@ function MissionWorkspace({
   mission,
   onChange,
   onReset,
+  onExit,
 }: {
   mission: MissionState;
   onChange: (next: MissionState) => void;
   onReset: () => void;
+  onExit: () => void;
 }) {
   const [command, setCommand] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -119,7 +122,7 @@ function MissionWorkspace({
       <header className="border-b border-slate-800/80 bg-slate-950/90 px-5 py-4 backdrop-blur sm:px-8">
         <div className="mx-auto flex max-w-[1500px] flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <span className="text-sm font-black uppercase tracking-[0.25em] text-cyan-300">NetQuest</span>
+            <Wordmark onHome={onExit} />
             <span className="hidden h-5 w-px bg-slate-700 sm:block" />
             <div>
               <p className="text-sm font-bold">The VLAN That Vanished</p>
@@ -130,6 +133,9 @@ function MissionWorkspace({
             <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${mission.status === "complete" ? "border-emerald-300/30 bg-emerald-300/10 text-emerald-200" : "border-amber-300/30 bg-amber-300/10 text-amber-200"}`}>
               {statusLabel(mission.status)}
             </span>
+            <button className="rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:border-slate-500 hover:text-white" onClick={onExit} type="button">
+              Back to dashboard
+            </button>
             <button className="rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:border-slate-500 hover:text-white" onClick={onReset} type="button">
               Reset mission
             </button>
@@ -389,6 +395,12 @@ export default function Home() {
     const next = resetMission();
     setMission(next);
     localStorage.removeItem("netquest-vlan-mission");
+  }
+
+  // Leave the VLAN mission without wiping saved progress (matches the other
+  // missions: the snapshot stays in localStorage so Play / resume continues it).
+  function exitVlanMission() {
+    setMission(resetMission());
   }
 
   function updateStpMission(next: StpMissionState) {
@@ -1438,7 +1450,7 @@ export default function Home() {
   if (mission.status !== "not_started") {
     return (
       <RescueLauncher rescue={mission.status === "complete" ? null : rescueFor("vlan")}>
-        <MissionWorkspace mission={mission} onChange={updateMission} onReset={resetCurrentMission} />
+        <MissionWorkspace mission={mission} onChange={updateMission} onReset={resetCurrentMission} onExit={exitVlanMission} />
       </RescueLauncher>
     );
   }

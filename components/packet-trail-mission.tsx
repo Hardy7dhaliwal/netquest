@@ -1,4 +1,5 @@
 "use client";
+import { Wordmark } from "@/components/wordmark";
 
 import { Fragment } from "react";
 import { motion } from "framer-motion";
@@ -93,7 +94,7 @@ export default function PacketTrailMission({
       <header className="border-b border-slate-800/80 px-5 py-4 sm:px-8">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="text-sm font-black uppercase tracking-[0.25em] text-cyan-300">NetQuest · Beginner track</p>
+            <Wordmark onHome={onExit} track="Beginner track" />
             <h1 className="mt-2 text-xl font-bold">The Packet Trail</h1>
             <p className="mt-1 text-xs text-slate-500">How a packet crosses a network · 50 XP</p>
           </div>

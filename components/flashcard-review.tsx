@@ -1,4 +1,5 @@
 "use client";
+import { Wordmark } from "@/components/wordmark";
 
 import { useState } from "react";
 import { dueCards, type CardState, type Flashcard } from "@/lib/flashcards";
@@ -38,7 +39,7 @@ export default function FlashcardReview({
       <header className="border-b border-slate-800/80 px-5 py-4 sm:px-8">
         <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="text-sm font-black uppercase tracking-[0.25em] text-cyan-300">NetQuest · Flashcards</p>
+            <Wordmark onHome={onExit} track="Flashcards" />
             <h1 className="mt-2 text-xl font-bold">Spaced repetition review</h1>
           </div>
           <button className="rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:border-slate-500 hover:text-white" onClick={onExit} type="button">Back to dashboard</button>

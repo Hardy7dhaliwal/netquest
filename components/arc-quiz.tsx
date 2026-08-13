@@ -1,4 +1,5 @@
 "use client";
+import { Wordmark } from "@/components/wordmark";
 
 import { arcTitle, quizScore, type QuizQuestion, type QuizSessionState } from "@/lib/quiz";
 
@@ -59,7 +60,7 @@ export default function ArcQuiz({
       <header className="border-b border-slate-800/80 px-5 py-4 sm:px-8">
         <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="text-sm font-black uppercase tracking-[0.25em] text-cyan-300">NetQuest · Mini-quiz</p>
+            <Wordmark onHome={onExit} track="Mini-quiz" />
             <h1 className="mt-2 text-xl font-bold">{arcTitle(arcId)}</h1>
           </div>
           <button className="rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:border-slate-500 hover:text-white" onClick={onExit} type="button">Quit quiz</button>
