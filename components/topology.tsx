@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ComponentType, type SVGProps } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Background,
   BaseEdge,
@@ -20,8 +20,7 @@ import {
 } from "@xyflow/react";
 import { MotionConfig, motion, useAnimationControls } from "framer-motion";
 import type { PacketStatus } from "@/lib/mission";
-
-type DeviceKind = "pc" | "switch" | "router";
+import { DEVICE_ICONS, PacketIcon, type DeviceKind } from "@/components/device-icons";
 
 type DeviceData = {
   kind: DeviceKind;
@@ -219,59 +218,6 @@ const BLOCKED_PATH = [NODE_CENTER_X.pc, NODE_CENTER_X.sw1, NODE_CENTER_X.sw2];
 // player's zoom/pan survives those remounts instead of snapping back to fit.
 let lastViewport: Viewport | null = null;
 
-function PcIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" viewBox="0 0 24 24" {...props}>
-      <rect height="11" rx="1.5" width="17" x="3.5" y="5" />
-      <path d="M8.5 19.5h7M12 16v3.5" />
-      <rect height="1.5" rx="0.5" width="8" x="8" y="8" />
-    </svg>
-  );
-}
-
-function SwitchIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" viewBox="0 0 24 24" {...props}>
-      <rect height="13" rx="2" width="18" x="3" y="5.5" />
-      <path d="M4 8.5h16" />
-      <circle cx="7.5" cy="12" r="1.1" fill="currentColor" stroke="none" />
-      <circle cx="11" cy="12" r="1.1" fill="currentColor" stroke="none" />
-      <circle cx="14.5" cy="12" r="1.1" fill="currentColor" stroke="none" />
-      <circle cx="18" cy="12" r="1.1" fill="currentColor" stroke="none" />
-      <circle cx="7" cy="6.8" r="0.9" fill="#34d399" stroke="none" />
-      <circle cx="9.5" cy="6.8" r="0.9" fill="#34d399" stroke="none" />
-    </svg>
-  );
-}
-
-function RouterIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" viewBox="0 0 24 24" {...props}>
-      <circle cx="12" cy="12" r="7" />
-      <path d="M8.5 12h7M12 8.5v7" />
-      <circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none" />
-      <path d="M4 4.5h4M5.5 3v3M16 4.5h4M17.5 3v3" />
-    </svg>
-  );
-}
-
-function PacketIcon({ status }: { status: "success" | "blocked" }) {
-  const color = status === "success" ? "#34d399" : "#fb7185";
-  return (
-    <svg fill="none" stroke={color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.4" viewBox="0 0 24 24">
-      <rect height="13" rx="2.5" width="18" x="3" y="5.5" />
-      <path d="M4.5 8.5 12 13l7.5-4.5" />
-      <circle cx="12" cy="12.5" r="1" fill={color} stroke="none" />
-    </svg>
-  );
-}
-
-const DEVICE_ICONS: Record<DeviceKind, ComponentType<SVGProps<SVGSVGElement>>> = {
-  pc: PcIcon,
-  switch: SwitchIcon,
-  router: RouterIcon,
-};
-
 function DeviceNode({ data }: NodeProps<DeviceNode>) {
   const Icon = DEVICE_ICONS[data.kind];
   return (
@@ -437,7 +383,7 @@ export default function Topology({ packetStatus }: { packetStatus: PacketStatus 
                 style={{ top: `${LINK_Y}px` }}
                 title={packetStatus === "success" ? "Packet reached GW1" : "Packet stopped at the trunk"}
               >
-                <PacketIcon status={packetStatus} />
+                <PacketIcon className="h-5 w-5" />
               </motion.div>
             )}
           </ReactFlow>

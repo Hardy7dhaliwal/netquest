@@ -4,6 +4,7 @@ import { Wordmark } from "@/components/wordmark";
 import { Fragment } from "react";
 import { motion } from "framer-motion";
 import { GlossaryText } from "@/components/glossary-text";
+import { DEVICE_ICONS, PacketIcon, type DeviceKind } from "@/components/device-icons";
 
 import {
   answerCheckpoint,
@@ -14,11 +15,11 @@ import {
   type PacketTrailOption,
 } from "@/lib/packet-trail-mission";
 
-const DEVICES = [
-  { id: "pc-sales", icon: "▣", label: "PC-Sales", detail: "10.20.0.10 · VLAN 20" },
-  { id: "sw1", icon: "◇", label: "SW1", detail: "access port" },
-  { id: "sw2", icon: "◇", label: "SW2", detail: "access + trunk" },
-  { id: "gw1", icon: "◎", label: "GW1", detail: "10.20.0.1 · VLAN 20" },
+const DEVICES: { id: string; kind: DeviceKind; label: string; detail: string }[] = [
+  { id: "pc-sales", kind: "pc", label: "PC-Sales", detail: "10.20.0.10 · VLAN 20" },
+  { id: "sw1", kind: "switch", label: "SW1", detail: "access port" },
+  { id: "sw2", kind: "switch", label: "SW2", detail: "access + trunk" },
+  { id: "gw1", kind: "router", label: "GW1", detail: "10.20.0.1 · VLAN 20" },
 ];
 
 const LINKS = [
@@ -127,28 +128,35 @@ export default function PacketTrailMission({
           {/* Network diagram */}
           <div className="mt-6 overflow-x-auto rounded-xl border border-slate-800 bg-[#07101f] p-5">
             <div className="flex min-w-[620px] items-center gap-2">
-              {DEVICES.map((device, index) => (
-                <Fragment key={device.id}>
-                  <div className={`min-w-[128px] rounded-2xl border px-3 py-3 text-center transition ${stop.activeDevices.includes(device.id) ? "border-cyan-300/50 bg-cyan-300/5 shadow-[0_0_25px_rgba(103,232,249,0.12)]" : "border-slate-700 bg-slate-950/70 opacity-50"}`}>
-                    <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl border border-cyan-300/30 bg-cyan-300/10 text-xl text-cyan-200">{device.icon}</div>
-                    <p className="mt-2 text-xs font-bold text-slate-100">{device.label}</p>
-                    <p className="mt-1 whitespace-nowrap text-[10px] text-slate-500">{device.detail}</p>
-                  </div>
-                  {index < DEVICES.length - 1 && (
-                    <div className="relative flex-1">
-                      <div className={`border-t-2 border-dashed transition ${stop.activeLinks.includes(LINKS[index].id) ? "border-cyan-300/70" : "border-slate-700"}`} />
-                      <span className={`absolute -top-5 left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] font-semibold uppercase tracking-wider transition ${stop.activeLinks.includes(LINKS[index].id) ? "text-cyan-200" : "text-slate-600"}`}>{LINKS[index].label}</span>
-                      {stop.focusLink === LINKS[index].id && (
-                        <motion.div
-                          className="absolute left-1/2 top-1/2 z-10 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-300 shadow-[0_0_14px_rgba(103,232,249,0.9)]"
-                          layoutId="trail-dot"
-                          transition={{ type: "spring", stiffness: 300, damping: 24 }}
-                        />
-                      )}
+              {DEVICES.map((device, index) => {
+                const DeviceIcon = DEVICE_ICONS[device.kind];
+                return (
+                  <Fragment key={device.id}>
+                    <div className={`min-w-[128px] rounded-2xl border px-3 py-3 text-center transition ${stop.activeDevices.includes(device.id) ? "border-cyan-300/50 bg-cyan-300/5 shadow-[0_0_25px_rgba(103,232,249,0.12)]" : "border-slate-700 bg-slate-950/70 opacity-50"}`}>
+                      <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl border border-cyan-300/30 bg-cyan-300/10 text-cyan-200">
+                        <DeviceIcon className="h-7 w-7" />
+                      </div>
+                      <p className="mt-2 text-xs font-bold text-slate-100">{device.label}</p>
+                      <p className="mt-1 whitespace-nowrap text-[10px] text-slate-500">{device.detail}</p>
                     </div>
-                  )}
-                </Fragment>
-              ))}
+                    {index < DEVICES.length - 1 && (
+                      <div className="relative flex-1">
+                        <div className={`border-t-2 border-dashed transition ${stop.activeLinks.includes(LINKS[index].id) ? "border-cyan-300/70" : "border-slate-700"}`} />
+                        <span className={`absolute -top-5 left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] font-semibold uppercase tracking-wider transition ${stop.activeLinks.includes(LINKS[index].id) ? "text-cyan-200" : "text-slate-600"}`}>{LINKS[index].label}</span>
+                        {stop.focusLink === LINKS[index].id && (
+                          <motion.div
+                            className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 text-cyan-300 drop-shadow-[0_0_8px_rgba(103,232,249,0.9)]"
+                            layoutId="trail-dot"
+                            transition={{ type: "spring", stiffness: 300, damping: 24 }}
+                          >
+                            <PacketIcon className="h-5 w-5" />
+                          </motion.div>
+                        )}
+                      </div>
+                    )}
+                  </Fragment>
+                );
+              })}
             </div>
           </div>
 
