@@ -190,6 +190,14 @@ describe("gap-topic labs", () => {
     }
   });
 
+  it("covers every 4.x and 6.x objective with at least one lab", () => {
+    const assuranceAutomation = ["4.1", "4.2", "4.3", "4.4", "4.5", "4.6", "6.1", "6.2", "6.3", "6.4", "6.5", "6.6", "6.7"];
+    const covered = new Set(LAB_TEMPLATES.flatMap((template) => template.objectiveIds));
+    for (const objective of assuranceAutomation) {
+      expect(covered.has(objective), `objective ${objective} should have a lab`).toBe(true);
+    }
+  });
+
   it("completes the eBGP lab cleanly with the corrected remote-as", () => {
     const template = findLab("lab-ebgp");
     const state = runLab(template, "a", ["show ip bgp summary"], "asn", "neighbor 10.1.0.2 remote-as 65002", "show ip bgp summary");
@@ -300,5 +308,108 @@ describe("gap-topic labs", () => {
     a = runLabCommand(a, template, "netconf-yang");
     a = runLabCommand(a, template, "show running-config | include restconf"); // variant B's verify must NOT pass on A
     expect(a.stepIndex).toBe(3); // still on verify
+  });
+
+  it("completes the diagnose lab cleanly with the MTU fix", () => {
+    const template = findLab("lab-diagnose");
+    const state = runLab(template, "a", ["ping 10.1.0.10 size 1500 df-bit"], "mtu", "ip mtu 1400", "ping 10.1.0.10 size 1500 df-bit");
+    expect(state.status).toBe("complete");
+    expect(state.clean).toBe(true);
+  });
+
+  it("uses variant-aware commands for RSPAN vs ERSPAN", () => {
+    const template = findLab("lab-rspan-erspan");
+    let a = startLab(template, "a"); // RSPAN
+    a = runLabCommand(a, template, "show vlan 900");
+    expect(a.stepIndex).toBe(1);
+    let b = startLab(template, "b"); // ERSPAN
+    b = runLabCommand(b, template, "show monitor session 2");
+    expect(b.stepIndex).toBe(1);
+  });
+
+  it("completes the RSPAN lab with remote-span and ERSPAN with erspan-id", () => {
+    const template = findLab("lab-rspan-erspan");
+    const a = runLab(template, "a", ["show vlan 900"], "remote", "remote-span", "show vlan 900");
+    expect(a.status).toBe("complete");
+    const b = runLab(template, "b", ["show monitor session 2"], "remote", "monitor session 2 destination erspan-id 1 ip 192.0.2.10", "show monitor session 2");
+    expect(b.status).toBe("complete");
+  });
+
+  it("rejects the ERSPAN fix on the RSPAN variant", () => {
+    const template = findLab("lab-rspan-erspan");
+    let state = startLab(template, "a");
+    state = runLabCommand(state, template, "show vlan 900");
+    state = answerLabDiagnose(state, template, "remote");
+    state = runLabCommand(state, template, "monitor session 2 destination erspan-id 1 ip 192.0.2.10");
+    expect(state.stepIndex).toBe(2); // still on configure
+  });
+
+  it("completes the IP SLA lab once the probe is scheduled", () => {
+    const template = findLab("lab-ipsla");
+    const state = runLab(template, "a", ["show ip sla statistics"], "notscheduled", "ip sla schedule 10 life forever start-time now", "show ip sla statistics");
+    expect(state.status).toBe("complete");
+    expect(state.clean).toBe(true);
+  });
+
+  it("completes the Catalyst Center lab with the matching SNMP community", () => {
+    const template = findLab("lab-catalyst-center");
+    const a = runLab(template, "a", ["show snmp community"], "snmp", "snmp-server community public ro", "show snmp community");
+    expect(a.status).toBe("complete");
+    const b = runLab(template, "b", ["show snmp community"], "snmp", "snmp-server community v3-user ro", "show snmp community");
+    expect(b.status).toBe("complete");
+  });
+
+  it("completes the Python lab with a blank-line guard", () => {
+    const template = findLab("lab-python");
+    const a = runLab(template, "a", ["python3 check_status.py"], "blank", "if not parts: continue", "python3 check_status.py");
+    expect(a.status).toBe("complete");
+    const b = runLab(template, "b", ["python3 check_status.py"], "blank", "if len(parts) < 6: continue", "python3 check_status.py");
+    expect(b.status).toBe("complete");
+  });
+
+  it("rejects the other variant's Python guard", () => {
+    const template = findLab("lab-python");
+    let state = startLab(template, "a");
+    state = runLabCommand(state, template, "python3 check_status.py");
+    state = answerLabDiagnose(state, template, "blank");
+    state = runLabCommand(state, template, "if len(parts) < 6: continue"); // variant B's fix
+    expect(state.stepIndex).toBe(2); // still on configure
+  });
+
+  it("completes the JSON lab with a valid payload", () => {
+    const template = findLab("lab-json");
+    const a = runLab(template, "a", ["curl -X PATCH -d @payload.json https://10.1.1.5/restconf/data/Cisco-IOS-XE-native:native/interface/GigabitEthernet=0/1"], "json", '{"name": "GigabitEthernet0/1", "description": "uplink"}', "curl -X GET https://10.1.1.5/restconf/data/Cisco-IOS-XE-native:native/interface/GigabitEthernet=0/1");
+    expect(a.status).toBe("complete");
+    expect(a.clean).toBe(true);
+  });
+
+  it("completes the YANG lab with the module-qualified path", () => {
+    const template = findLab("lab-yang");
+    const a = runLab(template, "a", ["curl -X GET https://10.1.1.5/restconf/data/interfaces"], "path", "curl -X GET https://10.1.1.5/restconf/data/ietf-interfaces:interfaces", "curl -X GET https://10.1.1.5/restconf/data/ietf-interfaces:interfaces");
+    expect(a.status).toBe("complete");
+    expect(a.clean).toBe(true);
+  });
+
+  it("completes the Catalyst API lab with the token request", () => {
+    const template = findLab("lab-catalyst-api");
+    const a = runLab(template, "a", ["curl -k -X GET https://10.1.1.5/dna/intent/api/v1/network-device"], "token", "curl -k -X POST https://10.1.1.5/dna/system/api/v1/auth/token -u admin:Cisco123!", "curl -k -X GET https://10.1.1.5/dna/intent/api/v1/network-device -H \"X-Auth-Token: TOKEN\"");
+    expect(a.status).toBe("complete");
+    const b = runLab(template, "b", ["curl -k -X GET https://172.16.1.5/dataservice/device"], "token", "curl -k -X POST https://172.16.1.5/dataservice/client/token -u admin:Cisco123!", "curl -k -X GET https://172.16.1.5/dataservice/device -b \"jSID=TOKEN\"");
+    expect(b.status).toBe("complete");
+  });
+
+  it("completes the EEM lab once the pattern matches real syslog", () => {
+    const template = findLab("lab-eem");
+    const a = runLab(template, "a", ["show event manager policy"], "pattern", 'event syslog pattern "LINEPROTO-5-UPDOWN"', "show event manager history events");
+    expect(a.status).toBe("complete");
+    expect(a.clean).toBe(true);
+  });
+
+  it("completes the orchestration lab with the fleet-fitting tool", () => {
+    const template = findLab("lab-orchestration");
+    const a = runLab(template, "a", ["cat fleet.txt"], "mode", "ansible-playbook site.yml -i inventory.ini", "ansible-playbook site.yml -i inventory.ini");
+    expect(a.status).toBe("complete");
+    const b = runLab(template, "b", ["cat fleet.txt"], "mode", "chef-client --runlist 'role[network]'", "chef-client --runlist 'role[network]'");
+    expect(b.status).toBe("complete");
   });
 });

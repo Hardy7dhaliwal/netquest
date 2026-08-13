@@ -178,6 +178,8 @@ export default function Glossary({ children }: { children: ReactNode }) {
                   <path d="m20 20-3.5-3.5" />
                 </svg>
                 <input
+                  id="glossary-search"
+                  name="glossary-search"
                   aria-label="Search glossary"
                   autoComplete="off"
                   className="min-w-0 flex-1 bg-transparent text-sm text-slate-100 outline-none placeholder:text-slate-600"

@@ -231,6 +231,8 @@ export default function SyncPanel() {
             {signInError && <p className="mb-3 text-xs text-rose-300">{signInError}</p>}
             <form className="flex max-w-md items-center gap-2" onSubmit={sendMagicLink}>
             <input
+              id="sign-in-email"
+              name="email"
               aria-label="Email for sign-in link"
               autoComplete="email"
               className="min-w-0 flex-1 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none placeholder:text-slate-600 focus:border-cyan-300/70"
