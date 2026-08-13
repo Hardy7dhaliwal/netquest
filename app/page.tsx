@@ -29,6 +29,9 @@ import FieldMissionCard from "@/components/field-mission-card";
 import CoverageDashboard from "@/components/coverage-dashboard";
 import MasteryPanel from "@/components/mastery-panel";
 import ReadinessReport from "@/components/readiness-report";
+import ExamHall from "@/components/exam-hall";
+import LabsPanel from "@/components/labs-panel";
+import { getReadinessReportV2 } from "@/lib/readiness";
 import BadgesPanel from "@/components/badges-panel";
 import TrainingGrounds from "@/components/training-grounds";
 import SyncPanel from "@/components/sync-panel";
@@ -287,7 +290,7 @@ function MissionWorkspace({
 }
 
 export default function Home() {
-  const { xp, streak, weakTopics, completedMissions, completeReview, awardMission, mastery, recordMissionResult, cardReviews, recordQuizResult, reviewFlashcard, quizResults, syncBadges } = useProgressStore();
+  const { xp, streak, weakTopics, completedMissions, completeReview, awardMission, mastery, recordMissionResult, cardReviews, recordQuizResult, reviewFlashcard, quizResults, syncBadges, skills, examResults, labResults, recordExamResult, recordLabResult } = useProgressStore();
   const [mission, setMission] = useState<MissionState>(resetMission);
   const [stpMission, setStpMission] = useState<StpMissionState>(resetStpMission);
   const [ecMission, setEcMission] = useState<EcMissionState>(resetEcMission);
@@ -305,6 +308,8 @@ export default function Home() {
   const [quizArc, setQuizArc] = useState<string | null>(null);
   const [quizSession, setQuizSession] = useState<QuizSessionState | null>(null);
   const [flashcardsOpen, setFlashcardsOpen] = useState(false);
+  const [examHallOpen, setExamHallOpen] = useState(false);
+  const [labsOpen, setLabsOpen] = useState(false);
   const [cliBasics, setCliBasics] = useState<CliBasicsMissionState>(resetCliBasicsMission);
   const [showAndPing, setShowAndPing] = useState<ShowAndPingMissionState>(resetShowAndPingMission);
   const [packetTrail, setPacketTrail] = useState<PacketTrailMissionState>(resetPacketTrailMission);
@@ -1367,6 +1372,21 @@ export default function Home() {
     setPacketTrail(resetPacketTrailMission());
   }
 
+  if (examHallOpen) {
+    return (
+      <ExamHall
+        examResults={examResults}
+        onRecordResult={recordExamResult}
+        onOpenArc={openArc}
+        onExit={() => setExamHallOpen(false)}
+      />
+    );
+  }
+
+  if (labsOpen) {
+    return <LabsPanel labResults={labResults} onRecordResult={recordLabResult} onExit={() => setLabsOpen(false)} />;
+  }
+
   if (quizArc && quizSession) {
     return (
       <ArcQuiz
@@ -1633,8 +1653,34 @@ export default function Home() {
           ))}
         </div>
 
+        <section className="mt-10">
+          <div className="flex items-center gap-3">
+            <p className="text-xs font-bold uppercase tracking-[0.25em] text-cyan-300">Exam hall</p>
+            <span className="h-px flex-1 bg-slate-800" />
+          </div>
+          <div className="mt-4 flex flex-col justify-between gap-4 rounded-xl border border-slate-800 bg-slate-900/60 p-5 sm:flex-row sm:items-center">
+            <div>
+              <p className="font-bold">Diagnostic + 2 full-length mock exams</p>
+              <p className="mt-1 text-sm text-slate-400">Mixed-domain, timed, aligned to the real ENCOR domain weights. Pass a mock to unlock the timed-mastery band.</p>
+            </div>
+            <button className="rounded-lg bg-cyan-300 px-4 py-2 text-sm font-black text-slate-950 transition hover:bg-cyan-200" onClick={() => setExamHallOpen(true)} type="button">Open exam hall</button>
+          </div>
+        </section>
+        <section className="mt-6">
+          <div className="flex items-center gap-3">
+            <p className="text-xs font-bold uppercase tracking-[0.25em] text-cyan-300">Hands-on labs</p>
+            <span className="h-px flex-1 bg-slate-800" />
+          </div>
+          <div className="mt-4 flex flex-col justify-between gap-4 rounded-xl border border-slate-800 bg-slate-900/60 p-5 sm:flex-row sm:items-center">
+            <div>
+              <p className="font-bold">Randomized multi-step IOS-style labs</p>
+              <p className="mt-1 text-sm text-slate-400">Inspect → diagnose → configure → verify with variants and alternate valid commands. Repeated clean runs across variants build Independent mastery.</p>
+            </div>
+            <button className="rounded-lg border border-cyan-300/50 px-4 py-2 text-sm font-bold text-cyan-200 transition hover:bg-cyan-300/10" onClick={() => setLabsOpen(true)} type="button">Open labs</button>
+          </div>
+        </section>
         <CoverageDashboard mastery={mastery} />
-        <ReadinessReport mastery={mastery} />
+        <ReadinessReport mastery={mastery} skills={skills} examResults={examResults} />
         <BadgesPanel statuses={badgeStatuses} />
         <TrainingGrounds />
         <SyncPanel />

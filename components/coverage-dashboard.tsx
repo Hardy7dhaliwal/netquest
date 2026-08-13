@@ -8,6 +8,7 @@ import {
   getWeightedCoverage,
 } from "@/lib/encor-catalog";
 import { bandLabel, getMasterySummary, objectiveScore, type MasteryMap } from "@/lib/mastery";
+import { getObjectiveStatus, type CurriculumStatus } from "@/lib/curriculum";
 
 /**
  * Curriculum coverage dashboard: per-domain progress bars against the 47 ENCOR
@@ -34,6 +35,13 @@ export default function CoverageDashboard({ mastery }: { mastery?: MasteryMap })
   }
   const plannedArcs = [...new Set([...plannedByDomain.values()].flat())];
 
+  const STATUS_STYLES: Record<CurriculumStatus, string> = {
+    verified: "border-emerald-300/40 bg-emerald-300/10 text-emerald-200",
+    complete: "border-cyan-300/40 bg-cyan-300/10 text-cyan-200",
+    partial: "border-amber-300/40 bg-amber-300/10 text-amber-200",
+    planned: "border-slate-700 bg-slate-800/60 text-slate-400",
+  };
+
   return (
     <section className="mt-10">
       <div className="flex flex-wrap items-center gap-3">
@@ -49,7 +57,7 @@ export default function CoverageDashboard({ mastery }: { mastery?: MasteryMap })
           <div>
             <p className="font-bold">ENCOR v1.2 blueprint</p>
             <p className="mt-1 text-sm text-slate-400">
-              {totalCovered} of {ENCOR_OBJECTIVE_COUNT} blueprint objectives have a playable mission{remaining > 0 ? ` — the remaining ${remaining} are mapped to planned arcs.` : "."}
+              Every objective has a playable mission; status is evidence-based — verified means a complete teaching plan, an 8+ question bank, and a deterministic engine test.
             </p>
           </div>
           <span className="shrink-0 text-3xl font-black tabular-nums text-cyan-200">{overallPct}%</span>
@@ -78,23 +86,22 @@ export default function CoverageDashboard({ mastery }: { mastery?: MasteryMap })
           const planned = plannedByDomain.get(domain.id) ?? [];
           const domainMastery = summary?.find((entry) => entry.domain.id === domain.id);
           return (
-            <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5" key={domain.id}>
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="font-bold">{domain.title}</p>
-                  <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">{domain.weight}% of exam</p>
-                </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  {domainMastery && (
-                    <span className="rounded-full border border-slate-700 px-2.5 py-1 text-[10px] font-bold tabular-nums text-slate-300" title="Average mastery across the domain's objectives">
-                      {domainMastery.average}% mastery
+            <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5" key={domain.id}>                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="font-bold">{domain.title}</p>
+                    <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">{domain.weight}% of exam</p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    {domainMastery && (
+                      <span className="rounded-full border border-slate-700 px-2.5 py-1 text-[10px] font-bold tabular-nums text-slate-300" title="Average mastery across the domain's objectives">
+                        {domainMastery.average}% mastery
+                      </span>
+                    )}
+                    <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold tabular-nums ${covered > 0 ? "border-cyan-300/30 bg-cyan-300/10 text-cyan-200" : "border-slate-700 text-slate-500"}`}>
+                      {covered}/{total} covered
                     </span>
-                  )}
-                  <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold tabular-nums ${covered > 0 ? "border-cyan-300/30 bg-cyan-300/10 text-cyan-200" : "border-slate-700 text-slate-500"}`}>
-                    {covered}/{total} covered
-                  </span>
+                  </div>
                 </div>
-              </div>
               <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-800">
                 <div className={`h-full rounded-full transition-all ${covered > 0 ? "bg-cyan-300" : "bg-slate-700"}`} style={{ width: `${pct}%` }} />
               </div>
@@ -103,6 +110,7 @@ export default function CoverageDashboard({ mastery }: { mastery?: MasteryMap })
                 <ul className="mt-4 space-y-2">
                   {coveredObjectives.map((objective) => {
                     const score = mastery ? objectiveScore(mastery, objective.id) : null;
+                    const status = getObjectiveStatus(objective.id);
                     const chipColor =
                       score === null
                         ? ""
@@ -115,14 +123,16 @@ export default function CoverageDashboard({ mastery }: { mastery?: MasteryMap })
                               : "border-slate-700 bg-slate-800/60 text-slate-400";
                     return (
                       <li className="flex items-start gap-2 text-xs leading-5" key={objective.id}>
-                        <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-emerald-300/40 bg-emerald-300/10 text-[10px] font-bold text-emerald-200">✓</span>
+                        <span className={`mt-0.5 shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-bold ${STATUS_STYLES[status]}`} title={`Curriculum: ${status}`}>
+                          {status === "verified" ? "✓ verified" : status}
+                        </span>
                         <span className="min-w-0 flex-1">
                           <code className="font-mono font-semibold text-cyan-200">{objective.id}</code>
                           <span className="ml-1.5 text-slate-400">{objective.label}</span>
                         </span>
-                        {score !== null && (
+                        {score !== null && score > 0 && (
                           <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-bold tabular-nums ${chipColor}`} title={bandLabel(score)}>
-                            {score === 0 ? "—" : bandLabel(score)}
+                            {bandLabel(score)}
                           </span>
                         )}
                       </li>

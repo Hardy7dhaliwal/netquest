@@ -22,6 +22,9 @@ function snap(overrides: Partial<ProgressSnapshot> = {}): ProgressSnapshot {
     daily: null,
     dailyHistory: [],
     bossRecords: { battles: 0, victories: 0, bestAccuracy: 0 },
+    skills: {},
+    examResults: {},
+    labResults: {},
     lastSyncedAt: null,
     updatedAt: 0,
     ...overrides,
@@ -120,6 +123,35 @@ describe("mergeProgress", () => {
     const merged = mergeProgress(snap({ mastery: strong }), snap({ mastery: {} }));
     expect(merged.weakTopics).toContain(label("3.2.b"));
     expect(merged.weakTopics).not.toContain(label("3.1.a"));
+  });
+
+  it("merges per-skill scores with the max and unions variant evidence", () => {
+    const merged = mergeProgress(
+      snap({ skills: { "3.1.a": { scores: { recall: 50, interpret: 0, configure: 0, troubleshoot: 0, timed: 0 }, cleanRuns: 1, variants: ["v1"], bestTimedPct: 0, lastTimedAt: null } } }),
+      snap({ skills: { "3.1.a": { scores: { recall: 70, interpret: 0, configure: 0, troubleshoot: 0, timed: 0 }, cleanRuns: 1, variants: ["v2"], bestTimedPct: 0, lastTimedAt: null } } }),
+    );
+    const state = merged.skills["3.1.a"];
+    expect(state.scores.recall).toBe(70);
+    expect(state.variants).toEqual(["v1", "v2"]);
+    expect(state.cleanRuns).toBe(1);
+  });
+
+  it("merges exam results keeping the best score per kind", () => {
+    const merged = mergeProgress(
+      snap({ examResults: { "mock-a": { pct: 60, passed: false, at: 1 } } }),
+      snap({ examResults: { "mock-a": { pct: 80, passed: true, at: 2 }, "mock-b": { pct: 40, passed: false, at: 3 } } }),
+    );
+    expect(merged.examResults["mock-a"].pct).toBe(80);
+    expect(merged.examResults["mock-b"].pct).toBe(40);
+  });
+
+  it("merges lab results unioning variant ids", () => {
+    const merged = mergeProgress(
+      snap({ labResults: { "lab-ospf-adjacency": { variantIds: ["a"], cleanRuns: 1, lastRunAt: 1 } } }),
+      snap({ labResults: { "lab-ospf-adjacency": { variantIds: ["b"], cleanRuns: 1, lastRunAt: 2 } } }),
+    );
+    expect(merged.labResults["lab-ospf-adjacency"].variantIds).toEqual(["a", "b"]);
+    expect(merged.labResults["lab-ospf-adjacency"].lastRunAt).toBe(2);
   });
 
   it("is idempotent once converged", () => {

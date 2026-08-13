@@ -85,7 +85,8 @@ function mulberry32(seed: number): () => number {
   };
 }
 
-function seededRng(seed: string): () => number {
+/** Deterministic PRNG shared by boss battles and mock exams (seeded per run). */
+export function seededRng(seed: string): () => number {
   return mulberry32(xmur3(seed)());
 }
 

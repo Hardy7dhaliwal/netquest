@@ -1,5 +1,6 @@
 import { getWeakObjectives } from "./mastery";
 import type { BossRecords, DailyState, ProgressData, QuizResult } from "./progress-store";
+import type { SkillMap, ObjectiveSkillState } from "./skills";
 
 /**
  * Cross-device sync engine (PRD §20 "Auth and persistence").
@@ -31,6 +32,9 @@ export function buildSnapshot(state: ProgressData, now: number = Date.now()): Pr
     daily: state.daily,
     dailyHistory: state.dailyHistory ?? [],
     bossRecords: state.bossRecords,
+    skills: state.skills ?? {},
+    examResults: state.examResults ?? {},
+    labResults: state.labResults ?? {},
     lastSyncedAt: state.lastSyncedAt,
     updatedAt: now,
   };
@@ -61,6 +65,60 @@ function mergeBossRecords(left: BossRecords, right: BossRecords): BossRecords {
     victories: Math.max(left.victories, right.victories),
     bestAccuracy: Math.max(left.bestAccuracy, right.bestAccuracy),
   };
+}
+
+/** Per-skill scores merge with the max; evidence (clean runs, variants) unions. */
+function mergeSkills(left: SkillMap, right: SkillMap): SkillMap {
+  const skills: SkillMap = { ...left };
+  for (const [objectiveId, state] of Object.entries(right)) {
+    const existing = skills[objectiveId];
+    if (!existing) {
+      skills[objectiveId] = { ...state, variants: [...state.variants] };
+      continue;
+    }
+    const merged: ObjectiveSkillState = {
+      scores: { ...existing.scores },
+      cleanRuns: Math.max(existing.cleanRuns, state.cleanRuns),
+      variants: [...new Set([...existing.variants, ...state.variants])],
+      bestTimedPct: Math.max(existing.bestTimedPct, state.bestTimedPct),
+      lastTimedAt: Math.max(existing.lastTimedAt ?? 0, state.lastTimedAt ?? 0) || null,
+    };
+    for (const skill of Object.keys(merged.scores) as (keyof ObjectiveSkillState["scores"])[]) {
+      merged.scores[skill] = Math.max(existing.scores[skill], state.scores[skill]);
+    }
+    skills[objectiveId] = merged;
+  }
+  return skills;
+}
+
+function mergeExamResults(
+  left: ProgressSnapshot["examResults"],
+  right: ProgressSnapshot["examResults"],
+): ProgressSnapshot["examResults"] {
+  const results: ProgressSnapshot["examResults"] = { ...left };
+  for (const [kind, entry] of Object.entries(right)) {
+    const existing = results[kind];
+    if (!existing || entry.pct > existing.pct) results[kind] = entry;
+  }
+  return results;
+}
+
+function mergeLabResults(
+  left: ProgressSnapshot["labResults"],
+  right: ProgressSnapshot["labResults"],
+): ProgressSnapshot["labResults"] {
+  const results: ProgressSnapshot["labResults"] = { ...left };
+  for (const [labId, entry] of Object.entries(right)) {
+    const existing = results[labId];
+    results[labId] = existing
+      ? {
+          variantIds: [...new Set([...existing.variantIds, ...entry.variantIds])],
+          cleanRuns: Math.max(existing.cleanRuns, entry.cleanRuns),
+          lastRunAt: Math.max(existing.lastRunAt, entry.lastRunAt),
+        }
+      : entry;
+  }
+  return results;
 }
 
 /**
@@ -101,6 +159,9 @@ export function mergeProgress(left: ProgressSnapshot, right: ProgressSnapshot): 
     // Claimed days only ever grow; the `?? []` keeps old cloud blobs compatible.
     dailyHistory: union(left.dailyHistory ?? [], right.dailyHistory ?? []),
     bossRecords: mergeBossRecords(left.bossRecords, right.bossRecords),
+    skills: mergeSkills(left.skills ?? {}, right.skills ?? {}),
+    examResults: mergeExamResults(left.examResults ?? {}, right.examResults ?? {}),
+    labResults: mergeLabResults(left.labResults ?? {}, right.labResults ?? {}),
     lastSyncedAt: Math.max(left.lastSyncedAt ?? 0, right.lastSyncedAt ?? 0) || null,
     updatedAt: Math.max(left.updatedAt, right.updatedAt),
   };

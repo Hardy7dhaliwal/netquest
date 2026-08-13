@@ -4,7 +4,7 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { BADGE_XP, getBadgeStatus } from "./badges";
 import { BOSS_XP, DAILY_XP, dateKey } from "./boss";
-import { ENCOR_MISSION_ARCS } from "./encor-catalog";
+import { ENCOR_DOMAINS, ENCOR_MISSION_ARCS } from "./encor-catalog";
 import { nextCardState, type CardState } from "./flashcards";
 import {
   getWeakObjectives,
@@ -13,6 +13,15 @@ import {
   recordQuizResult as recordQuizMastery,
   type MasteryMap,
 } from "./mastery";
+import {
+  recordLabSkill,
+  recordMissionSkill,
+  recordQuizSkill,
+  recordTimedSkill,
+  type SkillMap,
+} from "./skills";
+import { LAB_TEMPLATES } from "./lab-templates";
+import type { ExamScoreHistory } from "./readiness";
 
 export type QuizResult = { correct: number; total: number; perfect: boolean };
 
@@ -52,6 +61,12 @@ export type ProgressData = {
   syncStatus: SyncStatus;
   /** Human-readable sync state, e.g. an error detail. */
   syncMessage: string | null;
+  /** Per-assessment-type mastery (recall/interpret/config/troubleshoot/timed). */
+  skills: SkillMap;
+  /** Best mock-exam / diagnostic results by exam kind. */
+  examResults: ExamScoreHistory;
+  /** Lab completions keyed by lab id → completed variant ids. */
+  labResults: Record<string, { variantIds: string[]; cleanRuns: number; lastRunAt: number }>;
 };
 
 /** The persistable data a cloud sync carries (syncStatus/message are transient UI). */
@@ -72,15 +87,18 @@ export const INITIAL_PROGRESS: ProgressData = {
   lastSyncedAt: null,
   syncStatus: "idle",
   syncMessage: null,
+  skills: {},
+  examResults: {},
+  labResults: {},
 };
 
 type ProgressState = ProgressData & {
   completeReview: () => void;
   awardMission: (missionId: string, xp?: number) => void;
-  /** Record a mission completion's wrong-attempt count to raise per-objective mastery. */
-  recordMissionResult: (missionId: string, attempts: number) => void;
-  /** Award quiz XP (25 perfect / 10 otherwise, once per arc) and a mastery bump. */
-  recordQuizResult: (arcId: string, correct: number, total: number) => void;
+  /** Record a mission completion's wrong-attempt count to raise per-objective mastery + primary skill. */
+  recordMissionResult: (missionId: string, attempts: number, variantId?: string) => void;
+  /** Award quiz XP (25 perfect / 10 otherwise, once per arc) and a mastery + interpret/recall bump. */
+  recordQuizResult: (arcId: string, correct: number, total: number, questionKind?: "recall" | "interpret") => void;
   /** SM-2-lite flashcard review: 5 XP when a due card is remembered. */
   reviewFlashcard: (cardId: string, remembered: boolean) => void;
   /** Award newly earned badges (+BADGE_XP each); a no-op when none are new. */
@@ -89,6 +107,10 @@ type ProgressState = ProgressData & {
   claimDaily: (arcId: string) => void;
   /** Finish a boss battle: XP (tier-based when passed), records, and under-pressure mastery on a win. */
   recordBossResult: (arcId: string, victory: boolean, accuracy: number, xp?: number) => void;
+  /** Record a mock-exam score (drives the timed dimension) and timed skill on a pass. */
+  recordExamResult: (kind: string, pct: number, passed: boolean, objectiveIds: string[]) => void;
+  /** Record a completed lab variant (drives configuration/troubleshooting skill + variant evidence). */
+  recordLabResult: (labId: string, variantId: string, clean: boolean, skill: "configure" | "troubleshoot") => void;
   /** Apply a merged cloud snapshot; a no-op (same state ref) when nothing changed. */
   applyRemote: (remote: RemoteProgress) => void;
   /** Surface sync progress or errors in the UI. */
@@ -98,6 +120,12 @@ type ProgressState = ProgressData & {
 
 export function getLevel(xp: number) {
   return Math.floor(xp / 500) + 1;
+}
+
+/** Resolve objective ids to their catalog definitions (for skill mapping). */
+function objectivesFor(ids: string[]) {
+  const all = ENCOR_DOMAINS.flatMap((domain) => domain.objectives);
+  return ids.map((id) => all.find((objective) => objective.id === id)!).filter(Boolean);
 }
 
 export const useProgressStore = create<ProgressState>()(
@@ -116,23 +144,27 @@ export const useProgressStore = create<ProgressState>()(
                 completedMissions: [...state.completedMissions, missionId],
               },
         ),
-      recordMissionResult: (missionId, attempts) =>
+      recordMissionResult: (missionId, attempts, variantId) =>
         set((state) => {
           const arc = ENCOR_MISSION_ARCS.find((candidate) => candidate.id === missionId);
           if (!arc) return state;
+          const objectives = objectivesFor(arc.objectiveIds);
           const mastery = recordMastery(state.mastery, arc.objectiveIds, attempts);
+          const skills = recordMissionSkill(state.skills, objectives, attempts, variantId ?? null);
           const weakTopics = getWeakObjectives(mastery).slice(0, 3).map((objective) => objective.label);
-          return { ...state, mastery, weakTopics };
+          return { ...state, mastery, skills, weakTopics };
         }),
-      recordQuizResult: (arcId, correct, total) =>
+      recordQuizResult: (arcId, correct, total, questionKind = "interpret") =>
         set((state) => {
           const arc = ENCOR_MISSION_ARCS.find((candidate) => candidate.id === arcId);
           if (!arc || total <= 0) return state;
           const perfect = correct === total;
           const firstCompletion = !state.quizResults[arcId];
+          const objectives = objectivesFor(arc.objectiveIds);
           return {
             ...state,
             mastery: recordQuizMastery(state.mastery, arc.objectiveIds, correct, total),
+            skills: recordQuizSkill(state.skills, objectives, questionKind, correct, total),
             quizResults: { ...state.quizResults, [arcId]: { correct, total, perfect } },
             xp: firstCompletion ? state.xp + (perfect ? 25 : 10) : state.xp,
           };
@@ -181,11 +213,14 @@ export const useProgressStore = create<ProgressState>()(
         set((state) => {
           const arc = ENCOR_MISSION_ARCS.find((candidate) => candidate.id === arcId);
           if (!arc) return state;
+          const objectives = objectivesFor(arc.objectiveIds);
           const mastery = victory ? recordBossMastery(state.mastery, arc.objectiveIds, true) : state.mastery;
+          const skills = recordTimedSkill(state.skills, objectives, accuracy, victory);
           const awarded = xp ?? (victory ? BOSS_XP.victory : BOSS_XP.defeat);
           return {
             ...state,
             mastery,
+            skills,
             weakTopics: victory ? getWeakObjectives(mastery).slice(0, 3).map((objective) => objective.label) : state.weakTopics,
             bossRecords: {
               battles: state.bossRecords.battles + 1,
@@ -193,6 +228,39 @@ export const useProgressStore = create<ProgressState>()(
               bestAccuracy: Math.max(state.bossRecords.bestAccuracy, accuracy),
             },
             xp: state.xp + awarded,
+          };
+        }),
+      recordExamResult: (kind, pct, passed, objectiveIds) =>
+        set((state) => {
+          const objectives = objectivesFor(objectiveIds);
+          const skills = recordTimedSkill(state.skills, objectives, pct / 100, passed);
+          return {
+            ...state,
+            skills,
+            examResults: {
+              ...state.examResults,
+              [kind]: { pct, passed, at: Date.now() },
+            },
+          };
+        }),
+      recordLabResult: (labId, variantId, clean, skill) =>
+        set((state) => {
+          const template = LAB_TEMPLATES.find((candidate) => candidate.id === labId);
+          if (!template) return state;
+          const objectives = objectivesFor(template.objectiveIds);
+          const skills = recordLabSkill(state.skills, objectives, skill, clean, variantId);
+          const existing = state.labResults[labId];
+          return {
+            ...state,
+            skills,
+            labResults: {
+              ...state.labResults,
+              [labId]: {
+                variantIds: [...new Set([...(existing?.variantIds ?? []), variantId])],
+                cleanRuns: (existing?.cleanRuns ?? 0) + (clean ? 1 : 0),
+                lastRunAt: Date.now(),
+              },
+            },
           };
         }),
       applyRemote: (remote) =>
@@ -210,6 +278,9 @@ export const useProgressStore = create<ProgressState>()(
             daily: state.daily,
             dailyHistory: state.dailyHistory,
             bossRecords: state.bossRecords,
+            skills: state.skills,
+            examResults: state.examResults,
+            labResults: state.labResults,
           };
           // Returning the same reference when nothing changed keeps zustand
           // from notifying, so a converged sync can't loop with auto-sync.
@@ -239,6 +310,9 @@ export const useProgressStore = create<ProgressState>()(
         daily: state.daily,
         dailyHistory: state.dailyHistory,
         bossRecords: state.bossRecords,
+        skills: state.skills,
+        examResults: state.examResults,
+        labResults: state.labResults,
         lastSyncedAt: state.lastSyncedAt,
       }),
       merge: (persisted, current) => ({
@@ -254,6 +328,10 @@ export const useProgressStore = create<ProgressState>()(
         // Old saves predate the streak history — start empty.
         dailyHistory: (persisted as Partial<ProgressData>).dailyHistory ?? current.dailyHistory,
         bossRecords: (persisted as Partial<ProgressData>).bossRecords ?? current.bossRecords,
+        // Old saves predate skills/exams/labs — start empty.
+        skills: (persisted as Partial<ProgressData>).skills ?? current.skills,
+        examResults: (persisted as Partial<ProgressData>).examResults ?? current.examResults,
+        labResults: (persisted as Partial<ProgressData>).labResults ?? current.labResults,
         lastSyncedAt: (persisted as Partial<ProgressData>).lastSyncedAt ?? current.lastSyncedAt,
       }),
     },

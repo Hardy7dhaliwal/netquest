@@ -160,6 +160,30 @@ export const EXTRA_QUIZ_QUESTIONS: Record<string, QuizQuestion[]> = {
       explain: "An err-disabled port stays down until an administrator issues shutdown / no shutdown, or errdisable recovery is configured.",
       wrongGuidance: "Err-disable is a lockdown, not a blip — recovery is manual or via the errdisable recovery feature, never automatic by default.",
     },
+    {
+      id: "x-stp-5",
+      prompt: "A port that should be the root port is instead blocking despite a superior root path. Which STP protection is most likely responsible?",
+      options: [
+        { value: "root-guard", title: "Root guard — the port rejected a superior BPDU claim", note: "Root guard prevents the port from becoming the root path" },
+        { value: "bpdu-guard", title: "BPDU guard", note: "BPDU guard err-disables on any BPDU — this port is still up" },
+        { value: "loop-guard", title: "Loop guard", note: "Loop guard blocks when BPDUs stop arriving, not on superior claims" },
+      ],
+      correct: "root-guard",
+      explain: "Root guard forces a port to be non-root: when a superior BPDU arrives, the port goes to root-inconsistent (blocking) instead of becoming the root path.",
+      wrongGuidance: "BPDU guard shuts the port down entirely and loop guard reacts to silence — the root-inconsistent block is root guard's signature.",
+    },
+    {
+      id: "x-stp-6",
+      prompt: "In MST, what does each spanning-tree instance map to?",
+      options: [
+        { value: "vlan-group", title: "A configured group of VLANs", note: "MST groups many VLANs into one instance" },
+        { value: "one-vlan", title: "Exactly one VLAN", note: "That is PVST+ behavior, not MST" },
+        { value: "one-port", title: "One physical port", note: "Instances span the whole region, not a port" },
+      ],
+      correct: "vlan-group",
+      explain: "MST runs one instance per mapping group (e.g. instance 1 → VLANs 1-10), drastically cutting BPDU and state overhead versus per-VLAN PVST+.",
+      wrongGuidance: "One-instance-per-VLAN is PVST+. MST's whole point is fewer instances covering groups of VLANs.",
+    },
   ],
 
   // ─── The Bundled Bottleneck (3.1.b) ───────────────────────────────────────
@@ -224,6 +248,30 @@ export const EXTRA_QUIZ_QUESTIONS: Record<string, QuizQuestion[]> = {
       explain: "A member failure just reduces capacity — the hashed flows re-spread across the surviving links and the bundle keeps working.",
       wrongGuidance: "EtherChannel is resilient by design: one dead member shrinks the pipe but never kills the channel.",
     },
+    {
+      id: "x-ec-6",
+      prompt: "Two member links are configured identically, but the bundle still won't form. One side runs channel-group 1 mode active. What must the far end run?",
+      options: [
+        { value: "active-passive", title: "active or passive (both are LACP-compatible)", note: "active/active and active/passive both negotiate" },
+        { value: "passive-passive", title: "passive only", note: "passive/passive never negotiates — no one initiates" },
+        { value: "on", title: "mode on only", note: "on works, but the question is about LACP negotiation" },
+      ],
+      correct: "active-passive",
+      explain: "LACP forms when at least one side is active; passive/passive never negotiates because neither side sends LACPDUs first.",
+      wrongGuidance: "passive-passive is the classic 'both ends wait forever' failure — one side must be active to kick off LACP.",
+    },
+    {
+      id: "x-ec-7",
+      prompt: "A member link fails to join the channel because its speed differs from the others. What does the switch do?",
+      options: [
+        { value: "excludes", title: "Excludes that link from the bundle and keeps the rest up", note: "Members must match in speed and duplex" },
+        { value: "all-down", title: "Tears down the entire channel", note: "A mismatched member only excludes itself" },
+        { value: "autonegotiates", title: "Auto-adjusts the bundle to two speeds", note: "Channels require uniform members" },
+      ],
+      correct: "excludes",
+      explain: "EtherChannel members must share speed and duplex; a mismatched link is simply excluded rather than breaking the whole bundle.",
+      wrongGuidance: "The bundle tolerates a bad member by dropping it — uniformity is enforced per member, not per bundle.",
+    },
   ],
 
   // ─── Area Zero Hero (3.2.b) ───────────────────────────────────────────────
@@ -264,6 +312,54 @@ export const EXTRA_QUIZ_QUESTIONS: Record<string, QuizQuestion[]> = {
       explain: "A wildcard mask of 0.0.0.255 matches any host in 172.16.0.0/24 — the last octet is 'any'.",
       wrongGuidance: "Convert the wildcard to its inverse: 0.0.0.255 means the last octet varies, so this is a /24.",
     },
+    {
+      id: "x-ospf-4",
+      prompt: "A point-to-point serial link between two OSPF routers needs adjacency with no DR election. Which network type avoids the election?",
+      options: [
+        { value: "ptp", title: "point-to-point (or ip ospf network point-to-point)", note: "No DR/BDR on a two-router segment" },
+        { value: "broadcast", title: "broadcast", note: "The default Ethernet type — it elects a DR/BDR" },
+        { value: "nbma", title: "non-broadcast", note: "NBMA also elects and needs neighbor statements" },
+      ],
+      correct: "ptp",
+      explain: "The point-to-point network type skips DR/BDR election entirely — the standard choice for serial and tunnel links.",
+      wrongGuidance: "broadcast and NBMA both elect a DR/BDR; point-to-point (or its explicit override) is the no-election type.",
+    },
+    {
+      id: "x-ospf-5",
+      prompt: "passive-interface default + passive-interface except-type commands on an OSPF process do what?",
+      options: [
+        { value: "selective", title: "Make every interface passive except the ones explicitly enabled", note: "The 'except' list re-enables adjacencies" },
+        { value: "all", title: "Make every interface passive permanently", note: "That would break all adjacencies" },
+        { value: "routing", title: "Only affect redistribution", note: "Passive is about adjacency formation, not redistribution" },
+      ],
+      correct: "selective",
+      explain: "passive-interface default suppresses hellos everywhere; the except form re-enables them on the listed interfaces only.",
+      wrongGuidance: "The pair is a whitelist: default = passive everywhere, except = the interfaces that still form adjacencies.",
+    },
+    {
+      id: "x-ospf-6",
+      prompt: "Which command summarizes the routes an area advertises into area 0 at the ABR?",
+      options: [
+        { value: "range", title: "area 1 range 10.0.0.0 255.255.0.0", note: "The ABR-level summarizer" },
+        { value: "summary", title: "summary-address 10.0.0.0 255.255.0.0", note: "That is for external (redistributed) routes" },
+        { value: "network", title: "network 10.0.0.0 0.0.255.255 area 1", note: "That enables OSPF — it does not summarize" },
+      ],
+      correct: "range",
+      explain: "area <id> range <prefix> <mask> summarizes inter-area routes at the ABR; summary-address is the external-route counterpart.",
+      wrongGuidance: "summary-address applies to redistributed/external routes — inter-area summarization is the area range command.",
+    },
+    {
+      id: "x-ospf-7",
+      prompt: "A router is stuck in TWO-WAY with a neighbor on an Ethernet segment. Is this a fault?",
+      options: [
+        { value: "normal", title: "No — Two-Way is normal between non-DR/BDR neighbors on broadcast segments", note: "Only the DR/BDR reach FULL on multi-access links" },
+        { value: "fault", title: "Yes — all neighbors must reach FULL", note: "FULL is only required with the DR/BDR" },
+        { value: "timer", title: "Yes — it means the dead timer is wrong", note: "A timer mismatch would stall earlier at INIT" },
+      ],
+      correct: "normal",
+      explain: "On broadcast multi-access segments, non-DR/BDR neighbors stay Two-Way with each other; FULL is only with the DR and BDR.",
+      wrongGuidance: "Two-Way is the healthy steady state between regular neighbors on Ethernet — misdiagnosing it wastes time.",
+    },
   ],
 
   // ─── The Edge Has Opinions (3.2.a/c/d) ────────────────────────────────────
@@ -303,6 +399,30 @@ export const EXTRA_QUIZ_QUESTIONS: Record<string, QuizQuestion[]> = {
       correct: "bw-delay",
       explain: "EIGRP's default metric weighs the lowest bandwidth and the accumulated delay along the path.",
       wrongGuidance: "Hop count belongs to distance-vector RIP and cost to link-state OSPF — EIGRP's default pair is bandwidth plus delay.",
+    },
+    {
+      id: "x-edge-4",
+      prompt: "An eBGP session shows state Active. What does that most likely mean?",
+      options: [
+        { value: "no-peer", title: "The router is trying to reach a peer it cannot connect to", note: "Active = actively seeking the TCP connection" },
+        { value: "up", title: "The session is fully established", note: "Established is the up state — Active is not" },
+        { value: "password", title: "The password was accepted", note: "Password success moves the session forward to OpenSent" },
+      ],
+      correct: "no-peer",
+      explain: "Active means BGP is actively trying to open the TCP session to a peer that isn't answering — a classic reachability or multihop problem.",
+      wrongGuidance: "Active is the 'can't reach my peer' state — the session only reaches Established after the TCP handshake completes.",
+    },
+    {
+      id: "x-edge-5",
+      prompt: "Two eBGP paths reach the same prefix: path A has AS path length 3 and MED 50; path B has AS path length 5 and MED 20. Which is preferred?",
+      options: [
+        { value: "shorter-as", title: "Path A — AS path length beats MED", note: "AS path is compared before MED" },
+        { value: "lower-med", title: "Path B — the lower MED wins", note: "MED is a later tiebreaker" },
+        { value: "tie", title: "They tie — need a tiebreaker", note: "The AS paths differ, so no tie exists" },
+      ],
+      correct: "shorter-as",
+      explain: "BGP best-path compares AS path length before MED, so path A (shorter AS path) wins regardless of its higher MED.",
+      wrongGuidance: "Order matters: weight → local pref → AS path → origin → MED. MED only matters when the AS path length is equal.",
     },
   ],
 
@@ -407,6 +527,42 @@ export const EXTRA_QUIZ_QUESTIONS: Record<string, QuizQuestion[]> = {
       correct: "lan",
       explain: "Inside = the private network whose source addresses get translated; outside = the public side they are translated to.",
       wrongGuidance: "Inside is where the private addresses live and get translated; outside is the public realm they exit into.",
+    },
+    {
+      id: "x-edge-services-4",
+      prompt: "Which multicast mechanism stops a packet from looping back toward its source?",
+      options: [
+        { value: "rpf", title: "The RPF check — the packet must arrive on the interface toward the source", note: "Reverse Path Forwarding is the loop guard" },
+        { value: "igmp", title: "IGMP joining", note: "IGMP signals receivers — it does not prevent loops" },
+        { value: "msdp", title: "MSDP peering", note: "MSDP shares sources between RPs" },
+      ],
+      correct: "rpf",
+      explain: "Every multicast router runs an RPF check: if a packet for (S,G) didn't arrive on the interface that leads back to S, it is dropped — that's the loop prevention.",
+      wrongGuidance: "RPF is the multicast loop guard. IGMP handles receiver signaling and MSDP links RPs — neither does RPF's job.",
+    },
+    {
+      id: "x-edge-services-5",
+      prompt: "IGMPv3 enables SSM. What does the host report include that earlier versions lacked?",
+      options: [
+        { value: "source", title: "The specific source (S,G) it wants to receive", note: "IGMPv3 reports carry the source list" },
+        { value: "group-only", title: "Only the group address", note: "That is IGMPv1/v2 behavior" },
+        { value: "rp", title: "The rendezvous point address", note: "RPs are a PIM concept, not in the IGMP report" },
+      ],
+      correct: "source",
+      explain: "IGMPv3 membership reports include the source(s) the host wants (S,G), which is exactly what Source-Specific Multicast builds on — no RP needed.",
+      wrongGuidance: "Group-only reports are v1/v2; the (S,G) source awareness of v3 is what unlocks SSM and removes the RP.",
+    },
+    {
+      id: "x-edge-services-6",
+      prompt: "When do two PIM domains need MSDP between their rendezvous points?",
+      options: [
+        { value: "source-sharing", title: "So RPs learn about sources in the other domain", note: "MSDP advertises active sources between RPs" },
+        { value: "rpf", title: "To perform the RPF check", note: "RPF is local to each router" },
+        { value: "igmp", title: "To join receivers to groups", note: "IGMP does the joining at the edge" },
+      ],
+      correct: "source-sharing",
+      explain: "MSDP lets one domain's RP advertise its active sources to another domain's RP, so receivers can build trees to sources they'd otherwise never learn about.",
+      wrongGuidance: "MSDP is the source-discovery bridge between PIM domains — RPF and IGMP are separate, local mechanisms.",
     },
   ],
 
@@ -668,6 +824,42 @@ export const EXTRA_QUIZ_QUESTIONS: Record<string, QuizQuestion[]> = {
       explain: "NetFlow summarizes conversations into flow records (src, dst, ports, bytes) — perfect for usage and behavior analysis.",
       wrongGuidance: "SPAN hands you full packet copies and IP SLA probes the network — flow-level statistics are NetFlow's job.",
     },
+    {
+      id: "x-signal-3",
+      prompt: "A debug command is flooding the console. Which approach captures only what you need?",
+      options: [
+        { value: "conditional", title: "Conditional debug scoped to one neighbor or prefix", note: "debug ip ospf events condition + a neighbor filter" },
+        { value: "all", title: "Leave the full debug running and scroll", note: "That floods the CPU and console" },
+        { value: "logging", title: "Just raise logging console severity", note: "That suppresses, not targets, the output" },
+      ],
+      correct: "conditional",
+      explain: "Conditional debugging (e.g. debug ip ospf events condition interface g0/0) limits output to the exact object under investigation — CPU-safe and readable.",
+      wrongGuidance: "Full debugs are CPU-heavy and unreadable; conditional debug is the targeted, safe approach.",
+    },
+    {
+      id: "x-signal-4",
+      prompt: "Which monitoring pair is the classic 'push events, poll counters' setup?",
+      options: [
+        { value: "syslog-snmp", title: "Syslog pushes events; SNMP polls counters/traps", note: "The standard device-monitoring duo" },
+        { value: "netflow-only", title: "NetFlow for both", note: "NetFlow is flow data, not device health" },
+        { value: "ping-only", title: "Ping for both", note: "Ping proves reachability, not device health" },
+      ],
+      correct: "syslog-snmp",
+      explain: "Syslog delivers event messages (interface flaps, auth failures) to a collector; SNMP polls metrics and pushes traps on thresholds.",
+      wrongGuidance: "NetFlow tracks flows and ping tracks reachability — event push + counter poll is syslog + SNMP.",
+    },
+    {
+      id: "x-signal-5",
+      prompt: "A capture device sits across a routed core from the switch being monitored. Which mirroring option reaches it?",
+      options: [
+        { value: "erspan", title: "ERSPAN — encapsulated in GRE to cross routers", note: "The routed option" },
+        { value: "span", title: "Local SPAN", note: "SPAN is same-switch only" },
+        { value: "rspan", title: "RSPAN", note: "RSPAN needs L2 connectivity for its session VLAN" },
+      ],
+      correct: "erspan",
+      explain: "ERSPAN wraps mirrored traffic in GRE so it can traverse routed (L3) networks — local SPAN and RSPAN are L2-bound.",
+      wrongGuidance: "SPAN is local and RSPAN rides a session VLAN across L2 — crossing a routed core is exactly ERSPAN's job.",
+    },
   ],
 
   // ─── Lock the Control Plane (5.1.a–5.4.d) ─────────────────────────────────
@@ -708,6 +900,42 @@ export const EXTRA_QUIZ_QUESTIONS: Record<string, QuizQuestion[]> = {
       explain: "MACsec (802.1AE) provides encryption and integrity at Layer 2, protecting each link between adjacent devices.",
       wrongGuidance: "End-to-end IP encryption is IPsec; MACsec is the Layer 2 link-security answer, and it does encrypt.",
     },
+    {
+      id: "x-lock-4",
+      prompt: "CoPP protects a router by rate-limiting which plane?",
+      options: [
+        { value: "control", title: "The control plane — traffic destined to the CPU", note: "service-policy control-plane polices CPU-bound traffic" },
+        { value: "data", title: "The data plane — transit forwarding", note: "Data-plane policing is a different feature" },
+        { value: "mgmt", title: "Only the management plane", note: "CoPP covers routing protocols too, not just mgmt" },
+      ],
+      correct: "control",
+      explain: "Control Plane Policing applies a policy to the control plane, rate-limiting CPU-bound traffic so floods can't starve routing and management processes.",
+      wrongGuidance: "CoPP is explicitly a control-plane protection — data-plane policing is a separate feature with its own policies.",
+    },
+    {
+      id: "x-lock-5",
+      prompt: "A REST API rejects a request with 401. What does that status code mean?",
+      options: [
+        { value: "unauthorized", title: "Authentication failed — the token or credentials are wrong or missing", note: "401 = prove who you are" },
+        { value: "forbidden", title: "Authorization failed — authenticated but not allowed", note: "That is 403" },
+        { value: "notfound", title: "The resource does not exist", note: "That is 404" },
+      ],
+      correct: "unauthorized",
+      explain: "401 means the request was unauthenticated or the credentials/token were rejected — fix the Authorization header or token before anything else.",
+      wrongGuidance: "401 is an identity problem; 403 is a permissions problem and 404 is a missing resource — check the exact code.",
+    },
+    {
+      id: "x-lock-6",
+      prompt: "Endpoint security detects malware on a laptop mid-session. Which response capability contains the spread?",
+      options: [
+        { value: "edr", title: "EDR/NAC — quarantine the endpoint and block its network access", note: "Containment via posture and isolation" },
+        { value: "firewall", title: "A perimeter firewall only", note: "East-west spread happens inside the perimeter" },
+        { value: "logging", title: "Logging the alert", note: "Logging documents; containment stops the spread" },
+      ],
+      correct: "edr",
+      explain: "Endpoint detection & response plus NAC quarantine the infected device and cut its network access — containment, not just detection.",
+      wrongGuidance: "A perimeter firewall rarely sees internal east-west traffic, and logging alone does nothing to stop lateral movement.",
+    },
   ],
 
   // ─── Automator Prime (6.1–6.7) ────────────────────────────────────────────
@@ -747,6 +975,54 @@ export const EXTRA_QUIZ_QUESTIONS: Record<string, QuizQuestion[]> = {
       correct: "react",
       explain: "EEM watches for events — syslog patterns, timer expirations, interface transitions — and runs predefined applets in response.",
       wrongGuidance: "EEM is event-driven automation, not a CLI replacement and not machine learning.",
+    },
+    {
+      id: "x-automator-4",
+      prompt: "A Python script raises KeyError: 'name' while processing an API response. What does this tell you?",
+      options: [
+        { value: "missing-key", title: "The 'name' key is absent from the dict — inspect the actual response structure", note: "KeyError means the key isn't there" },
+        { value: "network", title: "The network request failed", note: "A network failure would raise a connection error, not KeyError" },
+        { value: "json", title: "The JSON is invalid", note: "Invalid JSON raises JSONDecodeError, not KeyError" },
+      ],
+      correct: "missing-key",
+      explain: "KeyError names the exact dict key that doesn't exist — the fix is to print the response and adjust the path, not to blame the network or the JSON format.",
+      wrongGuidance: "KeyError is a structure bug in your code's assumption about the payload — different exceptions mean network or parse problems.",
+    },
+    {
+      id: "x-automator-5",
+      prompt: "Which of these is a valid JSON value?",
+      options: [
+        { value: "number-array", title: "[\"up\", 1, true, null]", note: "An array of string, number, boolean, and null — all valid JSON types" },
+        { value: "single-quote", title: "{'status': 'up'}", note: "JSON requires double quotes on keys and strings" },
+        { value: "trailing", title: "{\"a\": 1,}", note: "Trailing commas are invalid in JSON" },
+      ],
+      correct: "number-array",
+      explain: "An array mixing a string, a number, a boolean, and null is perfectly valid JSON — the other two violate JSON's quoting and comma rules.",
+      wrongGuidance: "Single quotes and trailing commas are the classic JSON killers — everything must be double-quoted with no dangling commas.",
+    },
+    {
+      id: "x-automator-6",
+      prompt: "A YANG tree shows container interfaces { list interface [key name] { leaf enabled } }. How do you address interface GigabitEthernet1's enabled leaf?",
+      options: [
+        { value: "path", title: "/interfaces/interface[name='GigabitEthernet1']/enabled", note: "List key in brackets, then the leaf" },
+        { value: "flat", title: "/interfaces/interface/GigabitEthernet1/enabled", note: "The key must appear in brackets, not as a path segment" },
+        { value: "leaf-only", title: "/enabled", note: "The tree's full hierarchy matters for the data path" },
+      ],
+      correct: "path",
+      explain: "YANG instance identifiers walk the tree and select list entries by key in brackets — that exact path form is what NETCONF/RESTCONF use.",
+      wrongGuidance: "The key goes in brackets after the list node; skipping the hierarchy or flattening the key changes the identifier.",
+    },
+    {
+      id: "x-automator-7",
+      prompt: "Ansible configures network devices with no software installed on them. How?",
+      options: [
+        { value: "agentless", title: "Agentless — it connects over SSH/NETCONF from the control node", note: "Push-based, no device agent" },
+        { value: "agent", title: "An agent on every device pulls config", note: "That is the Puppet/Chef model" },
+        { value: "tftp", title: "It TFTPs configs at boot", note: "Not how Ansible works" },
+      ],
+      correct: "agentless",
+      explain: "Ansible is agentless: the control node opens SSH/NETCONF sessions and pushes the desired state, so no persistent software must live on the devices.",
+      wrongGuidance: "Ansible's signature is exactly agentless push over SSH — agent-based pull is Puppet/Chef territory.",
     },
   ],
 };

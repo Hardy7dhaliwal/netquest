@@ -260,6 +260,9 @@ describe("progress", () => {
       daily: null,
       dailyHistory: [],
       bossRecords: { battles: 1, victories: 1, bestAccuracy: 1 },
+      skills: {},
+      examResults: {},
+      labResults: {},
       lastSyncedAt: 1234,
     });
 
@@ -284,6 +287,9 @@ describe("progress", () => {
       daily: null,
       dailyHistory: [],
       bossRecords: { battles: 0, victories: 0, bestAccuracy: 0 },
+      skills: {},
+      examResults: {},
+      labResults: {},
       lastSyncedAt: before.lastSyncedAt,
     });
     expect(useProgressStore.getState()).toBe(before);
@@ -308,10 +314,51 @@ describe("progress", () => {
       daily: null,
       dailyHistory: [],
       bossRecords: { battles: 0, victories: 0, bestAccuracy: 0 },
+      skills: {},
+      examResults: {},
+      labResults: {},
       lastSyncedAt: 99,
     });
 
     const persisted = JSON.parse(values.get("netquest-progress") ?? "{}") as { state: { lastSyncedAt: number } };
     expect(persisted.state.lastSyncedAt).toBe(99);
+  });
+
+  it("records a mission result into per-skill mastery", () => {
+    useProgressStore.getState().recordMissionResult("area-zero-hero", 0); // 3.2.b configure
+    const skills = useProgressStore.getState().skills;
+    expect(skills["3.2.b"].scores.configure).toBe(85);
+  });
+
+  it("records a quiz result into interpret/recall skills", () => {
+    useProgressStore.getState().recordQuizResult("stp-storm", 3, 3, "interpret");
+    expect(useProgressStore.getState().skills["3.1.c"].scores.interpret).toBe(70);
+  });
+
+  it("records a boss victory into the timed skill", () => {
+    useProgressStore.getState().recordBossResult("stp-storm", true, 5 / 6);
+    expect(useProgressStore.getState().skills["3.1.c"].scores.timed).toBe(95);
+    expect(useProgressStore.getState().skills["3.1.c"].bestTimedPct).toBe(83);
+  });
+
+  it("records a lab result with variant evidence", () => {
+    useProgressStore.getState().recordLabResult("lab-ospf-adjacency", "a", true, "troubleshoot");
+    const skills = useProgressStore.getState().skills;
+    expect(skills["3.2.b"].scores.troubleshoot).toBe(85);
+    expect(skills["3.2.b"].variants).toEqual(["a"]);
+    expect(useProgressStore.getState().labResults["lab-ospf-adjacency"].cleanRuns).toBe(1);
+  });
+
+  it("records a passing mock exam and its timed mastery", () => {
+    useProgressStore.getState().recordExamResult("mock-a", 80, true, ["3.1.a", "3.2.b"]);
+    expect(useProgressStore.getState().examResults["mock-a"].pct).toBe(80);
+    expect(useProgressStore.getState().examResults["mock-a"].passed).toBe(true);
+    expect(useProgressStore.getState().skills["3.2.b"].scores.timed).toBe(95);
+  });
+
+  it("records a failing exam without awarding timed mastery", () => {
+    useProgressStore.getState().recordExamResult("mock-b", 40, false, ["3.1.a"]);
+    expect(useProgressStore.getState().examResults["mock-b"].passed).toBe(false);
+    expect(useProgressStore.getState().skills["3.1.a"].scores.timed).toBe(0);
   });
 });
