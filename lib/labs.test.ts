@@ -651,4 +651,118 @@ describe("gap-topic labs", () => {
       expect(covered.has(objective), `objective ${objective} should have a lab`).toBe(true);
     }
   });
+
+  it("covers the remaining lab-able objectives (PBR, EIGRP-vs-OSPF, local auth) with a lab", () => {
+    const remaining = ["3.2.d", "3.2.a", "5.1.a"];
+    const covered = new Set(LAB_TEMPLATES.flatMap((template) => template.objectiveIds));
+    for (const objective of remaining) {
+      expect(covered.has(objective), `objective ${objective} should have a lab`).toBe(true);
+    }
+  });
+
+  it("completes the PBR lab once the policy is enforced", () => {
+    const template = findLab("lab-pbr");
+    const a = runLab(template, "a", ["show route-map"], "enforcement", "ip policy route-map VOICE-PBR", "show ip policy");
+    expect(a.status).toBe("complete");
+    expect(a.clean).toBe(true);
+    const b = runLab(template, "b", ["show route-map"], "enforcement", "set ip next-hop 10.0.0.2", "show route-map");
+    expect(b.status).toBe("complete");
+    expect(b.clean).toBe(true);
+  });
+
+  it("rejects the other variant's PBR fix", () => {
+    const template = findLab("lab-pbr");
+    let state = startLab(template, "a");
+    state = runLabCommand(state, template, "show route-map");
+    state = answerLabDiagnose(state, template, "enforcement");
+    // Variant B's fix (set clause) must NOT apply on variant A (policy not attached).
+    state = runLabCommand(state, template, "set ip next-hop 10.0.0.2");
+    expect(state.stepIndex).toBe(2); // still on configure
+    expect(state.clean).toBe(false);
+  });
+
+  it("rejects the distractor in the PBR lab", () => {
+    const template = findLab("lab-pbr");
+    let state = startLab(template, "a");
+    state = runLabCommand(state, template, "show route-map");
+    state = answerLabDiagnose(state, template, "enforcement");
+    // The match ACL already classifies voice — changing it is a distractor.
+    state = runLabCommand(state, template, "access-list 110 permit ip host 10.10.1.10 any");
+    expect(state.stepIndex).toBe(2);
+    expect(state.clean).toBe(false);
+  });
+
+  it("completes the EIGRP-vs-OSPF lab once the fiber metric is restored", () => {
+    const template = findLab("lab-eigrp-ospf");
+    const a = runLab(template, "a", ["show ip eigrp topology"], "metric", "delay 100", "show ip route");
+    expect(a.status).toBe("complete");
+    expect(a.clean).toBe(true);
+    const b = runLab(template, "b", ["show ip ospf interface"], "metric", "no ip ospf cost", "show ip route");
+    expect(b.status).toBe("complete");
+    expect(b.clean).toBe(true);
+  });
+
+  it("rejects the other variant's metric fix (delay vs cost)", () => {
+    const template = findLab("lab-eigrp-ospf");
+    let state = startLab(template, "a"); // EIGRP
+    state = runLabCommand(state, template, "show ip eigrp topology");
+    state = answerLabDiagnose(state, template, "metric");
+    // Variant B's OSPF fix must NOT apply on the EIGRP variant.
+    state = runLabCommand(state, template, "no ip ospf cost");
+    expect(state.stepIndex).toBe(2); // still on configure
+    expect(state.clean).toBe(false);
+  });
+
+  it("rejects the bandwidth distractor in the EIGRP lab", () => {
+    const template = findLab("lab-eigrp-ospf");
+    let state = startLab(template, "a");
+    state = runLabCommand(state, template, "show ip eigrp topology");
+    state = answerLabDiagnose(state, template, "metric");
+    // EIGRP metric is bandwidth+delay; delay is the inflated part here.
+    state = runLabCommand(state, template, "bandwidth 10000");
+    expect(state.stepIndex).toBe(2);
+    expect(state.clean).toBe(false);
+  });
+
+  it("uses variant-aware inspect commands for EIGRP vs OSPF", () => {
+    const template = findLab("lab-eigrp-ospf");
+    let a = startLab(template, "a"); // EIGRP
+    a = runLabCommand(a, template, "show ip eigrp topology");
+    expect(a.stepIndex).toBe(1);
+    let b = startLab(template, "b"); // OSPF
+    b = runLabCommand(b, template, "show ip ospf interface");
+    expect(b.stepIndex).toBe(1);
+  });
+
+  it("completes the local-auth lab once per-user identity is in the login path", () => {
+    const template = findLab("lab-local-auth");
+    const a = runLab(template, "a", ["show running-config | include username"], "identity", "login local", "show running-config | section line vty");
+    expect(a.status).toBe("complete");
+    expect(a.clean).toBe(true);
+    const b = runLab(template, "b", ["show running-config | include username"], "identity", "username netadmin privilege 15 secret Cisco123", "show running-config | include username");
+    expect(b.status).toBe("complete");
+    expect(b.clean).toBe(true);
+  });
+
+  it("rejects the other variant's local-auth fix", () => {
+    const template = findLab("lab-local-auth");
+    let state = startLab(template, "a");
+    state = runLabCommand(state, template, "show running-config | include username");
+    state = answerLabDiagnose(state, template, "identity");
+    // Variant B's fix (creating a user) must NOT apply on variant A (login local is missing).
+    state = runLabCommand(state, template, "username netadmin privilege 15 secret Cisco123");
+    expect(state.stepIndex).toBe(2); // still on configure
+    expect(state.clean).toBe(false);
+  });
+
+  it("rejects the enable-secret distractor in the local-auth lab", () => {
+    const template = findLab("lab-local-auth");
+    let state = startLab(template, "a");
+    state = runLabCommand(state, template, "show running-config | include username");
+    state = answerLabDiagnose(state, template, "identity");
+    // enable secret protects the privileged level, not the user login.
+    state = runLabCommand(state, template, "enable secret Cisco123");
+    expect(state.stepIndex).toBe(2);
+    expect(state.clean).toBe(false);
+  });
 });
