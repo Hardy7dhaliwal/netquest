@@ -262,6 +262,7 @@ describe("progress", () => {
       bossRecords: { battles: 1, victories: 1, bestAccuracy: 1 },
       skills: {},
       examResults: {},
+      examSeen: {},
       labResults: {},
       lastSyncedAt: 1234,
     });
@@ -289,6 +290,7 @@ describe("progress", () => {
       bossRecords: { battles: 0, victories: 0, bestAccuracy: 0 },
       skills: {},
       examResults: {},
+      examSeen: {},
       labResults: {},
       lastSyncedAt: before.lastSyncedAt,
     });
@@ -316,6 +318,7 @@ describe("progress", () => {
       bossRecords: { battles: 0, victories: 0, bestAccuracy: 0 },
       skills: {},
       examResults: {},
+      examSeen: {},
       labResults: {},
       lastSyncedAt: 99,
     });
@@ -360,5 +363,12 @@ describe("progress", () => {
     useProgressStore.getState().recordExamResult("mock-b", 40, false, ["3.1.a"]);
     expect(useProgressStore.getState().examResults["mock-b"].passed).toBe(false);
     expect(useProgressStore.getState().skills["3.1.a"].scores.timed).toBe(0);
+  });
+
+  it("remembers seen exam questions per kind, deduplicated", () => {
+    useProgressStore.getState().recordExamSeen("mock-a", ["q1", "q2"]);
+    useProgressStore.getState().recordExamSeen("mock-a", ["q2", "q3"]);
+    expect(useProgressStore.getState().examSeen["mock-a"]).toEqual(["q1", "q2", "q3"]);
+    expect(useProgressStore.getState().examSeen["mock-b"]).toBeUndefined();
   });
 });

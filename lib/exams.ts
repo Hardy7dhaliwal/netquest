@@ -1,6 +1,7 @@
 import { ENCOR_DOMAINS, ENCOR_MISSION_ARCS, type EncorDomainId } from "./encor-catalog";
 import { getArcQuiz, type QuizQuestion } from "./quiz";
 import { seededRng } from "./boss";
+import { EXAM_BANK_QUESTIONS } from "./exam-bank";
 
 /**
  * Mixed exam preparation (PRD "learn and pass" — diagnostic + mock exams).
@@ -60,7 +61,9 @@ export const EXAM_SPECS: Record<ExamKind, ExamSpec> = {
 
 export type ExamQuestion = QuizQuestion & {
   domainId: EncorDomainId;
-  /** Objectives this question exercises (the source arc's objectives). */
+  /** Every domain this question exercises (multi-domain bank items have 2+; first is the primary). */
+  domainIds: EncorDomainId[];
+  /** Objectives this question exercises (the source arc's or the bank item's objectives). */
   objectiveIds: string[];
   arcId: string;
 };
@@ -103,8 +106,25 @@ function domainPools(): Record<EncorDomainId, ExamQuestion[]> {
     if (arc.status === "planned") continue;
     const primaryDomain = arc.domains[0];
     for (const question of getArcQuiz(arc.id)) {
-      pools[primaryDomain].push({ ...question, domainId: primaryDomain, objectiveIds: [...arc.objectiveIds], arcId: arc.id });
+      pools[primaryDomain].push({ ...question, domainId: primaryDomain, domainIds: [primaryDomain], objectiveIds: [...arc.objectiveIds], arcId: arc.id });
     }
+  }
+  return pools;
+}
+
+/** The multi-domain bank, attributed to each item's first-listed (primary) domain. */
+function examBankPools(): Record<EncorDomainId, ExamQuestion[]> {
+  const pools: Record<EncorDomainId, ExamQuestion[]> = {
+    architecture: [],
+    virtualization: [],
+    infrastructure: [],
+    assurance: [],
+    security: [],
+    automation: [],
+  };
+  for (const question of EXAM_BANK_QUESTIONS) {
+    const primary = question.domainIds[0];
+    pools[primary].push({ ...question, domainId: primary, domainIds: [...question.domainIds], objectiveIds: [...question.objectiveIds], arcId: question.remediationArcId });
   }
   return pools;
 }
@@ -119,25 +139,72 @@ function pickMany<T>(pool: T[], count: number, rng: () => number): T[] {
   return picked;
 }
 
+export type BuildExamOptions = {
+  /** Question ids to avoid re-serving — retakes pass what was already seen. */
+  excludeIds?: string[];
+  /** Share of each domain's quota drawn from the multi-domain bank (0–1). */
+  mixedPct?: number;
+};
+
+/** How much of each exam's quota comes from the multi-domain mixed bank. */
+const DEFAULT_MIXED_PCT: Record<ExamKind, number> = {
+  diagnostic: 0.5,
+  "mock-a": 0.35,
+  "mock-b": 0.35,
+};
+
 /**
  * Assemble an exam deterministically from a seed. Different seeds yield
  * different question mixes; the same seed always yields the same exam.
+ *
+ * Each domain's quota is split between the vetted per-arc pools and the
+ * multi-domain mixed bank (a third to a half, by exam kind), so mocks contain
+ * real cross-domain items. Retakes pass {@link BuildExamOptions.excludeIds} to
+ * skip already-seen questions — the pools are only reused once exhausted.
  */
-export function buildExam(kind: ExamKind, seed: string = `${kind}:v1`): ExamQuestion[] {
+export function buildExam(kind: ExamKind, seed: string = `${kind}:v1`, options: BuildExamOptions = {}): ExamQuestion[] {
   const pools = domainPools();
+  const bank = examBankPools();
   const rng = seededRng(seed);
+  const excluded = new Set(options.excludeIds ?? []);
+  const mixedPct = Math.min(1, Math.max(0, options.mixedPct ?? DEFAULT_MIXED_PCT[kind]));
   const questions: ExamQuestion[] = [];
   for (const { domainId, count } of domainCounts(kind)) {
-    const selected = pickMany(pools[domainId], count, rng);
-    if (selected.length < count) {
-      // Every domain pool holds 8+ questions (each arc is topped up by the
-      // extra bank), so a short draw signals a catalog regression — surface it
-      // loudly rather than silently shipping a shorter exam.
-      throw new Error(`Not enough questions in the ${domainId} pool for exam ${kind}: need ${count}, have ${pools[domainId].length}`);
+    // Prefer fresh (never-seen) questions; fall back to the full pool only
+    // when the exclusions would starve the draw.
+    const mixedCount = Math.min(bank[domainId].length, Math.round(count * mixedPct));
+    const arcCount = count - mixedCount;
+    const mixed = drawFresh(bank[domainId], mixedCount, rng, excluded);
+    const arc = drawFresh(pools[domainId], arcCount, rng, excluded);
+    if (mixed.length + arc.length < count) {
+      // Every domain pool holds 8+ questions and the bank covers every domain,
+      // so a short draw signals a catalog regression — surface it loudly
+      // rather than silently shipping a shorter exam.
+      throw new Error(`Not enough questions in the ${domainId} pool for exam ${kind}: need ${count}, have ${bank[domainId].length + pools[domainId].length}`);
     }
-    questions.push(...selected);
+    questions.push(...mixed, ...arc);
   }
   return questions;
+}
+
+/**
+ * Draw `count` questions, preferring never-seen ones: take everything fresh the
+ * pool can offer, then top up from the full pool only for what's still missing
+ * (a small bank sub-pool can be exhausted by retakes). Never duplicates within
+ * the returned set, so an exam always has `count` distinct questions.
+ *
+ * Note: mixed slots are bank-bound BY DESIGN — buildExam always fills them from
+ * the multi-domain bank (never from the arc pools), so the cross-domain mix is
+ * guaranteed even when exclusions force a re-serve. Don't "fix" the top-up by
+ * sourcing mixed items elsewhere; grow EXAM_BANK_QUESTIONS instead.
+ */
+function drawFresh<T extends { id: string }>(pool: T[], count: number, rng: () => number, excluded: Set<string>): T[] {
+  const fresh = pool.filter((question) => !excluded.has(question.id));
+  const fromFresh = pickMany(fresh, Math.min(count, fresh.length), rng);
+  if (fromFresh.length >= count) return fromFresh;
+  const taken = new Set(fromFresh.map((question) => question.id));
+  const remainder = pool.filter((question) => !taken.has(question.id));
+  return [...fromFresh, ...pickMany(remainder, count - fromFresh.length, rng)];
 }
 
 // ─── Timed exam session ─────────────────────────────────────────────────────

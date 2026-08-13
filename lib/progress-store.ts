@@ -65,6 +65,8 @@ export type ProgressData = {
   skills: SkillMap;
   /** Best mock-exam / diagnostic results by exam kind. */
   examResults: ExamScoreHistory;
+  /** Question ids already served per exam kind, so retakes draw fresh mixes. */
+  examSeen: Record<string, string[]>;
   /** Lab completions keyed by lab id → completed variant ids. */
   labResults: Record<string, { variantIds: string[]; cleanRuns: number; lastRunAt: number }>;
 };
@@ -89,6 +91,7 @@ export const INITIAL_PROGRESS: ProgressData = {
   syncMessage: null,
   skills: {},
   examResults: {},
+  examSeen: {},
   labResults: {},
 };
 
@@ -109,6 +112,8 @@ type ProgressState = ProgressData & {
   recordBossResult: (arcId: string, victory: boolean, accuracy: number, xp?: number) => void;
   /** Record a mock-exam score (drives the timed dimension) and timed skill on a pass. */
   recordExamResult: (kind: string, pct: number, passed: boolean, objectiveIds: string[]) => void;
+  /** Remember the questions an exam served, so the next retake draws fresh ones. */
+  recordExamSeen: (kind: string, ids: string[]) => void;
   /** Record a completed lab variant (drives configuration/troubleshooting skill + variant evidence). */
   recordLabResult: (labId: string, variantId: string, clean: boolean, skill: "configure" | "troubleshoot") => void;
   /** Apply a merged cloud snapshot; a no-op (same state ref) when nothing changed. */
@@ -243,6 +248,16 @@ export const useProgressStore = create<ProgressState>()(
             },
           };
         }),
+      recordExamSeen: (kind, ids) =>
+        set((state) => {
+          const seen = new Set(state.examSeen[kind] ?? []);
+          for (const id of ids) seen.add(id);
+          // Bounded per kind: a few full retake cycles is plenty of variety.
+          return {
+            ...state,
+            examSeen: { ...state.examSeen, [kind]: [...seen].slice(0, 400) },
+          };
+        }),
       recordLabResult: (labId, variantId, clean, skill) =>
         set((state) => {
           const template = LAB_TEMPLATES.find((candidate) => candidate.id === labId);
@@ -280,6 +295,7 @@ export const useProgressStore = create<ProgressState>()(
             bossRecords: state.bossRecords,
             skills: state.skills,
             examResults: state.examResults,
+            examSeen: state.examSeen,
             labResults: state.labResults,
           };
           // Returning the same reference when nothing changed keeps zustand
@@ -312,6 +328,7 @@ export const useProgressStore = create<ProgressState>()(
         bossRecords: state.bossRecords,
         skills: state.skills,
         examResults: state.examResults,
+        examSeen: state.examSeen,
         labResults: state.labResults,
         lastSyncedAt: state.lastSyncedAt,
       }),
@@ -331,6 +348,8 @@ export const useProgressStore = create<ProgressState>()(
         // Old saves predate skills/exams/labs — start empty.
         skills: (persisted as Partial<ProgressData>).skills ?? current.skills,
         examResults: (persisted as Partial<ProgressData>).examResults ?? current.examResults,
+        // Old saves predate per-kind seen-question tracking — start empty.
+        examSeen: (persisted as Partial<ProgressData>).examSeen ?? current.examSeen,
         labResults: (persisted as Partial<ProgressData>).labResults ?? current.labResults,
         lastSyncedAt: (persisted as Partial<ProgressData>).lastSyncedAt ?? current.lastSyncedAt,
       }),

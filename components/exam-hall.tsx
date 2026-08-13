@@ -27,12 +27,17 @@ const EXAM_ORDER: ExamKind[] = ["diagnostic", "mock-a", "mock-b"];
  */
 export default function ExamHall({
   examResults,
+  examSeen,
   onRecordResult,
+  onRecordSeen,
   onOpenArc,
   onExit,
 }: {
   examResults: Record<string, { pct: number; passed: boolean; at: number }>;
+  /** Question ids already served per exam kind — retakes draw fresh questions. */
+  examSeen: Record<string, string[]>;
   onRecordResult: (kind: ExamKind, pct: number, passed: boolean, objectiveIds: string[]) => void;
+  onRecordSeen: (kind: ExamKind, ids: string[]) => void;
   onOpenArc: (arcId: string) => void;
   onExit: () => void;
 }) {
@@ -62,20 +67,22 @@ export default function ExamHall({
     }
   }, [session, now]);
 
-  // Record the result exactly once when the exam reaches done (button or timer).
+  // Record the result exactly once when the exam reaches done (button or timer),
+  // and remember the questions served so the next retake draws a fresh mix.
   useEffect(() => {
     if (session && session.phase === "done" && questions.length && !recordedRef.current) {
       recordedRef.current = true;
       const result = scoreExam(session, questions);
       onRecordResult(session.kind, result.pct, result.passed, [...new Set(questions.flatMap((q) => q.objectiveIds))]);
+      onRecordSeen(session.kind, questions.map((q) => q.id));
     }
-  }, [session, questions, onRecordResult]);
+  }, [session, questions, onRecordResult, onRecordSeen]);
 
   function begin(kind: ExamKind) {
     const nextSeed = `${kind}:v${Math.floor(Math.random() * 1e6)}`;
     recordedRef.current = false;
     setSeed(nextSeed);
-    setQuestions(buildExam(kind, nextSeed));
+    setQuestions(buildExam(kind, nextSeed, { excludeIds: examSeen[kind] ?? [] }));
     setSession(startExam(kind, nextSeed));
     setActive(kind);
     setNow(Date.now());
@@ -102,6 +109,7 @@ export default function ExamHall({
         <div className="mx-auto max-w-4xl p-5 sm:p-8">
           <p className="text-xs font-bold uppercase tracking-[0.25em] text-cyan-300">Exam hall</p>
           <p className="mt-2 text-sm text-slate-400">Mixed-domain, timed exams aligned to the real ENCOR domain weights. A pass on a timed mock counts toward your timed-mastery and exam-readiness gates.</p>
+          <p className="mt-2 text-xs text-slate-500">Every exam blends per-topic questions with multi-domain scenario items; retakes skip previously seen questions wherever the pool allows.</p>
           <div className="mt-4 grid gap-4 lg:grid-cols-3">
             {EXAM_ORDER.map((kind) => {
               const spec = EXAM_SPECS[kind];
@@ -237,7 +245,9 @@ export default function ExamHall({
       <div className="mx-auto max-w-3xl p-5 sm:p-8">
         <div className="flex items-center justify-between gap-4">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Question {session.index + 1} of {questions.length}</p>
-          <span className="rounded-full border border-slate-800 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-500">{question.domainId} domain</span>
+          <span className="rounded-full border border-slate-800 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+            {question.domainIds.length > 1 ? `${question.domainIds.join(" + ")} domains` : `${question.domainId} domain`}
+          </span>
         </div>
 
         <div className="mt-6 rounded-xl border border-slate-800 bg-slate-900/70 p-6">

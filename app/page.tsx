@@ -290,7 +290,7 @@ function MissionWorkspace({
 }
 
 export default function Home() {
-  const { xp, streak, weakTopics, completedMissions, completeReview, awardMission, mastery, recordMissionResult, cardReviews, recordQuizResult, reviewFlashcard, quizResults, syncBadges, skills, examResults, labResults, recordExamResult, recordLabResult } = useProgressStore();
+  const { xp, streak, weakTopics, completedMissions, completeReview, awardMission, mastery, recordMissionResult, cardReviews, recordQuizResult, reviewFlashcard, quizResults, syncBadges, skills, examResults, examSeen, labResults, recordExamResult, recordExamSeen, recordLabResult } = useProgressStore();
   const [mission, setMission] = useState<MissionState>(resetMission);
   const [stpMission, setStpMission] = useState<StpMissionState>(resetStpMission);
   const [ecMission, setEcMission] = useState<EcMissionState>(resetEcMission);
@@ -1376,7 +1376,9 @@ export default function Home() {
     return (
       <ExamHall
         examResults={examResults}
+        examSeen={examSeen}
         onRecordResult={recordExamResult}
+        onRecordSeen={recordExamSeen}
         onOpenArc={openArc}
         onExit={() => setExamHallOpen(false)}
       />

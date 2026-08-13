@@ -24,6 +24,7 @@ function snap(overrides: Partial<ProgressSnapshot> = {}): ProgressSnapshot {
     bossRecords: { battles: 0, victories: 0, bestAccuracy: 0 },
     skills: {},
     examResults: {},
+    examSeen: {},
     labResults: {},
     lastSyncedAt: null,
     updatedAt: 0,
@@ -152,6 +153,15 @@ describe("mergeProgress", () => {
     );
     expect(merged.labResults["lab-ospf-adjacency"].variantIds).toEqual(["a", "b"]);
     expect(merged.labResults["lab-ospf-adjacency"].lastRunAt).toBe(2);
+  });
+
+  it("unions seen-question tracking per exam kind (retakes never un-see)", () => {
+    const merged = mergeProgress(
+      snap({ examSeen: { "mock-a": ["eb-arch-1", "x-ospf-1"] } }),
+      snap({ examSeen: { "mock-a": ["x-ospf-1", "x-ospf-2"], "mock-b": ["eb-virt-1"] } }),
+    );
+    expect(merged.examSeen["mock-a"]).toEqual(["eb-arch-1", "x-ospf-1", "x-ospf-2"]);
+    expect(merged.examSeen["mock-b"]).toEqual(["eb-virt-1"]);
   });
 
   it("is idempotent once converged", () => {

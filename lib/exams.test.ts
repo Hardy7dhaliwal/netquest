@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ENCOR_DOMAINS } from "./encor-catalog";
+import { EXAM_BANK_QUESTIONS } from "./exam-bank";
 import {
   advanceExam,
   answerExam,
@@ -57,6 +58,72 @@ describe("exam assembly", () => {
     const covered = coveredObjectives([...buildExam("mock-a", "spread"), ...buildExam("mock-b", "spread")]);
     // Both mocks together should touch a wide share of the blueprint.
     expect(covered.length).toBeGreaterThanOrEqual(20);
+  });
+});
+
+describe("multi-domain mixed items", () => {
+  it("blends a fixed share of cross-domain questions into every exam", () => {
+    for (const kind of ["diagnostic", "mock-a", "mock-b"] as const) {
+      const exam = buildExam(kind, `${kind}:mixed`);
+      const mixed = exam.filter((question) => question.domainIds.length > 1);
+      // The bank draw is deterministic per seed and always serves its quota.
+      expect(mixed.length).toBeGreaterThan(0);
+      for (const question of mixed) {
+        expect(question.domainIds[0]).toBe(question.domainId);
+      }
+    }
+    // Mocks carry a solid chunk of multi-domain items (≈ a third of the mix).
+    expect(buildExam("mock-a", "mixed").filter((q) => q.domainIds.length > 1).length).toBeGreaterThanOrEqual(10);
+  });
+
+  it("tags arc-pool questions as single-domain", () => {
+    for (const question of buildExam("mock-b", "tags")) {
+      if (question.id.startsWith("eb-")) continue; // bank items are multi-domain by design
+      expect(question.domainIds).toEqual([question.domainId]);
+    }
+  });
+
+  it("never re-serves excluded arc-pool ids on a retake", () => {
+    const first = buildExam("mock-a", "retake-1");
+    const second = buildExam("mock-a", "retake-2", { excludeIds: first.map((question) => question.id) });
+    const firstIds = new Set(first.map((question) => question.id));
+    expect(second).toHaveLength(first.length);
+    // The big per-arc pools refresh fully on retakes; only the small (2–4 item)
+    // multi-domain bank sub-pools may re-serve once their quota is exhausted.
+    for (const question of second) {
+      if (question.id.startsWith("eb-")) continue;
+      expect(firstIds.has(question.id), `${question.id} was served on the previous attempt`).toBe(false);
+    }
+  });
+
+  it("serves as many fresh bank items as the sub-pool allows before reusing", () => {
+    const first = buildExam("mock-a", "bank-retake-1");
+    const seen = new Set(first.map((question) => question.id));
+    // Excluding every bank item forces the mixed draw to fall back; the exam
+    // must stay full-length and distinct within itself.
+    const second = buildExam("mock-a", "bank-retake-2", { excludeIds: [...EXAM_BANK_QUESTIONS.map((q) => q.id), ...first.map((q) => q.id)] });
+    expect(second).toHaveLength(first.length);
+    const ids = second.map((question) => question.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    // The arc slots still refresh (they were not excluded above the quota).
+    const freshArc = second.filter((question) => !question.id.startsWith("eb-") && !seen.has(question.id));
+    expect(freshArc.length).toBeGreaterThan(0);
+  });
+
+  it("falls back gracefully when exclusions would starve a pool", () => {
+    // Excluding every bank item plus a prior exam's questions still yields a
+    // full-length exam — the draw degrades to reuse rather than crashing.
+    const bankIds = EXAM_BANK_QUESTIONS.map((question) => question.id);
+    const first = buildExam("diagnostic", "starve-1");
+    const second = buildExam("diagnostic", "starve-2", { excludeIds: [...bankIds, ...first.map((question) => question.id)] });
+    expect(second).toHaveLength(EXAM_SPECS.diagnostic.questionCount);
+  });
+
+  it("is deterministic for a given seed and exclusion set", () => {
+    const opts = { excludeIds: ["eb-arch-1", "x-ospf-1"] };
+    const a = buildExam("mock-a", "fixed", opts);
+    const b = buildExam("mock-a", "fixed", opts);
+    expect(a.map((question) => question.id)).toEqual(b.map((question) => question.id));
   });
 });
 

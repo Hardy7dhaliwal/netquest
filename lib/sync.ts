@@ -34,6 +34,7 @@ export function buildSnapshot(state: ProgressData, now: number = Date.now()): Pr
     bossRecords: state.bossRecords,
     skills: state.skills ?? {},
     examResults: state.examResults ?? {},
+    examSeen: state.examSeen ?? {},
     labResults: state.labResults ?? {},
     lastSyncedAt: state.lastSyncedAt,
     updatedAt: now,
@@ -103,6 +104,21 @@ function mergeExamResults(
   return results;
 }
 
+/**
+ * Seen-question tracking unions per exam kind (retakes never un-see a question),
+ * capped like the local recorder so a merged blob stays bounded.
+ */
+function mergeExamSeen(
+  left: ProgressSnapshot["examSeen"],
+  right: ProgressSnapshot["examSeen"],
+): ProgressSnapshot["examSeen"] {
+  const seen: ProgressSnapshot["examSeen"] = { ...left };
+  for (const [kind, ids] of Object.entries(right)) {
+    seen[kind] = union(seen[kind] ?? [], ids).slice(0, 400);
+  }
+  return seen;
+}
+
 function mergeLabResults(
   left: ProgressSnapshot["labResults"],
   right: ProgressSnapshot["labResults"],
@@ -161,6 +177,7 @@ export function mergeProgress(left: ProgressSnapshot, right: ProgressSnapshot): 
     bossRecords: mergeBossRecords(left.bossRecords, right.bossRecords),
     skills: mergeSkills(left.skills ?? {}, right.skills ?? {}),
     examResults: mergeExamResults(left.examResults ?? {}, right.examResults ?? {}),
+    examSeen: mergeExamSeen(left.examSeen ?? {}, right.examSeen ?? {}),
     labResults: mergeLabResults(left.labResults ?? {}, right.labResults ?? {}),
     lastSyncedAt: Math.max(left.lastSyncedAt ?? 0, right.lastSyncedAt ?? 0) || null,
     updatedAt: Math.max(left.updatedAt, right.updatedAt),
