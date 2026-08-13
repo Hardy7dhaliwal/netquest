@@ -89,18 +89,20 @@ export const CURRICULUM_PLANS: Record<string, ObjectivePlan> = {
   },
   "1.2.a": {
     objectiveId: "1.2.a",
-    subskills: ["Control plane (vSmart, OMP)", "Management plane (vManage)", "Data plane (vEdge/cEdge)", "Orchestration (vBond)"],
+    subskills: ["Control plane (vSmart, OMP)", "Management plane (vManage)", "Data plane (vEdge/cEdge)", "Orchestration (vBond)", "OMP route vs TLOC tables"],
     lesson:
-      "Catalyst SD-WAN separates planes: vManage (SD-WAN Manager) is the management and analytics plane, vSmart (SD-WAN Controller) is the control plane and reflects OMP routes, vBond (SD-WAN Validator) orchestrates onboarding and authentication, and vEdge/cEdge devices form the data plane with TLOC-anchored tunnels.",
+      "Catalyst SD-WAN separates planes: vManage (SD-WAN Manager) is the management and analytics plane, vSmart (SD-WAN Controller) is the control plane and reflects OMP routes, vBond (SD-WAN Validator) orchestrates onboarding and authentication, and vEdge/cEdge devices form the data plane with TLOC-anchored tunnels. Two OMP tables answer different questions: show omp routes lists the prefixes and which TLOC (transport locator: system-IP + color + encapsulation) can reach them, while show omp tlocs lists the transport endpoints themselves. A route is only usable when both its prefix entry and its TLOC are present and the underlying tunnel is up.",
     scenarios: [
       "A new branch vEdge boots with no configuration — trace which component it contacts first and why.",
       "An OMP route is not appearing at a remote vEdge — which plane and which component do you inspect?",
+      "show omp routes shows the prefix with a TLOC, but traffic still fails — which second table (omp tlocs) and which tunnel state should you check?",
     ],
     misconceptions: [
       "OMP replaces BGP entirely — OMP is the control-plane protocol between controllers and vEdges; BGP still runs at the service edge toward external networks.",
       "The data plane is vManage — vManage manages; vEdges forward over the IPsec tunnels.",
+      "An OMP route alone means the path works — the prefix entry is useless if its TLOC is missing or the transport tunnel to it is down.",
     ],
-    handsOn: "From a vEdge console, interpret show control connections, show omp routes, and show omp tlocs to locate a missing route.",
+    handsOn: "From a vEdge console, interpret show control connections, show omp routes, and show omp tlocs to locate a missing route and the transport tunnel that must carry it.",
   },
   "1.2.b": {
     objectiveId: "1.2.b",
@@ -147,18 +149,20 @@ export const CURRICULUM_PLANS: Record<string, ObjectivePlan> = {
   },
   "1.4": {
     objectiveId: "1.4",
-    subskills: ["DSCP and PHBs", "Classification and marking", "Queuing and policy maps"],
+    subskills: ["DSCP and PHBs", "Classification and marking", "Queuing and policy maps", "Policing vs shaping, WRED"],
     lesson:
-      "QoS configs classify traffic, mark it (often with DSCP), and treat it in queues. Key PHBs: EF (46) for voice, AF classes (AF41=34 etc.) for assured forwarding, CS0/0 for best effort. A policy map ties class maps to actions like bandwidth, priority (strict), and WRED.",
+      "QoS configs classify traffic, mark it (often with DSCP), and treat it in queues. Key PHBs: EF (46) for voice, AF classes (AF41=34 etc.) for assured forwarding, CS0/0 for best effort. A policy map ties class maps to actions like bandwidth, priority (strict), and WRED. Two actions that look alike are very different: policing drops or re-marks excess (burst-tolerant, no buffering), while shaping buffers excess and sends it later (smooths bursts, adds delay). WRED drops packets probabilistically before the queue fills, protecting TCP from tail-drop synchronization.",
     scenarios: [
       "Voice is being dropped under congestion — which class and queue action fixes it, and which DSCP should voice carry?",
       "A policy map shows class AF41 with bandwidth 30 — interpret what the config guarantees vs. what it doesn't.",
+      "A router must smooth bursty traffic into a slow WAN link without dropping it — does police or shape fit, and why?",
     ],
     misconceptions: [
       "Marking on the WAN edge is enough — you should trust/remark at the trust boundary; dropping is what actually happens under congestion.",
       "priority and bandwidth mean the same thing — priority is strict scheduling, bandwidth is a guaranteed minimum share.",
+      "Policing and shaping both drop excess — policing drops/re-marks immediately; shaping buffers and delays excess, so it adds latency but no loss.",
     ],
-    handsOn: "Interpret a Cisco MQC config (class-map → policy-map → service-policy) and state the per-class treatment.",
+    handsOn: "Interpret a Cisco MQC config (class-map → policy-map → service-policy) and state the per-class treatment, including whether excess is dropped (police) or buffered (shape).",
   },
 
   // ─── Virtualization (10%) ─────────────────────────────────────────────────
@@ -296,9 +300,9 @@ export const CURRICULUM_PLANS: Record<string, ObjectivePlan> = {
   },
   "3.1.c": {
     objectiveId: "3.1.c",
-    subskills: ["RSTP operation", "MST regions, instances, and mapping", "Root guard and BPDU guard"],
+    subskills: ["RSTP operation", "MST regions, instances, and mapping", "Root guard and BPDU guard", "UDLD and loop guard"],
     lesson:
-      "RSTP converges fast via proposal/agreement. MST groups VLANs into instances to scale: switches in a region agree on a name, revision, and VLAN→instance map; a region boundary runs one spanning tree per instance. Root guard blocks a port from becoming the root's path (rejects superior BPDUs); BPDU guard err-disables a port that receives a BPDU where none should arrive (access ports). A mismatched region (different name, revision, or mapping) silently splits the region, so the same instance numbers diverge on either side of the boundary.",
+      "RSTP converges fast via proposal/agreement. MST groups VLANs into instances to scale: switches in a region agree on a name, revision, and VLAN→instance map; a region boundary runs one spanning tree per instance. Root guard blocks a port from becoming the root's path (rejects superior BPDUs); BPDU guard err-disables a port that receives a BPDU where none should arrive (access ports); UDLD detects one-way links (frames sent but never received back) and err-disables the port; loop guard blocks a port that stops receiving BPDUs from forwarding into a potential loop. A mismatched region (different name, revision, or mapping) silently splits the region, so the same instance numbers diverge on either side of the boundary.",
     scenarios: [
       "A rogue switch with lower priority hijacks root — which guard stops it, and what does the port do?",
       "VLANs must be load-balanced across two uplinks — how does MST instance mapping achieve this?",
@@ -313,16 +317,18 @@ export const CURRICULUM_PLANS: Record<string, ObjectivePlan> = {
   },
   "3.2.a": {
     objectiveId: "3.2.a",
-    subskills: ["EIGRP DUAL and feasible successors", "OSPF SPF and cost", "Metric and convergence comparison"],
+    subskills: ["EIGRP DUAL and feasible successors", "OSPF SPF and cost", "Metric and convergence comparison", "OSPF area types (stub, NSSA)"],
     lesson:
-      "EIGRP is a hybrid protocol using DUAL: it pre-computes a feasible successor for instant failover and uses bandwidth+delay as its metric. OSPF is link-state: every router builds the full topology and runs SPF, using cost (reference BW / interface BW) as its metric. OSPF scales with areas; EIGRP is simpler in small routed designs.",
+      "EIGRP is a hybrid protocol using DUAL: it pre-computes a feasible successor for instant failover and uses bandwidth+delay as its metric. OSPF is link-state: every router builds the full topology and runs SPF, using cost (reference BW / interface BW) as its metric. OSPF scales with areas; EIGRP is simpler in small routed designs. Area types tune what an area advertises: a stub area blocks Type 5 (external) LSAs and injects a default, a totally stubby area also blocks inter-area summaries, and an NSSA allows a filtered set of external routes (Type 7) instead.",
     scenarios: [
       "A link fails — which protocol converges without recomputation (feasible successor) and which must run SPF again?",
       "Two paths differ in bandwidth and delay — compute which wins under each protocol's metric.",
+      "A remote area needs a default route but must not receive any external LSAs — which area type (stub vs NSSA) fits, and what does the ABR inject?",
     ],
     misconceptions: [
       "OSPF and EIGRP use the same metric — EIGRP: bandwidth+delay composite; OSPF: cumulative interface cost.",
       "EIGRP is dead — it's still widely deployed and its DUAL failover is genuinely instant when a feasible successor exists.",
+      "All non-backbone areas are the same — stub and NSSA areas filter external LSAs differently, and a regular area floods everything.",
     ],
   },
   "3.2.b": {
@@ -344,18 +350,20 @@ export const CURRICULUM_PLANS: Record<string, ObjectivePlan> = {
   },
   "3.2.c": {
     objectiveId: "3.2.c",
-    subskills: ["eBGP peering basics", "Neighbor states and multihop", "Best-path reasoning"],
+    subskills: ["eBGP peering basics", "Neighbor states and multihop", "Best-path attribute order", "show ip bgp interpretation"],
     lesson:
-      "eBGP peers directly connected ASes. The session climbs Idle→Connect→Active→OpenSent→OpenConfirm→Established. Default TTL is 1 (directly connected); ebgp-multihop raises it for indirect peers. Best-path selection starts with weight, then local preference, AS path, origin, MED, and tie-breakers.",
+      "eBGP peers directly connected ASes. The session climbs Idle→Connect→Active→OpenSent→OpenConfirm→Established. Default TTL is 1 (directly connected); ebgp-multihop raises it for indirect peers. Best-path selection follows a strict order: weight (Cisco-local), local preference, locally originated, AS path length, origin type, MED, then eBGP-over-iBGP and tie-breakers. show ip bgp marks the winner with a > and shows the path attributes, so interpreting it means tracing which attribute decided the outcome.",
     scenarios: [
       "A peer two hops away never reaches Established — which eBGP attribute and command fix it?",
       "Two paths to the same prefix: one has lower MED, the other a shorter AS path — which is preferred, and in what order are they compared?",
+      "show ip bgp shows path A marked best even though path B has a shorter AS path — which higher-priority attribute (weight or local preference) must be overriding it?",
     ],
     misconceptions: [
       "eBGP neighbors can be anywhere — the default TTL of 1 assumes a direct link; multihop must be explicit.",
       "MED decides most path choices — weight, local preference, and AS path all come before MED.",
+      "The > marker in show ip bgp means the newest path — it marks the BEST path, chosen by the attribute order, not by recency.",
     ],
-    handsOn: "Bring up a directly connected eBGP session, verify with show ip bgp summary, and fix a two-hop peer with ebgp-multihop.",
+    handsOn: "Bring up a directly connected eBGP session, verify with show ip bgp summary, fix a two-hop peer with ebgp-multihop, and interpret show ip bgp to name the attribute that decided the best path.",
   },
   "3.2.d": {
     objectiveId: "3.2.d",
@@ -423,16 +431,18 @@ export const CURRICULUM_PLANS: Record<string, ObjectivePlan> = {
     objectiveId: "3.3.d",
     subskills: ["RPF checks", "PIM Sparse Mode and RPs", "IGMPv2/v3 and SSM", "Bidir PIM and MSDP"],
     lesson:
-      "Multicast needs receivers (IGMP), a routing protocol (PIM), and loop prevention (RPF). PIM-SM builds shared trees via rendezvous points; SSM skips RPs using (S,G) with IGMPv3. Bidir PIM suits many-to-many. MSDP lets RPs learn sources across domains. RPF checks that multicast arrives on the interface back toward the source.",
+      "Multicast needs receivers (IGMP), a routing protocol (PIM), and loop prevention (RPF). PIM-SM builds shared trees via rendezvous points; SSM skips RPs using (S,G) with IGMPv3. Bidir PIM suits many-to-many flows: it builds a single shared tree per group with no source trees, so RPs carry no per-source state — ideal for telemetry-style many-to-many. MSDP lets RPs learn sources across domains by advertising active sources (SA messages) between RPs. RPF checks that multicast arrives on the interface back toward the source.",
     scenarios: [
       "Multicast flows only to directly attached receivers — which missing pieces (RP, PIM on all interfaces, IGMP) explain it?",
       "Two PIM domains need to share sources — which protocol (MSDP) and where does it run (between RPs)?",
+      "A telemetry feed has many sources and many receivers with no dominant senders — why is bidir PIM a better fit than PIM-SM (one shared tree, no (S,G) source trees)?",
     ],
     misconceptions: [
       "PIM alone delivers multicast — receivers must signal with IGMP, and every transit router needs PIM enabled on the path.",
       "SSM needs an RP — SSM (232/8) intentionally has no RP; it uses IGMPv3 (S,G) reports.",
+      "Bidir PIM builds source trees like PIM-SM — bidir uses one shared tree per group with no source trees, trading per-source state for a single RPF path to the RP.",
     ],
-    handsOn: "Troubleshoot a missing multicast flow: verify RPF via show ip mroute, confirm the RP with show ip pim rp mapping, and enable PIM/IGMP on the path.",
+    handsOn: "Troubleshoot a missing multicast flow: verify RPF via show ip mroute, confirm the RP with show ip pim rp mapping, enable PIM/IGMP on the path, and distinguish PIM-SM vs bidir behavior from the mroute table.",
   },
 
   // ─── Network Assurance (10%) ──────────────────────────────────────────────
@@ -635,14 +645,16 @@ export const CURRICULUM_PLANS: Record<string, ObjectivePlan> = {
     objectiveId: "5.4.c",
     subskills: ["NGFW inspection", "Application and user awareness", "IPS and SSL inspection"],
     lesson:
-      "Next-generation firewalls go beyond port/protocol filtering: they inspect application traffic (even over allowed ports), tie policy to users/groups, and integrate IPS and SSL/TLS inspection. This closes the gap where legacy firewalls 'allow 443 and hope'.",
+      "Next-generation firewalls go beyond port/protocol filtering: they inspect application traffic (even over allowed ports), tie policy to users/groups, and integrate IPS and SSL/TLS inspection. This closes the gap where legacy firewalls 'allow 443 and hope'. Interpreting an NGFW rule means reading it as app + user + action, not just port: an 'allow Facebook over 443' entry is an application decision, and the SSL-inspection policy decides whether the firewall can actually see inside the encrypted flow.",
     scenarios: [
       "A legacy firewall allows 443 and malware rides HTTPS — which NGFW features (app ID + SSL inspection + IPS) close it?",
       "Policy must vary by user group, not just subnet — how does an NGFW express that?",
+      "An NGFW rule allows the app 'Office365' on any port, but the traffic still isn't inspected — which sub-policy (SSL decryption) determines whether the firewall sees inside the TLS session?",
     ],
     misconceptions: [
       "NGFWs are just faster firewalls — the difference is application/user awareness and inspection depth.",
       "SSL inspection is free — it requires the trust store/cert handling and carries performance cost.",
+      "Allowing a port lets the NGFW see the traffic — without app-ID and SSL decryption, 'allow 443' is exactly the blind spot NGFWs exist to close.",
     ],
   },
   "5.4.d": {

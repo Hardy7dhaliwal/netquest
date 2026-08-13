@@ -509,4 +509,60 @@ describe("gap-topic labs", () => {
       expect(covered.has(objective), `objective ${objective} should have a lab`).toBe(true);
     }
   });
+
+  it("completes the multicast RP lab once the RP is reachable", () => {
+    const template = findLab("lab-multicast-rp");
+    const a = runLab(template, "a", ["show ip pim rp mapping"], "rp", "ip pim rp-address 192.0.2.10", "show ip mroute");
+    expect(a.status).toBe("complete");
+    expect(a.clean).toBe(true);
+    const b = runLab(template, "b", ["show ip pim rp mapping"], "rp", "ip pim rp-address 203.0.113.9", "show ip mroute");
+    expect(b.status).toBe("complete");
+    expect(b.clean).toBe(true);
+  });
+
+  it("rejects the other variant's RP address in the multicast lab", () => {
+    const template = findLab("lab-multicast-rp");
+    let state = startLab(template, "a");
+    state = runLabCommand(state, template, "show ip pim rp mapping");
+    state = answerLabDiagnose(state, template, "rp");
+    state = runLabCommand(state, template, "ip pim rp-address 203.0.113.9");
+    expect(state.stepIndex).toBe(2);
+    expect(state.clean).toBe(false);
+  });
+
+  it("completes the eBGP weight lab once the preferred peer holds the weight", () => {
+    const template = findLab("lab-bgp-weight");
+    const a = runLab(template, "a", ["show ip bgp"], "weight", "neighbor 192.0.2.2 weight 1000", "show ip bgp");
+    expect(a.status).toBe("complete");
+    const b = runLab(template, "b", ["show ip bgp"], "weight", "neighbor 198.51.100.2 weight 1000", "show ip bgp");
+    expect(b.status).toBe("complete");
+  });
+
+  it("completes the QoS priority lab once voice gets strict priority", () => {
+    const template = findLab("lab-qos-priority");
+    const a = runLab(template, "a", ["show policy-map"], "strict", "priority 30", "show policy-map interface");
+    expect(a.status).toBe("complete");
+    expect(a.clean).toBe(true);
+    const b = runLab(template, "b", ["show policy-map"], "strict", "priority 15", "show policy-map interface");
+    expect(b.status).toBe("complete");
+    expect(b.clean).toBe(true);
+  });
+
+  it("rejects the bandwidth distractor in the QoS lab", () => {
+    const template = findLab("lab-qos-priority");
+    let state = startLab(template, "a");
+    state = runLabCommand(state, template, "show policy-map");
+    state = answerLabDiagnose(state, template, "strict");
+    state = runLabCommand(state, template, "bandwidth 30");
+    expect(state.stepIndex).toBe(2);
+    expect(state.clean).toBe(false);
+  });
+
+  it("covers the depth-expansion objectives with a lab", () => {
+    const depthObjectives = ["3.3.d", "3.2.c", "1.4"];
+    const covered = new Set(LAB_TEMPLATES.flatMap((template) => template.objectiveIds));
+    for (const objective of depthObjectives) {
+      expect(covered.has(objective), `objective ${objective} should have a lab`).toBe(true);
+    }
+  });
 });

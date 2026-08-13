@@ -208,6 +208,30 @@ export const EXTRA_QUIZ_QUESTIONS: Record<string, QuizQuestion[]> = {
       explain: "spanning-tree mst <instance> vlan <range> assigns VLANs to an instance; combined with the region name/revision/map it defines how the region groups traffic.",
       wrongGuidance: "The syntax is spanning-tree mst <instance-id> vlan <range> — instance first, then VLANs; the region command only names the region.",
     },
+    {
+      id: "x-stp-9",
+      prompt: "Which pair protects against unidirectional links that silently black-hole traffic while STP still shows the port as forwarding?",
+      options: [
+        { value: "udld", title: "UDLD — detects one-way links and err-disables the port", note: "Unidirectional-link detection" },
+        { value: "root-guard", title: "Root guard — rejects superior BPDUs", note: "Root guard protects the root role, not link direction" },
+        { value: "bpdu-guard", title: "BPDU guard — err-disables on any BPDU", note: "BPDU guard targets access ports receiving BPDUs" },
+      ],
+      correct: "udld",
+      explain: "UDLD sends its own probes to verify two-way connectivity; a port that hears nothing back is err-disabled, closing the silent one-way black hole.",
+      wrongGuidance: "Root guard and BPDU guard manage BPDUs and root roles — link-direction failure is UDLD's job.",
+    },
+    {
+      id: "x-stp-10",
+      prompt: "A port stops receiving BPDUs and STP would otherwise flip it to forwarding. Which protection keeps the blocked state?",
+      options: [
+        { value: "loop-guard", title: "Loop guard — blocks when BPDUs stop arriving", note: "Prevents stale-blocked ports from opening into a loop" },
+        { value: "udld", title: "UDLD — err-disables the port", note: "UDLD detects one-way links with its own probes, not BPDU absence" },
+        { value: "bpdu-guard", title: "BPDU guard — shuts the port on a BPDU", note: "BPDU guard reacts to receiving BPDUs, not silence" },
+      ],
+      correct: "loop-guard",
+      explain: "Loop guard puts a port into loop-inconsistent (blocking) when BPDUs stop, so a stale root/designated port can't open into a loop.",
+      wrongGuidance: "UDLD probes links directly and BPDU guard acts on received BPDUs — BPDU silence is loop guard's trigger.",
+    },
   ],
 
   // ─── The Bundled Bottleneck (3.1.b) ───────────────────────────────────────
@@ -472,6 +496,30 @@ export const EXTRA_QUIZ_QUESTIONS: Record<string, QuizQuestion[]> = {
       explain: "BGP best-path compares AS path length before MED, so path A (shorter AS path) wins regardless of its higher MED.",
       wrongGuidance: "Order matters: weight → local pref → AS path → origin → MED. MED only matters when the AS path length is equal.",
     },
+    {
+      id: "x-edge-6",
+      prompt: "Which OSPF area type blocks Type 5 (external) LSAs entirely and injects a default route from the ABR?",
+      options: [
+        { value: "stub", title: "Stub area", note: "External routes become a default; Type 5 is blocked" },
+        { value: "backbone", title: "Backbone (area 0)", note: "Area 0 carries everything — it is never stubby" },
+        { value: "normal", title: "A normal area", note: "Normal areas flood Type 5 LSAs freely" },
+      ],
+      correct: "stub",
+      explain: "A stub area blocks Type 5 external LSAs and the ABR injects a default route instead — external reachability collapses to the default.",
+      wrongGuidance: "Area 0 is the backbone (never stubby) and normal areas flood externals — the external-blocking area is the stub.",
+    },
+    {
+      id: "x-edge-7",
+      prompt: "show ip bgp marks path A with '>' and path B has a shorter AS path. What must be true for path A to still win?",
+      options: [
+        { value: "higher-attr", title: "Path A has a higher weight or local preference", note: "Those attributes are compared before AS path length" },
+        { value: "lower-med", title: "Path A has a lower MED", note: "MED is compared after AS path, so it can't override a shorter path" },
+        { value: "newer", title: "Path A was learned more recently", note: "The '>' marks the best path, not the newest" },
+      ],
+      correct: "higher-attr",
+      explain: "Weight and local preference are compared before AS path length — so a higher weight or local pref on path A explains why it beats B's shorter AS path.",
+      wrongGuidance: "MED is a later tiebreaker and '>' marks the best path — only weight/local-pref (earlier attributes) can override a shorter AS path.",
+    },
   ],
 
   // ─── Gateway at Dawn (1.1.a/b, 3.3.c) ─────────────────────────────────────
@@ -635,6 +683,42 @@ export const EXTRA_QUIZ_QUESTIONS: Record<string, QuizQuestion[]> = {
       correct: "priority",
       explain: "The Best Master Clock Algorithm compares priority1 first, then clock class (quality), then priority2 — the winner is the grandmaster for the domain.",
       wrongGuidance: "Grandmaster selection is the BMCA on priority/clock-quality — addresses and domain numbers don't elect it.",
+    },
+    {
+      id: "x-edge-services-9",
+      prompt: "A telemetry network has many sources and many receivers with no dominant senders. Which multicast protocol fits best?",
+      options: [
+        { value: "bidir", title: "Bidir PIM — one shared tree per group, no per-source trees", note: "Many-to-many without source-tree state" },
+        { value: "ssm", title: "SSM — (S,G) trees per source", note: "SSM scales poorly when every source needs its own tree" },
+        { value: "pim-sm", title: "PIM-SM with per-source switchover", note: "Source trees add state that many-to-many doesn't need" },
+      ],
+      correct: "bidir",
+      explain: "Bidir PIM builds one shared tree per group with no source trees, so many-to-many telemetry keeps state tiny — exactly the no-dominant-sender case.",
+      wrongGuidance: "SSM and PIM-SM build per-source (S,G) state; bidir's single shared tree is the many-to-many fit.",
+    },
+    {
+      id: "x-edge-services-10",
+      prompt: "A policy map applies police 8 Mbps to a bursty flow on a 30 Mbps link. What happens to excess traffic?",
+      options: [
+        { value: "drop", title: "It is dropped or re-marked immediately", note: "Policing acts on arrival — no buffering" },
+        { value: "buffer", title: "It is buffered and sent later", note: "That is shaping's behavior" },
+        { value: "queue", title: "It is queued in the priority queue", note: "Priority queueing is a separate scheduling action" },
+      ],
+      correct: "drop",
+      explain: "Policing drops (or re-marks) excess on arrival — it never buffers, so it smooths nothing but enforces a hard ceiling.",
+      wrongGuidance: "Buffering excess for later transmission is shaping; policing's signature is immediate drop/re-mark.",
+    },
+    {
+      id: "x-edge-services-11",
+      prompt: "Which QoS treatment smooths a bursty flow into a slow WAN link without dropping the excess?",
+      options: [
+        { value: "shape", title: "Shaping — buffer the excess and transmit it later", note: "Adds delay, avoids loss" },
+        { value: "police", title: "Policing — drop the excess on arrival", note: "Policing causes loss under bursts" },
+        { value: "wrred", title: "WRED — drop probabilistically as the queue fills", note: "WRED drops too; it targets congestion, not smoothing" },
+      ],
+      correct: "shape",
+      explain: "Shaping buffers excess and paces it out, trading a little latency for zero loss — the standard fix for bursts into a slower link.",
+      wrongGuidance: "Policing and WRED both drop; shaping is the buffer-and-delay treatment that avoids loss.",
     },
   ],
 
@@ -892,6 +976,30 @@ export const EXTRA_QUIZ_QUESTIONS: Record<string, QuizQuestion[]> = {
       explain: "A TLOC (Transport Locator) names the WAN transport endpoint — system-IP + color + encapsulation — that can deliver to the prefix.",
       wrongGuidance: "The TLOC is the 'where' — the tunnel endpoint on the WAN transport — not the prefix or the session.",
     },
+    {
+      id: "x-sdwan-5",
+      prompt: "show omp routes lists a prefix with a valid TLOC, but traffic to it still fails. Which second check completes the diagnosis?",
+      options: [
+        { value: "tlocs", title: "show omp tlocs — is the transport locator itself present and its tunnel up?", note: "A route is usable only when the TLOC and its tunnel exist" },
+        { value: "bgp", title: "show ip bgp on the vEdge", note: "Service-side BGP is separate from OMP's overlay reachability" },
+        { value: "ntp", title: "show ntp status", note: "Time sync does not gate OMP route usability" },
+      ],
+      correct: "tlocs",
+      explain: "The OMP route names a TLOC, but that TLOC must also be advertised and its transport tunnel up — check show omp tlocs and the BFD/tunnel state.",
+      wrongGuidance: "A prefix entry without a healthy TLOC is a dead route — the second table (omp tlocs) and the tunnel state are the missing piece.",
+    },
+    {
+      id: "x-sdwan-6",
+      prompt: "Two TLOCs advertise the same prefix with different colors (mpls vs biz-internet). Which attribute selects the preferred transport path?",
+      options: [
+        { value: "tloc-pref", title: "TLOC preference (and the path/overlay policy that sets it)", note: "SD-WAN policy decides which color/path wins" },
+        { value: "metric", title: "The OMP route metric alone", note: "Metric matters, but color/path preference is policy-driven" },
+        { value: "rtt", title: "Current RTT measured by the vEdge", note: "Live RTT is not a BGP-style selection attribute" },
+      ],
+      correct: "tloc-pref",
+      explain: "TLOC preference, set through centralized policy, ranks which transport (color) carries the traffic — that is how SD-WAN steers between MPLS and internet paths.",
+      wrongGuidance: "Path choice between colors is policy (TLOC preference), not raw metric or live RTT — SD-WAN policy is the steering mechanism.",
+    },
   ],
 
   // ─── The Signal Detective (4.1–4.6) ───────────────────────────────────────
@@ -1103,6 +1211,18 @@ export const EXTRA_QUIZ_QUESTIONS: Record<string, QuizQuestion[]> = {
       correct: "app-ssl-ips",
       explain: "NGFWs identify the application inside the port, decrypt/inspect the TLS stream, and run IPS signatures — port-based ACLs alone can't see the malicious content.",
       wrongGuidance: "Port-based ACLs and NAT operate on headers — the NGFW value is application awareness plus SSL inspection plus IPS.",
+    },
+    {
+      id: "x-lock-10",
+      prompt: "An NGFW rule allows the application 'Office365' on any port, yet the traffic still isn't inspected. Which sub-policy is missing?",
+      options: [
+        { value: "ssl-decrypt", title: "SSL/TLS decryption — without it the firewall can't see inside the encrypted session", note: "App-ID on encrypted traffic needs decryption first" },
+        { value: "nat", title: "NAT policy", note: "NAT changes addressing; it doesn't enable inspection" },
+        { value: "vlan", title: "VLAN tagging", note: "VLANs don't gate application inspection" },
+      ],
+      correct: "ssl-decrypt",
+      explain: "Application identification on HTTPS requires the firewall to decrypt the TLS flow — the SSL-decryption policy is what lets it see the Office365 traffic inside.",
+      wrongGuidance: "Without SSL decryption the rule is matching the encrypted shell, not the application — NAT and VLANs are unrelated to inspection depth.",
     },
   ],
 

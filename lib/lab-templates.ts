@@ -2,6 +2,7 @@ import type { LabTemplate } from "./labs";
 import { LAB_TEMPLATES_EXTRA } from "./lab-templates-extra";
 import { LAB_TEMPLATES_EXTRA2 } from "./lab-templates-extra2";
 import { LAB_TEMPLATES_EXTRA3 } from "./lab-templates-extra3";
+import { LAB_TEMPLATES_EXTRA4 } from "./lab-templates-extra4";
 
 /**
  * The starter lab catalog. Each lab has at least two variants that change
@@ -312,4 +313,5 @@ export const LAB_TEMPLATES: LabTemplate[] = [
   ...LAB_TEMPLATES_EXTRA,
   ...LAB_TEMPLATES_EXTRA2,
   ...LAB_TEMPLATES_EXTRA3,
+  ...LAB_TEMPLATES_EXTRA4,
 ];
