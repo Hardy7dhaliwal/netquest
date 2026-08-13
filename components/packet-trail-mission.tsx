@@ -141,7 +141,7 @@ export default function PacketTrailMission({
                     </div>
                     {index < DEVICES.length - 1 && (
                       <div className="relative flex-1">
-                        <div className={`border-t-2 border-dashed transition ${stop.activeLinks.includes(LINKS[index].id) ? "border-cyan-300/70" : "border-slate-700"}`} />
+                        <div className={`h-0.5 transition ${stop.activeLinks.includes(LINKS[index].id) ? "traffic-dash text-cyan-300" : "bg-slate-700"}`} />
                         <span className={`absolute -top-5 left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] font-semibold uppercase tracking-wider transition ${stop.activeLinks.includes(LINKS[index].id) ? "text-cyan-200" : "text-slate-600"}`}>{LINKS[index].label}</span>
                         {stop.focusLink === LINKS[index].id && (
                           <motion.div

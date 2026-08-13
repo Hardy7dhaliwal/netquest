@@ -105,7 +105,6 @@ function buildEdges(packetStatus: PacketStatus): LinkEdge[] {
       type: "link",
       source: "pc-sales",
       target: "sw1",
-      animated: true,
       data: {
         label: "access · VLAN 20",
         explain: ["Access port on SW1", "Carries untagged frames for VLAN 20", "PC-Sales connects here"],
@@ -116,7 +115,6 @@ function buildEdges(packetStatus: PacketStatus): LinkEdge[] {
       type: "link",
       source: "sw1",
       target: "sw2",
-      animated: true,
       data: trunkOpen
         ? { label: "trunk · VLAN 10, 20", explain: ["Inter-switch trunk", "Now carries VLAN 20 after the fix", "Gateway path restored"] }
         : { label: "trunk · VLAN 10 only", explain: ["Inter-switch trunk", "Allowed list: VLAN 10 only", "VLAN 20 frames are dropped here — the fault"] },
@@ -126,7 +124,6 @@ function buildEdges(packetStatus: PacketStatus): LinkEdge[] {
       type: "link",
       source: "sw2",
       target: "gw1",
-      animated: true,
       data: {
         label: "gateway path",
         explain: ["SW2 to GW1 uplink", "Routed gateway link for VLAN 20", "Only reachable once the trunk allows VLAN 20"],
@@ -196,7 +193,7 @@ function LinkEdge({ id, sourceX, sourceY, targetX, targetY, sourcePosition, targ
   });
   return (
     <>
-      <BaseEdge id={id} path={edgePath} />
+      <BaseEdge className="edge-flow" id={id} path={edgePath} />
       <EdgeLabelRenderer>
         {data && <LinkLabel data={data} labelX={labelX} labelY={labelY} open={open} onToggle={() => setOpen((value) => !value)} />}
       </EdgeLabelRenderer>

@@ -39,3 +39,38 @@ body {
   fill: #94a3b8;
   font-size: 10px;
 }
+
+/* Moving traffic dashes for link animations (packet-trail links, map edges). */
+@keyframes traffic-flow {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 16px 0;
+  }
+}
+
+.traffic-dash {
+  background-image: repeating-linear-gradient(
+    90deg,
+    currentColor 0 6px,
+    transparent 6px 16px
+  );
+  background-size: 16px 100%;
+  animation: traffic-flow 0.8s linear infinite;
+}
+
+/* Moving dashes on SVG edges (React Flow custom edges). */
+@keyframes edge-flow {
+  from {
+    stroke-dashoffset: 14;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.edge-flow {
+  stroke-dasharray: 8 6;
+  animation: edge-flow 0.7s linear infinite;
+}
