@@ -25,6 +25,7 @@ import SignalDetectiveMission from "@/components/signal-detective-mission";
 import CampusFabricMission from "@/components/campus-fabric-mission";
 import LockControlPlaneMission from "@/components/lock-control-plane-mission";
 import AutomatorPrimeMission from "@/components/automator-prime-mission";
+import FieldMissionCard from "@/components/field-mission-card";
 import CoverageDashboard from "@/components/coverage-dashboard";
 import MasteryPanel from "@/components/mastery-panel";
 import ReadinessReport from "@/components/readiness-report";
@@ -65,6 +66,35 @@ import { SHOW_PING_STEPS, resetShowAndPingMission, startShowAndPingMission, type
 import { PACKET_TRAIL_STOPS, resetPacketTrailMission, startPacketTrailMission, type PacketTrailMissionState } from "@/lib/packet-trail-mission";
 
 const FLASHCARD_DECK = getFlashcardDeck();
+
+type MissionCatalogEntry = {
+  id: string;
+  title: string;
+  desc: string;
+  xp: number;
+  tier: "beginner" | "field";
+};
+
+/** All 17 missions in the recommended play order — the dashboard uses this to point players at the next one. */
+const MISSION_CATALOG: MissionCatalogEntry[] = [
+  { id: "console-basics", title: "Console Basics", desc: "Your first five commands: help, enable, config mode, end, show version.", xp: 50, tier: "beginner" },
+  { id: "show-and-ping", title: "Show & Ping", desc: "Read a healthy network with show commands and prove it with ping.", xp: 50, tier: "beginner" },
+  { id: "packet-trail", title: "The Packet Trail", desc: "A visual tour: how a packet crosses a two-switch network, access ports, and trunks.", xp: 50, tier: "beginner" },
+  { id: "vlan-that-vanished", title: "The VLAN That Vanished", desc: "After a switch upgrade, Sales users on VLAN 20 cannot reach their gateway. The access port and gateway are configured, but traffic crossing the inter-switch trunk is failing.", xp: 150, tier: "field" },
+  { id: "stp-storm", title: "The STP Storm", desc: "Predict the root bridge before the loop takes down the campus.", xp: 100, tier: "field" },
+  { id: "bundled-bottleneck", title: "The Bundled Bottleneck", desc: "Only one of two LACP links ever bundles. Find the mismatch and restore the 2 Gbps path.", xp: 100, tier: "field" },
+  { id: "area-zero-hero", title: "Area Zero Hero", desc: "R2 never reaches FULL OSPF adjacency. Fix the area fault, verify convergence, summarize — then filter the lab out of area 0.", xp: 100, tier: "field" },
+  { id: "edge-has-opinions", title: "The Edge Has Opinions", desc: "Pick the IGP, type the eBGP fix on the console, and steer special traffic with PBR at the border.", xp: 150, tier: "field" },
+  { id: "gateway-at-dawn", title: "Gateway at Dawn", desc: "Design the campus, then configure HSRP on the distribution pair — and prove the virtual gateway survives when the active router dies.", xp: 150, tier: "field" },
+  { id: "edge-services", title: "Edge Services", desc: "Read the WAN QoS and clock configs, then build PAT so the whole LAN shares one public address — and prove it with the translation table.", xp: 150, tier: "field" },
+  { id: "tunnel-vision", title: "Tunnel Vision", desc: "The wire is tapped. Isolate the guests with a VRF, then build an encrypted GRE-over-IPsec tunnel so the branch reaches HQ safely.", xp: 150, tier: "field" },
+  { id: "fabric-express", title: "The Fabric Express", desc: "Workloads went virtual. Read the VM, inspect the vSwitch inside the hypervisor, then trace the VXLAN overlay from the VTEP to its peers.", xp: 100, tier: "field" },
+  { id: "sdwan-overlay", title: "SD-WAN: The WAN Overlay", desc: "The branch joins a Catalyst SD-WAN fabric. Map the planes, read what OMP carries, verify the vEdge's TLOCs and BFD — then weigh the benefit against the cost.", xp: 100, tier: "field" },
+  { id: "signal-detective", title: "The Signal Detective", desc: "The finance app is crawling. Work the diagnostic ladder on R-CORE to catch the culprit, then build the watch: NetFlow, SPAN, IP SLA, and a programmatic interface.", xp: 150, tier: "field" },
+  { id: "campus-fabric", title: "The Campus Fabric", desc: "The new campus runs SD-Access. Map the fabric roles, read the LISP EID-to-RLOC database on the control plane node, then predict how the legacy network reaches fabric hosts.", xp: 100, tier: "field" },
+  { id: "lock-the-control-plane", title: "Lock the Control Plane", desc: "A guessed VTY password got someone in. Lock the branch router down layer by layer: local auth and SSH-only VTY lines, AAA against ISE, an infrastructure ACL, CoPP, a secure REST API — then the defense-in-depth picture.", xp: 200, tier: "field" },
+  { id: "automator-prime", title: "Automator Prime", desc: "The ops team is going full automation. Write the Python probe, craft the JSON payloads, decode the YANG model, call the SD-WAN Manager API, read the responses, build the EEM config-save applet — then pick the orchestration model for the fleet.", xp: 200, tier: "field" },
+];
 
 const OBJECTIVES = [
   "Inspect VLAN state",
@@ -295,6 +325,31 @@ export default function Home() {
   const cliBasicsCompleted = completedMissions.includes("console-basics");
   const showAndPingCompleted = completedMissions.includes("show-and-ping");
   const packetTrailCompleted = completedMissions.includes("packet-trail");
+
+  // Map every mission id to its launcher so the "Up next" guidance can dispatch.
+  const OPENERS: Record<string, () => void> = {
+    "console-basics": openCliBasicsMission,
+    "show-and-ping": openShowAndPingMission,
+    "packet-trail": openPacketTrailMission,
+    "vlan-that-vanished": openMission,
+    "stp-storm": openStpMission,
+    "bundled-bottleneck": openEcMission,
+    "area-zero-hero": openOspfMission,
+    "edge-has-opinions": openEdgeMission,
+    "gateway-at-dawn": openGatewayMission,
+    "edge-services": openEdgeServicesMission,
+    "tunnel-vision": openTunnelVisionMission,
+    "fabric-express": openFabricExpressMission,
+    "sdwan-overlay": openSdwanMission,
+    "signal-detective": openSignalDetectiveMission,
+    "campus-fabric": openCampusFabricMission,
+    "lock-the-control-plane": openLockControlPlaneMission,
+    "automator-prime": openAutomatorPrimeMission,
+  };
+
+  // The single next mission to play: the first one in play order the player hasn't finished.
+  const nextMission = MISSION_CATALOG.find((m) => !completedMissions.includes(m.id)) ?? null;
+  const nextMissionIndex = nextMission ? MISSION_CATALOG.indexOf(nextMission) + 1 : null;
 
   useEffect(() => {
     void useProgressStore.persist.rehydrate();
@@ -1466,17 +1521,67 @@ export default function Home() {
             <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-300">Learn enterprise networking by inspecting, configuring, and watching a broken network come back to life.</p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <button className="rounded-lg bg-cyan-300 px-5 py-3 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 hover:bg-cyan-200 focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:ring-offset-2 focus:ring-offset-slate-950" onClick={openMission} type="button">Start / resume mission <span aria-hidden="true">→</span></button>
-            <button className="rounded-lg border border-cyan-300/40 px-5 py-3 text-sm font-bold text-cyan-200 transition hover:bg-cyan-300/10" onClick={() => openQuiz("vlan-that-vanished")} type="button">{quizResults["vlan-that-vanished"]?.perfect ? "★ " : ""}VLAN quiz</button>
+            <button
+              className="rounded-lg bg-cyan-300 px-5 py-3 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 hover:bg-cyan-200 focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:ring-offset-2 focus:ring-offset-slate-950"
+              onClick={() => (nextMission ? OPENERS[nextMission.id]() : openMission())}
+              type="button"
+            >
+              {nextMission ? "Continue your path" : "Start / resume mission"} <span aria-hidden="true">→</span>
+            </button>
+            {nextMission && (
+              <button
+                className="rounded-lg border border-cyan-300/40 px-5 py-3 text-sm font-bold text-cyan-200 transition hover:bg-cyan-300/10"
+                onClick={() => openQuiz(nextMission.id)}
+                type="button"
+              >
+                {quizResults[nextMission.id]?.perfect ? "★ " : ""}{nextMission.title} quiz
+              </button>
+            )}
             <AccountButton />
           </div>
         </div>
         <AuthBanner />
         <div className="mt-12 grid gap-4 sm:grid-cols-3">
-          <div className="rounded-xl border border-cyan-300/20 bg-cyan-300/5 p-5"><p className="text-sm text-slate-400">Current mission</p><p className="mt-2 font-bold">The VLAN That Vanished</p><p className="mt-2 text-sm text-cyan-300">150 XP available</p></div>
+          <div className="rounded-xl border border-cyan-300/20 bg-cyan-300/5 p-5">
+            <p className="text-sm text-slate-400">Next up</p>
+            <p className="mt-2 font-bold">{nextMission ? nextMission.title : "All missions complete"}</p>
+            <p className="mt-2 text-sm text-cyan-300">{nextMission ? `${nextMission.xp} XP available` : "Replay any mission"}</p>
+          </div>
           <div className="rounded-xl border border-slate-800 bg-slate-900 p-5"><p className="text-sm text-slate-400">Your progress</p><p className="mt-2 font-bold">Level {getLevel(xp)}</p><p className="mt-2 text-sm text-slate-300">{xp} XP · {streak}-day streak</p></div>
           <div className="rounded-xl border border-slate-800 bg-slate-900 p-5"><p className="text-sm text-slate-400">Weak topics</p><p className="mt-2 font-bold">{weakTopics.length > 0 ? weakTopics[0] : "None below Guided"}</p><p className="mt-2 text-sm text-slate-300">{weakTopics.length > 1 ? `${weakTopics.length} topics need practice` : weakTopics.length === 1 ? "Recommended for practice" : "All objectives at Guided or better"}</p></div>
         </div>
+
+        {nextMission ? (
+          <div className="mt-6 overflow-hidden rounded-2xl border border-cyan-300/40 bg-gradient-to-br from-cyan-300/10 via-slate-900/70 to-slate-900/40 p-6 sm:p-8">
+            <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
+              <div className="max-w-2xl">
+                <p className="text-xs font-black uppercase tracking-[0.25em] text-cyan-300">
+                  Up next · Mission {nextMissionIndex} of {MISSION_CATALOG.length}
+                </p>
+                <p className="mt-3 text-2xl font-black tracking-tight sm:text-3xl">{nextMission.title}</p>
+                <p className="mt-3 text-sm leading-6 text-slate-300">
+                  <GlossaryText text={nextMission.desc} />
+                </p>
+              </div>
+              <div className="flex shrink-0 items-center gap-4">
+                <span className="rounded-full border border-cyan-300/40 bg-cyan-300/10 px-4 py-1.5 text-sm font-black text-cyan-200">{nextMission.xp} XP</span>
+                <button
+                  className="rounded-lg bg-cyan-300 px-6 py-3 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 hover:bg-cyan-200 focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:ring-offset-2 focus:ring-offset-slate-950"
+                  onClick={() => OPENERS[nextMission.id]()}
+                  type="button"
+                >
+                  Start / continue <span aria-hidden="true">→</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="mt-6 rounded-2xl border border-emerald-300/40 bg-emerald-300/10 p-6 sm:p-8">
+            <p className="text-xs font-black uppercase tracking-[0.25em] text-emerald-300">All missions complete</p>
+            <p className="mt-3 text-2xl font-black tracking-tight sm:text-3xl">You cleared the whole path 🎉</p>
+            <p className="mt-3 text-sm leading-6 text-slate-300">Replay any mission below to push your mastery higher, or keep the streak alive in the Training Grounds.</p>
+          </div>
+        )}
         <MasteryPanel mastery={mastery} weakTopics={weakTopics} onOpen={openArc} />
         <div className="mt-6 flex flex-col justify-between gap-4 rounded-xl border border-slate-800 bg-slate-900/60 p-5 sm:flex-row sm:items-center">
           <div>
@@ -1494,36 +1599,17 @@ export default function Home() {
           </div>
           <p className="mt-2 text-sm text-slate-400"><GlossaryText text="New to networking? These three guided missions teach the console and the concepts every mission below assumes — each takes a few minutes." /></p>
           <div className="mt-4 grid gap-4 lg:grid-cols-3">
-            <div className="rounded-xl border border-cyan-300/20 bg-cyan-300/5 p-5 transition hover:border-cyan-300/40">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">{cliBasicsCompleted ? "Complete" : "Beginner mission 1/3"}</p>
-                  <p className="mt-2 font-bold">Console Basics</p>
-                  <p className="mt-2 text-sm text-slate-400"><GlossaryText text="Your first five commands: help, enable, config mode, end, show version." /></p>
-                </div>
-                <button className="shrink-0 rounded-lg bg-cyan-300 px-4 py-2 text-xs font-black text-slate-950 transition hover:bg-cyan-200" onClick={openCliBasicsMission} type="button">{cliBasicsCompleted ? "Replay" : "Start"} · 50 XP</button>
-              </div>
-            </div>
-            <div className="rounded-xl border border-cyan-300/20 bg-cyan-300/5 p-5 transition hover:border-cyan-300/40">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">{showAndPingCompleted ? "Complete" : "Beginner mission 2/3"}</p>
-                  <p className="mt-2 font-bold">Show &amp; Ping</p>
-                  <p className="mt-2 text-sm text-slate-400"><GlossaryText text="Read a healthy network with show commands and prove it with ping." /></p>
-                </div>
-                <button className="shrink-0 rounded-lg bg-cyan-300 px-4 py-2 text-xs font-black text-slate-950 transition hover:bg-cyan-200" onClick={openShowAndPingMission} type="button">{showAndPingCompleted ? "Replay" : "Start"} · 50 XP</button>
-              </div>
-            </div>
-            <div className="rounded-xl border border-cyan-300/20 bg-cyan-300/5 p-5 transition hover:border-cyan-300/40">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">{packetTrailCompleted ? "Complete" : "Beginner mission 3/3"}</p>
-                  <p className="mt-2 font-bold">The Packet Trail</p>
-                  <p className="mt-2 text-sm text-slate-400"><GlossaryText text="A visual tour: how a packet crosses a two-switch network, access ports, and trunks." /></p>
-                </div>
-                <button className="shrink-0 rounded-lg bg-cyan-300 px-4 py-2 text-xs font-black text-slate-950 transition hover:bg-cyan-200" onClick={openPacketTrailMission} type="button">{packetTrailCompleted ? "Replay" : "Start"} · 50 XP</button>
-              </div>
-            </div>
+            {MISSION_CATALOG.filter((m) => m.tier === "beginner").map((m, index) => (
+              <FieldMissionCard
+                key={m.id}
+                title={m.title}
+                desc={m.desc}
+                xp={m.xp}
+                chipLabel={`Beginner mission ${index + 1}/3`}
+                state={completedMissions.includes(m.id) ? "complete" : m.id === nextMission?.id ? "next" : "available"}
+                onPlay={() => OPENERS[m.id]()}
+              />
+            ))}
           </div>
         </div>
 
@@ -1532,33 +1618,19 @@ export default function Home() {
           <span className="h-px flex-1 bg-slate-800" />
         </div>
 
-        <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_1fr]">
-          <div className="rounded-xl border border-emerald-300/20 bg-emerald-300/5 p-5">              <div className="flex items-center justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">New mission unlocked</p><p className="mt-2 font-bold">The STP Storm</p><p className="mt-2 text-sm text-slate-400"><GlossaryText text="Predict the root bridge before the loop takes down the campus." /></p></div><div className="flex shrink-0 items-center gap-2"><button className="rounded-lg bg-emerald-300 px-4 py-2 text-xs font-black text-slate-950 transition hover:bg-emerald-200" onClick={openStpMission} type="button">Play / resume · 100 XP</button><button className="rounded-lg border border-cyan-300/40 px-3 py-2 text-xs font-bold text-cyan-200 transition hover:bg-cyan-300/10" onClick={() => openQuiz("stp-storm")} type="button">{quizResults["stp-storm"]?.perfect ? "★ " : ""}Quiz</button></div></div>
-          </div>
-          <div className="rounded-xl border border-emerald-300/20 bg-emerald-300/5 p-5">              <div className="flex items-center justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">New mission unlocked</p><p className="mt-2 font-bold">The Bundled Bottleneck</p><p className="mt-2 text-sm text-slate-400"><GlossaryText text="Only one of two LACP links ever bundles. Find the mismatch and restore the 2 Gbps path." /></p></div><div className="flex shrink-0 items-center gap-2"><button className="rounded-lg bg-emerald-300 px-4 py-2 text-xs font-black text-slate-950 transition hover:bg-emerald-200" onClick={openEcMission} type="button">Play / resume · 100 XP</button><button className="rounded-lg border border-cyan-300/40 px-3 py-2 text-xs font-bold text-cyan-200 transition hover:bg-cyan-300/10" onClick={() => openQuiz("bundled-bottleneck")} type="button">{quizResults["bundled-bottleneck"]?.perfect ? "★ " : ""}Quiz</button></div></div>
-          </div>
-          <div className="rounded-xl border border-emerald-300/20 bg-emerald-300/5 p-5">              <div className="flex items-center justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">New mission unlocked</p><p className="mt-2 font-bold">Area Zero Hero</p><p className="mt-2 text-sm text-slate-400"><GlossaryText text="R2 never reaches FULL OSPF adjacency. Fix the area fault, verify convergence, summarize — then filter the lab out of area 0." /></p></div><div className="flex shrink-0 items-center gap-2"><button className="rounded-lg bg-emerald-300 px-4 py-2 text-xs font-black text-slate-950 transition hover:bg-emerald-200" onClick={openOspfMission} type="button">Play / resume · 100 XP</button><button className="rounded-lg border border-cyan-300/40 px-3 py-2 text-xs font-bold text-cyan-200 transition hover:bg-cyan-300/10" onClick={() => openQuiz("area-zero-hero")} type="button">{quizResults["area-zero-hero"]?.perfect ? "★ " : ""}Quiz</button></div></div>
-          </div>
-          <div className="rounded-xl border border-emerald-300/20 bg-emerald-300/5 p-5">              <div className="flex items-center justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">New mission unlocked</p><p className="mt-2 font-bold">The Edge Has Opinions</p><p className="mt-2 text-sm text-slate-400"><GlossaryText text="Pick the IGP, type the eBGP fix on the console, and steer special traffic with PBR at the border." /></p></div><div className="flex shrink-0 items-center gap-2"><button className="rounded-lg bg-emerald-300 px-4 py-2 text-xs font-black text-slate-950 transition hover:bg-emerald-200" onClick={openEdgeMission} type="button">Play / resume · 150 XP</button><button className="rounded-lg border border-cyan-300/40 px-3 py-2 text-xs font-bold text-cyan-200 transition hover:bg-cyan-300/10" onClick={() => openQuiz("edge-has-opinions")} type="button">{quizResults["edge-has-opinions"]?.perfect ? "★ " : ""}Quiz</button></div></div>
-          </div>
-          <div className="rounded-xl border border-emerald-300/20 bg-emerald-300/5 p-5">              <div className="flex items-center justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">New mission unlocked</p><p className="mt-2 font-bold">Gateway at Dawn</p><p className="mt-2 text-sm text-slate-400"><GlossaryText text="Design the campus, then configure HSRP on the distribution pair — and prove the virtual gateway survives when the active router dies." /></p></div><div className="flex shrink-0 items-center gap-2"><button className="rounded-lg bg-emerald-300 px-4 py-2 text-xs font-black text-slate-950 transition hover:bg-emerald-200" onClick={openGatewayMission} type="button">Play / resume · 150 XP</button><button className="rounded-lg border border-cyan-300/40 px-3 py-2 text-xs font-bold text-cyan-200 transition hover:bg-cyan-300/10" onClick={() => openQuiz("gateway-at-dawn")} type="button">{quizResults["gateway-at-dawn"]?.perfect ? "★ " : ""}Quiz</button></div></div>
-          </div>
-          <div className="rounded-xl border border-emerald-300/20 bg-emerald-300/5 p-5">              <div className="flex items-center justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">New mission unlocked</p><p className="mt-2 font-bold">Edge Services</p><p className="mt-2 text-sm text-slate-400"><GlossaryText text="Read the WAN QoS and clock configs, then build PAT so the whole LAN shares one public address — and prove it with the translation table." /></p></div><div className="flex shrink-0 items-center gap-2"><button className="rounded-lg bg-emerald-300 px-4 py-2 text-xs font-black text-slate-950 transition hover:bg-emerald-200" onClick={openEdgeServicesMission} type="button">Play / resume · 150 XP</button><button className="rounded-lg border border-cyan-300/40 px-3 py-2 text-xs font-bold text-cyan-200 transition hover:bg-cyan-300/10" onClick={() => openQuiz("edge-services")} type="button">{quizResults["edge-services"]?.perfect ? "★ " : ""}Quiz</button></div></div>
-          </div>
-          <div className="rounded-xl border border-emerald-300/20 bg-emerald-300/5 p-5">              <div className="flex items-center justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">New mission unlocked</p><p className="mt-2 font-bold">Tunnel Vision</p><p className="mt-2 text-sm text-slate-400"><GlossaryText text="The wire is tapped. Isolate the guests with a VRF, then build an encrypted GRE-over-IPsec tunnel so the branch reaches HQ safely." /></p></div><div className="flex shrink-0 items-center gap-2"><button className="rounded-lg bg-emerald-300 px-4 py-2 text-xs font-black text-slate-950 transition hover:bg-emerald-200" onClick={openTunnelVisionMission} type="button">Play / resume · 150 XP</button><button className="rounded-lg border border-cyan-300/40 px-3 py-2 text-xs font-bold text-cyan-200 transition hover:bg-cyan-300/10" onClick={() => openQuiz("tunnel-vision")} type="button">{quizResults["tunnel-vision"]?.perfect ? "★ " : ""}Quiz</button></div></div>
-          </div>
-          <div className="rounded-xl border border-emerald-300/20 bg-emerald-300/5 p-5">              <div className="flex items-center justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">New mission unlocked</p><p className="mt-2 font-bold">The Fabric Express</p><p className="mt-2 text-sm text-slate-400"><GlossaryText text="Workloads went virtual. Read the VM, inspect the vSwitch inside the hypervisor, then trace the VXLAN overlay from the VTEP to its peers." /></p></div><div className="flex shrink-0 items-center gap-2"><button className="rounded-lg bg-emerald-300 px-4 py-2 text-xs font-black text-slate-950 transition hover:bg-emerald-200" onClick={openFabricExpressMission} type="button">Play / resume · 100 XP</button><button className="rounded-lg border border-cyan-300/40 px-3 py-2 text-xs font-bold text-cyan-200 transition hover:bg-cyan-300/10" onClick={() => openQuiz("fabric-express")} type="button">{quizResults["fabric-express"]?.perfect ? "★ " : ""}Quiz</button></div></div>
-          </div>
-          <div className="rounded-xl border border-emerald-300/20 bg-emerald-300/5 p-5">              <div className="flex items-center justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">New mission unlocked</p><p className="mt-2 font-bold">SD-WAN: The WAN Overlay</p><p className="mt-2 text-sm text-slate-400"><GlossaryText text="The branch joins a Catalyst SD-WAN fabric. Map the planes, read what OMP carries, verify the vEdge's TLOCs and BFD — then weigh the benefit against the cost." /></p></div><div className="flex shrink-0 items-center gap-2"><button className="rounded-lg bg-emerald-300 px-4 py-2 text-xs font-black text-slate-950 transition hover:bg-emerald-200" onClick={openSdwanMission} type="button">Play / resume · 100 XP</button><button className="rounded-lg border border-cyan-300/40 px-3 py-2 text-xs font-bold text-cyan-200 transition hover:bg-cyan-300/10" onClick={() => openQuiz("sdwan-overlay")} type="button">{quizResults["sdwan-overlay"]?.perfect ? "★ " : ""}Quiz</button></div></div>
-          </div>
-          <div className="rounded-xl border border-emerald-300/20 bg-emerald-300/5 p-5">              <div className="flex items-center justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">New mission unlocked</p><p className="mt-2 font-bold">The Signal Detective</p><p className="mt-2 text-sm text-slate-400"><GlossaryText text="The finance app is crawling. Work the diagnostic ladder on R-CORE to catch the culprit, then build the watch: NetFlow, SPAN, IP SLA, and a programmatic interface." /></p></div><div className="flex shrink-0 items-center gap-2"><button className="rounded-lg bg-emerald-300 px-4 py-2 text-xs font-black text-slate-950 transition hover:bg-emerald-200" onClick={openSignalDetectiveMission} type="button">Play / resume · 150 XP</button><button className="rounded-lg border border-cyan-300/40 px-3 py-2 text-xs font-bold text-cyan-200 transition hover:bg-cyan-300/10" onClick={() => openQuiz("signal-detective")} type="button">{quizResults["signal-detective"]?.perfect ? "★ " : ""}Quiz</button></div></div>
-          </div>
-          <div className="rounded-xl border border-emerald-300/20 bg-emerald-300/5 p-5">              <div className="flex items-center justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">New mission unlocked</p><p className="mt-2 font-bold">The Campus Fabric</p><p className="mt-2 text-sm text-slate-400"><GlossaryText text="The new campus runs SD-Access. Map the fabric roles, read the LISP EID-to-RLOC database on the control plane node, then predict how the legacy network reaches fabric hosts." /></p></div><div className="flex shrink-0 items-center gap-2"><button className="rounded-lg bg-emerald-300 px-4 py-2 text-xs font-black text-slate-950 transition hover:bg-emerald-200" onClick={openCampusFabricMission} type="button">Play / resume · 100 XP</button><button className="rounded-lg border border-cyan-300/40 px-3 py-2 text-xs font-bold text-cyan-200 transition hover:bg-cyan-300/10" onClick={() => openQuiz("campus-fabric")} type="button">{quizResults["campus-fabric"]?.perfect ? "★ " : ""}Quiz</button></div></div>
-          </div>
-          <div className="rounded-xl border border-emerald-300/20 bg-emerald-300/5 p-5">              <div className="flex items-center justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">New mission unlocked</p><p className="mt-2 font-bold">Lock the Control Plane</p><p className="mt-2 text-sm text-slate-400"><GlossaryText text="A guessed VTY password got someone in. Lock the branch router down layer by layer: local auth and SSH-only VTY lines, AAA against ISE, an infrastructure ACL, CoPP, a secure REST API — then the defense-in-depth picture." /></p></div><div className="flex shrink-0 items-center gap-2"><button className="rounded-lg bg-emerald-300 px-4 py-2 text-xs font-black text-slate-950 transition hover:bg-emerald-200" onClick={openLockControlPlaneMission} type="button">Play / resume · 200 XP</button><button className="rounded-lg border border-cyan-300/40 px-3 py-2 text-xs font-bold text-cyan-200 transition hover:bg-cyan-300/10" onClick={() => openQuiz("lock-the-control-plane")} type="button">{quizResults["lock-the-control-plane"]?.perfect ? "★ " : ""}Quiz</button></div></div>
-          </div>
-          <div className="rounded-xl border border-emerald-300/20 bg-emerald-300/5 p-5">              <div className="flex items-center justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">Final mission unlocked</p><p className="mt-2 font-bold">Automator Prime</p><p className="mt-2 text-sm text-slate-400"><GlossaryText text="The ops team is going full automation. Write the Python probe, craft the JSON payloads, decode the YANG model, call the SD-WAN Manager API, read the responses, build the EEM config-save applet — then pick the orchestration model for the fleet." /></p></div><div className="flex shrink-0 items-center gap-2"><button className="rounded-lg bg-emerald-300 px-4 py-2 text-xs font-black text-slate-950 transition hover:bg-emerald-200" onClick={openAutomatorPrimeMission} type="button">Play / resume · 200 XP</button><button className="rounded-lg border border-cyan-300/40 px-3 py-2 text-xs font-bold text-cyan-200 transition hover:bg-cyan-300/10" onClick={() => openQuiz("automator-prime")} type="button">{quizResults["automator-prime"]?.perfect ? "★ " : ""}Quiz</button></div></div>
-          </div>
+                <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_1fr]">
+          {MISSION_CATALOG.filter((m) => m.tier === "field").map((m) => (
+            <FieldMissionCard
+              key={m.id}
+              title={m.title}
+              desc={m.desc}
+              xp={m.xp}
+              state={completedMissions.includes(m.id) ? "complete" : m.id === nextMission?.id ? "next" : "available"}
+              quizPerfect={quizResults[m.id]?.perfect}
+              onPlay={() => OPENERS[m.id]()}
+              onQuiz={() => openQuiz(m.id)}
+            />
+          ))}
         </div>
 
         <CoverageDashboard mastery={mastery} />
