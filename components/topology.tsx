@@ -20,6 +20,7 @@ type DeviceData = {
   icon: string;
   label: string;
   detail: string;
+  hover: { role: string; lines: string[] };
 };
 
 type DeviceNode = Node<DeviceData, "device">;
@@ -29,25 +30,57 @@ const NODES: DeviceNode[] = [
     id: "pc-sales",
     type: "device",
     position: { x: 20, y: 120 },
-    data: { icon: "▣", label: "PC-Sales", detail: "10.20.0.10 · VLAN 20" },
+    data: {
+      icon: "▣",
+      label: "PC-Sales",
+      detail: "10.20.0.10 · VLAN 20",
+      hover: {
+        role: "Workstation",
+        lines: ["10.20.0.10 · VLAN 20", "Sales desktop — needs the gateway", "Access port on SW1"],
+      },
+    },
   },
   {
     id: "sw1",
     type: "device",
     position: { x: 220, y: 120 },
-    data: { icon: "◇", label: "SW1", detail: "Gi0/1 trunk" },
+    data: {
+      icon: "◇",
+      label: "SW1",
+      detail: "Gi0/1 trunk",
+      hover: {
+        role: "Access switch",
+        lines: ["Serves the Sales access port", "Gi0/1 trunk toward SW2", "Trunk allows only VLAN 10 — VLAN 20 missing"],
+      },
+    },
   },
   {
     id: "sw2",
     type: "device",
     position: { x: 420, y: 120 },
-    data: { icon: "◇", label: "SW2", detail: "Gi0/1 trunk" },
+    data: {
+      icon: "◇",
+      label: "SW2",
+      detail: "Gi0/1 trunk",
+      hover: {
+        role: "Access switch",
+        lines: ["Gi0/1 trunk back to SW1", "Gateway path toward GW1", "Would forward VLAN 20 once the trunk allows it"],
+      },
+    },
   },
   {
     id: "gw1",
     type: "device",
     position: { x: 620, y: 120 },
-    data: { icon: "◎", label: "GW1", detail: "10.20.0.1" },
+    data: {
+      icon: "◎",
+      label: "GW1",
+      detail: "10.20.0.1",
+      hover: {
+        role: "Default gateway",
+        lines: ["10.20.0.1 — the Sales gateway", "Answers ARP for VLAN 20", "Unreachable while the trunk blocks VLAN 20"],
+      },
+    },
   },
 ];
 
@@ -73,10 +106,24 @@ function DeviceNode({ data }: NodeProps<DeviceNode>) {
   return (
     <>
       <Handle className="!h-2 !w-2 !border-cyan-200 !bg-cyan-400" position={Position.Left} type="target" />
-      <div className="min-w-[120px] rounded-2xl border border-cyan-300/30 bg-slate-950 px-3 py-3 text-center shadow-[0_0_25px_rgba(103,232,249,0.08)]">
-        <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl border border-cyan-300/30 bg-cyan-300/10 text-xl text-cyan-200">{data.icon}</div>
-        <p className="mt-2 text-xs font-bold text-slate-100">{data.label}</p>
-        <p className="mt-1 whitespace-nowrap text-[10px] text-slate-500">{data.detail}</p>
+      <div className="group relative">
+        <div className="min-w-[120px] rounded-2xl border border-cyan-300/30 bg-slate-950 px-3 py-3 text-center shadow-[0_0_25px_rgba(103,232,249,0.08)] transition-colors duration-150 group-hover:border-cyan-300/60">
+          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl border border-cyan-300/30 bg-cyan-300/10 text-xl text-cyan-200 transition-colors duration-150 group-hover:bg-cyan-300/20">{data.icon}</div>
+          <p className="mt-2 text-xs font-bold text-slate-100">{data.label}</p>
+          <p className="mt-1 whitespace-nowrap text-[10px] text-slate-500">{data.detail}</p>
+        </div>
+        <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-3 w-52 -translate-x-1/2 scale-95 rounded-lg border border-cyan-300/25 bg-[#0a1628] p-3 text-left opacity-0 shadow-2xl shadow-black/50 transition-all duration-150 group-hover:scale-100 group-hover:opacity-100">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-300">{data.hover.role}</p>
+          <ul className="mt-2 space-y-1.5">
+            {data.hover.lines.map((line) => (
+              <li className="flex items-start gap-1.5 text-[11px] leading-4 text-slate-300" key={line}>
+                <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-cyan-300/60" />
+                {line}
+              </li>
+            ))}
+          </ul>
+          <span className="absolute left-1/2 top-full h-2 w-2 -translate-x-1/2 -translate-y-1/2 rotate-45 border-b border-r border-cyan-300/25 bg-[#0a1628]" />
+        </div>
       </div>
       <Handle className="!h-2 !w-2 !border-cyan-200 !bg-cyan-400" position={Position.Right} type="source" />
     </>
