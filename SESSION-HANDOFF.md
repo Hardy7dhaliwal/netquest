@@ -9,8 +9,9 @@ Last updated: 2026-08-12
 ## 1. Where we are
 
 - **Phase 1 (prototype) is complete** — The VLAN That Vanished with React Flow topology, Framer Motion packet animation, CLI, event log, XP, and persistence.
-- **Phase 2 (MVP) content is complete** — all **14 field arcs + 3 beginner missions** are built and playable; the ENCOR v1.2 blueprint is **47/47 objectives, 100% exam weight covered**. The **mastery system** (per-objective scores, weak-topic derivation, recommended-next engine) is live.
-- **Validation baseline: 283/283 tests green (24 files), `tsc --noEmit` clean.** (ESLint hangs in this environment — see §5.)
+- **Phase 2 (MVP) is complete** — all **14 field arcs + 3 beginner missions** are built and playable; the ENCOR v1.2 blueprint is **47/47 objectives, 100% exam weight covered**. The full learning loop is live: mastery (incl. the previously-unreachable 95 "Under Pressure" band, now earned by boss wins), rescue engine, glossary, arc quizzes, flashcards, badges, exam-readiness report, daily challenge, boss battles with tiers, streak calendar, and **cross-device cloud sync** (Supabase magic-link auth).
+- **Validation baseline: 373/373 tests green (31 files), `tsc --noEmit` clean.** (ESLint hangs in this environment — see §5.)
+- **Repo: 7 commits on `main`, pushed to GitHub** (`github.com/Hardy7dhaliwal/netquest`). Working tree clean.
 
 ## 2. Done so far (milestones)
 
@@ -30,15 +31,21 @@ Last updated: 2026-08-12
 | Session J | **Beginner track** — Console Basics, Show & Ping, The Packet Trail (3 guided 50 XP missions for newcomers). |
 | Session J | **Coverage dashboard** — `components/coverage-dashboard.tsx`: per-domain progress against the blueprint, exam-weight percentages. |
 | Session K | **Mastery & recommendations (Slice A)** — `lib/mastery.ts` engine: per-objective scores on the PRD bands (25/50/70/85/95), best-result-wins recording from wrong attempts, weak-objective detection, `recommendNext` (unplayed arc → weakest arc → exam-ready); `recordMissionResult` in the store derives `weakTopics`; `MasteryPanel` recommended-next card; CoverageDashboard shows per-objective mastery chips + per-domain averages. |
+| Slice B | **Arc quizzes + flashcards** — per-arc quizzes over the arc's full vetted rescue checkpoint bank (`lib/quiz.ts`, +25/10 XP once per arc) and an SM-2-lite deck (`lib/flashcards.ts`, +5 XP per due card). Closes PRD items #7–#8. |
+| Slice D | **Badges + exam-readiness (Slice D)** — achievement badges over the mastery map (+20 XP each, `lib/badges.ts`) and a per-domain readiness report on the mastery bands (`lib/readiness.ts`). |
+| Slice C | **Daily challenge + boss battles (Slice C)** — date-seeded daily challenge (3 questions, 20s each, +40 XP + streak day, once per calendar day) and 14 seeded boss fights (win at ≥80% to push an arc's objectives to the 95 Under Pressure band). Shared timed runner `components/gauntlet.tsx`; **plus UI stacking fixes** (the rescue button was hidden under the global glossary FAB — now stacked above it; overlays raised above the FAB). |
+| Slice C | **Boss difficulty tiers** — Rookie (4q/25s, +50/10), Veteran (6q/15s, +75/15), Elite (8q/10s, +100/20) via `BOSS_TIERS`; tier picker in the Training Grounds; store accepts tier XP (backward compatible). |
+| Final slice | **Cross-device sync (Supabase)** — transport-agnostic monotonic sync engine `lib/sync.ts` (fetch → merge → push so a stale device can never overwrite newer cloud data; 15 tests), RLS-protected per-user row transport `lib/sync-supabase.ts`, cookie-based browser client `lib/supabase.ts` (@supabase/ssr — the PKCE verifier must live in cookies for the server exchange), magic-link callback `app/auth/callback/route.ts` + `lib/supabase-server.ts`, and `components/sync-panel.tsx` (sign-in, Sync now / Pull latest, last-synced status, 4s debounced auto-sync). Also `scripts/start-dev-server.py` (detached dev server that purges stale shell SUPABASE vars). |
+| Final slice | **Streak calendar** — rolling 9-week chain of claimed challenge days in the Training Grounds (`components/streak-calendar.tsx`), current/best runs derived from a new persisted `dailyHistory` (`lib/streak.ts`); the history rides the sync blob so the chain survives device switches. |
 
 ## 3. Current state (code map)
 
 - **Engines** (all deterministic, no React): `lib/mission.ts` (VLAN), `lib/{stp,etherchannel,ospf,edge,gateway,edge-services,tunnel-vision,fabric-express,sdwan,signal-detective,campus-fabric,lock-control-plane,automator-prime}-mission.ts` + beginner engines `lib/{cli-basics,show-and-ping,packet-trail}-mission.ts`. Each has `startX`/`resetX`, per-phase choice/command functions, `X_EXPECTED` constants, attempt counting, and event-log feedback.
-- **Mastery**: `lib/mastery.ts` (bands, recording, weak detection, recommendations) + `lib/mastery.test.ts`.
-- **Rescue/glossary**: `lib/rescue.ts` (RescueDefinition + steps types), `lib/rescues.ts` (46 entries, phase-keyed), `lib/glossary.ts` (34 terms).
-- **UI**: 17 mission renderers in `components/` + shared `topology.tsx`, `console-panel.tsx`, `command-reference.tsx`, `hint-ladder.tsx`, `glossary-text.tsx`, `coverage-dashboard.tsx`, `mastery-panel.tsx`. Dark slate/cyan theme, `role="group"`/`aria-pressed` options, `aria-live` logs.
-- **Dashboard**: `app/page.tsx` — hero, XP/level/streak/weak-topic cards, MasteryPanel (recommended next), beginner track, one card per arc (Play/resume · XP), CoverageDashboard with mastery chips, streak review button.
-- **Persistence**: zustand `persist` for progress (`netquest-progress` — xp, streak, weakTopics, completedMissions, **mastery**); per-mission localStorage keys with validated snapshot guards. Invalid saves are discarded.
+- **Learning systems**: `lib/mastery.ts`, `lib/quiz.ts`, `lib/flashcards.ts`, `lib/badges.ts`, `lib/readiness.ts`, `lib/boss.ts` (seeded PRNG: daily + boss tiers), `lib/streak.ts`, `lib/rescue.ts` + `lib/rescues.ts` (46 entries), `lib/glossary.ts` (34 terms).
+- **Sync**: `lib/sync.ts` (merge engine), `lib/sync-supabase.ts` (transport), `lib/supabase.ts` (browser client), `lib/supabase-server.ts` (callback client), `app/auth/callback/route.ts`.
+- **UI**: 17 mission renderers + `topology.tsx`, `console-panel.tsx`, `command-reference.tsx`, `hint-ladder.tsx`, `glossary-text.tsx`, `coverage-dashboard.tsx`, `mastery-panel.tsx`, `badges-panel.tsx`, `readiness-report.tsx`, `arc-quiz.tsx`, `flashcard-review.tsx`, `gauntlet.tsx`, `training-grounds.tsx`, `streak-calendar.tsx`, `sync-panel.tsx`, `rescue-launcher.tsx`/`rescue-panel.tsx`. Dark slate/cyan theme, `role="group"`/`aria-pressed` options, `aria-live` logs.
+- **Dashboard**: `app/page.tsx` — hero, XP/level/streak/weak-topic cards, MasteryPanel (recommended next), beginner track, one card per arc (Play/resume · XP), CoverageDashboard, ArcQuiz + FlashcardReview, BadgesPanel, ReadinessReport, TrainingGrounds (daily + boss + streak calendar), SyncPanel.
+- **Persistence**: zustand `persist` for progress (`netquest-progress` — xp, streak, weakTopics, completedMissions, mastery, quizResults, cardReviews, badges, daily, dailyHistory, bossRecords, lastSyncedAt); per-mission localStorage keys with validated snapshot guards. Invalid saves are discarded. Every persisted field flows through `buildSnapshot`/`mergeProgress` so it rides the cloud blob.
 - **Catalog**: `lib/encor-catalog.ts` — all 14 arcs `available`/`complete`; `getCoverageByDomain`/`getWeightedCoverage` report 47/47 and 100%.
 
 ## 4. Proven build pattern (follow for every new feature — ponytail: no new deps, no new abstractions)
@@ -47,31 +54,38 @@ Last updated: 2026-08-12
 2. `lib/<feature>.test.ts` — transitions, wrong-answer feedback, immutability, completion tests.
 3. `components/<feature>.tsx` — UI wiring.
 4. Register in the catalog / store / page (`app/page.tsx`): state + reset, snapshot validator, open/exit, award effect, dashboard card, render branch.
-5. Validate: targeted tests → full suite → `tsc --noEmit` → code-reviewer pass → fix → re-validate.
+5. New persisted fields: `ProgressData` type → `INITIAL_PROGRESS` → `partialize` → backward-compatible `merge` → `buildSnapshot`/`mergeProgress` in `lib/sync.ts`.
+6. Validate: targeted tests → full suite → `tsc --noEmit` → code-reviewer pass → fix → re-validate.
 
-**XP rules:** clicker/interpretation missions = 100 XP; missions with a typed CLI configure+verify pass = 150 XP; the two finale arcs (Lock the Control Plane, Automator Prime) = 200 XP. Beginner missions = 50 XP each. Total available ≈ 2050 XP (+ 5 XP per review). `awardMission` is idempotent; `recordMissionResult` (mastery) fires on **every** completion so clean replays can raise a score (best result wins).
+**XP rules:** clicker/interpretation missions = 100 XP; missions with a typed CLI configure+verify pass = 150 XP; the two finale arcs (Lock the Control Plane, Automator Prime) = 200 XP. Beginner missions = 50 XP. Plus: review +5, quiz +25 perfect/+10 partial (once per arc), flashcard +5 per due card, badge +20 each, daily challenge +40, boss win +50/75/100 by tier (defeat +10/15/20). `awardMission` is idempotent; `recordMissionResult` (mastery) fires on **every** completion so clean replays can raise a score (best result wins).
 
-**Snapshot changes:** additive fields are backward-compatible (`?? null`/`?? {}` defaults — mastery map merges to `{}` for old saves). Format changes (e.g., clicker → CLI) intentionally reset old saves — comment the reason.
+**Snapshot changes:** additive fields are backward-compatible (`?? null`/`?? {}`/`?? []` defaults — mastery map merges to `{}`, dailyHistory to `[]` for old saves). Format changes (e.g., clicker → CLI) intentionally reset old saves — comment the reason.
+
+**Sync merge:** every merged field is monotonic (max XP/streak/mastery, unions for missions/badges/dailyHistory, freshest flashcard schedule, best quiz). Fetch happens **before** push — a stale device that pulls and re-pushes the union never loses data.
 
 ## 5. Known environment issues
 
 - **ESLint hangs silently** — `npm run lint` never returns/emits diagnostics in this dev machine. Use `tsc --noEmit` + `vitest` + `next build` for validation instead.
 - **`next build` + `tsc` concurrently corrupt `.next/types/`** — produces stale `*. 2.ts` duplicates; `.next/` is gitignored. Run them sequentially; `rm -f '.next/types/* 2.ts'` if they appear.
 - **Vitest boot is slow** — target single files (`./node_modules/.bin/vitest run lib/x.test.ts --pool=threads --maxWorkers=1 --no-file-parallelism --no-isolate`); give the full suite a long timeout.
-- **Repo state**: no git commits yet — everything is untracked. `350-401-ENCORE-v1.2.pdf` and `CCNP-350-401-ENCOR-v1.2-Learning-Matrix.xlsx` (the curriculum source docs) sit untracked at the root; decide whether to commit or gitignore them.
+- **Shell env shadowing** — Next.js won't let `.env.local` override vars already exported in the shell; the dev shell here exports empty `NEXT_PUBLIC_SUPABASE_URL`/`ANON_KEY`, which hid the sync panel until `scripts/start-dev-server.py` started purging them. If the panel shows "off", check `env | grep SUPABASE` in the launching terminal.
+- **Node 20 deprecation** — supabase-js warns Node ≤20 is deprecated; upgrade to Node 22+ when convenient.
+- **Repo state**: 7 commits pushed to `github.com/Hardy7dhaliwal/netquest`. `350-401-ENCORE-v1.2.pdf` and `CCNP-350-401-ENCOR-v1.2-Learning-Matrix.xlsx` (the curriculum source docs) sit untracked at the root; `.env.local` (Supabase keys) is gitignored.
+- **Browser QA agent unavailable** in this environment — UI fixes are verified by code-level checks + curl of the dev server, not pixels.
 
 ## 6. Next session — priorities
 
-1. **Commit the current state** (initial commit) so progress is recoverable, and decide on the two curriculum binaries (commit vs `.gitignore`).
-2. **Slice B — quizzes & flashcards**: per-arc mini-quizzes (reuse the vetted rescue `checkpoint` steps — unique options + correct + explanations already exist) and an SM-2-lite flashcard deck (≥3 cards/arc) with a review screen and 5 XP per card. This closes the curriculum "Required Content Per Mission Arc" items #7–#8.
-3. **Slice C — daily challenge & boss battles**: a date-seeded 50 XP mixed set plus one cross-domain boss-battle scenario; boss battles are the natural way to unlock the 95 "underPressure" mastery band (currently reserved, unreachable).
-4. **Slice D — badges & exam-readiness report**: achievements over mastery + an "exam-ready vs introduced" view (data model tables `achievements`/`user_achievements` in the PRD).
-5. **Auth / cross-device persistence** — the last big Phase 2 MVP item (PRD §9); deferred until the local learning loop is proven.
+1. **Deploy** — the MVP is feature-complete; put it on Vercel (or similar) and flip the Supabase Site URL / Redirect URLs to the production domain. Before public release: restore the React Flow attribution (see README known notes) and re-check the license.
+2. **Full playtest pass** — desktop + mobile browser QA of every screen (missions, dashboard, gauntlet, sync panel, calendar). This has never been done end-to-end in a real browser in this environment.
+3. **Content depth** — more questions per arc in the quiz/boss bank (small arcs yield short Elite battles), more flashcards per arc, and the deferred Static EtherChannel (`mode on`) troubleshooting variant.
+4. **AI tutor (PRD §15)** — the last big deferred item; the rescue engine is the deterministic stand-in. Only sensible after the verified content model + deployment.
+5. **Optional polish** — streak reminders (email/push when a daily challenge goes unclaimed), boss-battle leaderboard (note: the sync blob is client-controlled, so competitive features need server-side validation), and fixing the ESLint environment issue.
 
 ## 7. Deferred / open decisions
 
-- **Mastery model** — implemented (Slice A); quiz/flashcard/boss-battle inputs and the 95 band are the remaining pieces.
-- **Quiz/flashcard content source** — rescue checkpoints are the natural quiz pool; decide whether flashcards are derived or hand-written per arc.
-- **Auth / cross-device persistence** — deferred (localStorage only today), per curriculum Phase 2 boundary.
-- **AI tutor** — only after the verified content model exists (per PRD §15 and curriculum); the rescue engine is the deterministic stand-in today.
+- **Quiz/flashcard content source** — RESOLVED: rescue checkpoints are the pool (`ARC_TO_MISSION` in `lib/quiz.ts`).
+- **95 Under Pressure band** — RESOLVED: boss wins raise objectives to 95.
+- **Auth / cross-device persistence** — DONE (Supabase magic link + RLS row + monotonic merge).
+- **Sync tampering** — the cloud blob is client-controlled and unvalidated (a tampered client could inflate XP); acceptable single-player, but revisit before any leaderboard/competitive feature.
+- **AI tutor** — still deferred (PRD §15); rescue engine remains the deterministic stand-in.
 - **Static EtherChannel** (`mode on`) troubleshooting — explicitly skipped; add a static-mismatch variant when the arc grows.
