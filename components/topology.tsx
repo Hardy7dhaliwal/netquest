@@ -3,11 +3,16 @@
 import { useEffect, useRef, useState } from "react";
 import {
   Background,
+  BaseEdge,
   Controls,
+  EdgeLabelRenderer,
+  getSmoothStepPath,
   Handle,
   Position,
   ReactFlow,
   type Edge,
+  type EdgeProps,
+  type EdgeTypes,
   type Node,
   type NodeProps,
   type NodeTypes,
@@ -84,11 +89,121 @@ const NODES: DeviceNode[] = [
   },
 ];
 
-const EDGES: Edge[] = [
-  { id: "pc-sw1", source: "pc-sales", target: "sw1", label: "access · VLAN 20", animated: true },
-  { id: "sw1-sw2", source: "sw1", target: "sw2", label: "trunk · VLAN 10 only", animated: true },
-  { id: "sw2-gw1", source: "sw2", target: "gw1", label: "gateway path", animated: true },
-];
+type LinkData = {
+  label: string;
+  explain: string[];
+};
+
+type LinkEdge = Edge<LinkData, "link">;
+
+function buildEdges(packetStatus: PacketStatus): LinkEdge[] {
+  const trunkOpen = packetStatus === "success";
+  return [
+    {
+      id: "pc-sw1",
+      type: "link",
+      source: "pc-sales",
+      target: "sw1",
+      animated: true,
+      data: {
+        label: "access · VLAN 20",
+        explain: ["Access port on SW1", "Carries untagged frames for VLAN 20", "PC-Sales connects here"],
+      },
+    },
+    {
+      id: "sw1-sw2",
+      type: "link",
+      source: "sw1",
+      target: "sw2",
+      animated: true,
+      data: trunkOpen
+        ? { label: "trunk · VLAN 10, 20", explain: ["Inter-switch trunk", "Now carries VLAN 20 after the fix", "Gateway path restored"] }
+        : { label: "trunk · VLAN 10 only", explain: ["Inter-switch trunk", "Allowed list: VLAN 10 only", "VLAN 20 frames are dropped here — the fault"] },
+    },
+    {
+      id: "sw2-gw1",
+      type: "link",
+      source: "sw2",
+      target: "gw1",
+      animated: true,
+      data: {
+        label: "gateway path",
+        explain: ["SW2 to GW1 uplink", "Routed gateway link for VLAN 20", "Only reachable once the trunk allows VLAN 20"],
+      },
+    },
+  ];
+}
+
+function LinkLabel({
+  data,
+  labelX,
+  labelY,
+  open,
+  onToggle,
+}: {
+  data: LinkData;
+  labelX: number;
+  labelY: number;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <>
+      <button
+        aria-expanded={open}
+        aria-label={`Explain this link: ${data.label}`}
+        className={`nodrag nopan pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 rounded-full border px-2 py-0.5 text-[10px] font-semibold transition-colors ${open ? "border-cyan-300/70 bg-cyan-300/15 text-cyan-200" : "border-slate-700 bg-[#0a1628] text-slate-400 hover:border-cyan-300/50 hover:text-cyan-200"}`}
+        onClick={(event) => {
+          event.stopPropagation();
+          onToggle();
+        }}
+        style={{ left: labelX, top: labelY }}
+        type="button"
+      >
+        {data.label}
+      </button>
+      {open && (
+        <div
+          className="pointer-events-none absolute z-50 w-56 rounded-lg border border-cyan-300/25 bg-[#0a1628] p-3 text-left shadow-2xl shadow-black/50"
+          style={{ left: labelX, top: labelY - 12, transform: "translate(-50%, -100%)" }}
+        >
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-300">{data.label}</p>
+          <ul className="mt-2 space-y-1.5">
+            {data.explain.map((line) => (
+              <li className="flex items-start gap-1.5 text-[11px] leading-4 text-slate-300" key={line}>
+                <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-cyan-300/60" />
+                {line}
+              </li>
+            ))}
+          </ul>
+          <span className="absolute left-1/2 top-full h-2 w-2 -translate-x-1/2 -translate-y-1/2 rotate-45 border-b border-r border-cyan-300/25 bg-[#0a1628]" />
+        </div>
+      )}
+    </>
+  );
+}
+
+function LinkEdge({ id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, data }: EdgeProps<LinkEdge>) {
+  const [open, setOpen] = useState(false);
+  const [edgePath, labelX, labelY] = getSmoothStepPath({
+    sourceX,
+    sourceY,
+    targetX,
+    targetY,
+    sourcePosition,
+    targetPosition,
+  });
+  return (
+    <>
+      <BaseEdge id={id} path={edgePath} />
+      <EdgeLabelRenderer>
+        {data && <LinkLabel data={data} labelX={labelX} labelY={labelY} open={open} onToggle={() => setOpen((value) => !value)} />}
+      </EdgeLabelRenderer>
+    </>
+  );
+}
+
+const EDGE_TYPES: EdgeTypes = { link: LinkEdge };
 
 // Packet path in React Flow coordinates (node-center X positions), so the dot
 // lives inside the viewport and stays glued to the links at any zoom level.
@@ -235,8 +350,9 @@ export default function Topology({ packetStatus }: { packetStatus: PacketStatus 
         <div className="relative h-[360px] w-full">
           <ReactFlow
             nodes={NODES}
-            edges={EDGES.map((edge) => edge.id === "sw1-sw2" ? { ...edge, label: packetStatus === "success" ? "trunk · VLAN 10, 20" : "trunk · VLAN 10 only" } : edge)}
+            edges={buildEdges(packetStatus)}
             nodeTypes={NODE_TYPES}
+            edgeTypes={EDGE_TYPES}
             nodesConnectable={false}
             nodesDraggable={false}
             panOnDrag
