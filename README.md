@@ -2,7 +2,7 @@
 
 Interactive, game-style CCNP ENCOR learning platform.
 
-Current phase: **Phase 2 MVP + "learn and pass" upgrade** — the full ENCOR v1.2 blueprint is playable (**47/47 objectives, 100% exam weight** across 17 missions) with evidence-based coverage states, per-assessment-type mastery, a diagnostic exam + two full-length timed mocks, a five-dimension readiness report, a **21-lab hands-on library covering every 4.x and 6.x objective**, and the whole learning loop: rescue engine, glossary, arc quizzes, flashcards, badges, daily challenge, boss battles with difficulty tiers, streak calendar, and **cross-device cloud sync** via Supabase. **Live on Vercel** — deploy note in Development below.
+Current phase: **Phase 2 MVP + "learn and pass" upgrade** — the full ENCOR v1.2 blueprint is playable (**47/47 objectives, 100% exam weight** across 17 missions) with evidence-based coverage states, per-assessment-type mastery, a diagnostic exam + two full-length timed mocks (with multi-domain mixed items and no-repeat retakes), a five-dimension readiness report, a **21-lab hands-on library covering every 4.x and 6.x objective**, **adaptive review** (spaced repetition over your weakest subskills), and the whole learning loop: rescue engine, glossary, arc quizzes, flashcards, badges, daily challenge, boss battles with difficulty tiers, streak calendar, and **cross-device cloud sync** via Supabase. **Live on Vercel** — deploy note in Development below.
 
 ## Product docs
 
@@ -89,12 +89,14 @@ The **exam hall** (dashboard → Exam hall) runs blueprint-aligned practice exam
 - **Diagnostic exam** — 15 questions, untimed, for before study begins.
 - **Mock exam A / B** — 40 questions, 55-minute timed mode with auto-submit; question counts are allocated to Cisco's domain weights (Architecture 15% / Virtualization 10% / Infrastructure 30% / Network Assurance 10% / Security 20% / Automation & AI 15%) via largest-remainder.
 - Score report by objective + **remediation links** back to the arcs, labs, and flashcards that cover each miss.
+- **Multi-domain items + no-repeat retakes** — a 16-item mixed bank (each question spans 2+ ENCOR domains, e.g. CoPP breaking BGP or an OSPF MTU fault inside a VXLAN underlay) is blended into every exam (diagnostic 50% / mocks 35%), shown with an "X + Y domains" chip; retakes skip previously seen questions so the mix stays fresh.
 
 ## Learning systems
 
 - **Curriculum coverage** — all 47 ENCOR v1.2 objectives carry teaching plans (subskills, lessons, guided scenarios, misconceptions) and an **evidence-based coverage state**: `planned / partial / complete / verified` (`lib/curriculum.ts`), shown as status chips on the coverage dashboard.
 - **Mastery** — every objective carries a score on the PRD bands: 25 Introduced → 50 Recognized → 70 Guided → 85 Independent → **95 Under Pressure** (earned by winning a boss battle). Completing a mission raises its objectives' scores from wrong-attempt count; best result wins, so clean replays matter.
 - **Skills** — per-objective scores split by assessment type (recall / output interpretation / configuration / troubleshooting / timed). **Independent** needs ≥2 no-hint clean runs across ≥2 lab variants; **Under Pressure** needs a timed mixed-variant pass (`lib/skills.ts`).
+- **Adaptive review** — a spaced-repetition queue over the **weakest due subskills** (`lib/review.ts`): each in-scope objective contributes a fresh recall/interpret question from its arc bank (never re-serving seen ids) and, when a lab covers it, a lab item that prefers uncompleted variants. Correct answers stretch the objective's SM-2-lite interval (+5 XP each) and misses reschedule it for sooner; lab runs from review feed the variant evidence for Independent. The schedule and seen-question map persist across devices via the sync blob.
 - **Rescue engine** — 46 mini-lessons keyed to mission phases, shown when a player is stuck (`lib/rescues.ts` + `HintLadder` + `rescue-panel`). Every phase of every mission is covered (enforced by tests).
 - **Glossary** — 34 networking terms with clickable inline references in mission briefs and hints (`lib/glossary.ts` + `GlossaryText`).
 - **Coverage dashboard** — per-domain progress and exam-weight percentages against the 47-objective blueprint, with evidence-based status chips + per-objective mastery.
@@ -112,7 +114,8 @@ lib/encor-catalog.ts         ENCOR v1.2 blueprint: 6 domains, 47 objectives, 14 
 lib/curriculum.ts            Teaching plans + evidence-based coverage states + audit matrix
 lib/mastery.ts               Mastery engine: bands, recording, weak topics, recommendations
 lib/skills.ts                Per-assessment-type mastery (recall/interpret/configure/troubleshoot/timed)
-lib/exams.ts                 Diagnostic + 2 mock exams, domain-weighted, timed sessions
+lib/exams.ts                 Diagnostic + 2 mock exams, domain-weighted, timed, multi-domain blend + retakes
+lib/exam-bank.ts             Multi-domain mixed exam items (16, 2+ domains each)
 lib/labs.ts                  Variant lab engine (inspect-diagnose-configure-verify, alternate commands)
 lib/lab-templates.ts         Core labs (4) + spreads of lab-templates-extra.ts (7) and -extra2.ts (10) = 21
 lib/rescue.ts, rescues.ts    Rescue mini-lesson types + 46-entry phase-keyed catalog
@@ -123,17 +126,18 @@ lib/badges.ts                Achievement badges over the mastery map
 lib/readiness.ts             Five-dimension readiness report + strict exam-ready gate
 lib/boss.ts                  Seeded PRNG: daily challenge, boss fights, difficulty tiers
 lib/streak.ts                Current/best run math for the streak calendar
+lib/review.ts                Adaptive review: weak+due selection, SM-2-lite schedule, fresh questions + lab variants
 lib/sync.ts                  Transport-agnostic monotonic sync engine (fetch-merge-push)
 lib/sync-supabase.ts         Supabase row transport (RLS-protected per-user blob)
 lib/supabase.ts              Cookie-based browser client (@supabase/ssr)
 lib/supabase-server.ts       Server client for the magic-link callback route
-lib/progress-store.ts        zustand + localStorage: XP, streak, mastery, skills, exam/lab results, sync fields
+lib/progress-store.ts        zustand + localStorage: XP, streak, mastery, skills, exam/review/lab results, sync fields
 lib/<arc>-mission.ts         14 field-mission engines + 3 beginner engines (deterministic)
-lib/*.test.ts                484 unit tests across 35 files
+lib/*.test.ts                516 unit tests across 37 files
 components/*.tsx             Mission renderers + topology, console-panel, hint-ladder, glossary,
                              coverage-dashboard, mastery-panel, badges-panel, readiness-report,
                              arc-quiz, flashcard-review, gauntlet, training-grounds, streak-calendar,
-                             sync-panel, rescue-launcher/panel, exam-hall, labs-panel
+                             sync-panel, rescue-launcher/panel, exam-hall, labs-panel, adaptive-review
 app/page.tsx                 Dashboard, mission wiring, persistence, award effects
 app/auth/callback/route.ts   Magic-link PKCE exchange → session cookies → home
 ```
@@ -152,7 +156,7 @@ Conventions (keep these when adding features):
 ```bash
 npm install
 npm run dev       # start dev server
-npm test          # vitest (484 unit tests)
+npm test          # vitest (516 unit tests)
 npm run build     # production build
 npm run lint      # eslint (see known notes)
 ```
@@ -163,7 +167,7 @@ npm run lint      # eslint (see known notes)
 
 ## Testing
 
-484 deterministic unit tests across 35 files:
+516 deterministic unit tests across 37 files:
 
 | Area | Files | Tests |
 | --- | --- | ---: |
@@ -171,9 +175,9 @@ npm run lint      # eslint (see known notes)
 | Field engines | mission (VLAN), stp, etherchannel, ospf, edge, gateway, edge-services | 93 |
 | Overlay arcs | tunnel-vision, fabric-express, sdwan, campus-fabric | 66 |
 | Assurance + finale | signal-detective, lock-control-plane, automator-prime | 60 |
-| Learning systems | rescue, rescues, glossary, mastery, quiz, flashcards, badges, readiness, boss, streak | 101 |
-| Learn-and-pass engines | curriculum, skills, exams, labs (incl. full 4.x/6.x lab-coverage assertion) | 91 |
-| Core + sync | progress-store, encor-catalog, sync, smoke | 56 |
+| Learning systems | rescue, rescues, glossary, mastery, quiz, flashcards, badges, readiness, boss, streak, review (adaptive) | 117 |
+| Learn-and-pass engines | curriculum, skills, exams, labs (incl. full 4.x/6.x lab-coverage assertion), exam-bank | 102 |
+| Core + sync | progress-store, encor-catalog, sync, smoke | 61 |
 
 ## Known notes
 
