@@ -11,6 +11,7 @@ import {
   type Node,
   type NodeProps,
   type NodeTypes,
+  type Viewport,
 } from "@xyflow/react";
 import { MotionConfig, motion, useAnimationControls } from "framer-motion";
 import type { PacketStatus } from "@/lib/mission";
@@ -56,8 +57,17 @@ const EDGES: Edge[] = [
   { id: "sw2-gw1", source: "sw2", target: "gw1", label: "gateway path", animated: true },
 ];
 
-const SUCCESS_PATH = [8, 35, 63, 90];
-const BLOCKED_PATH = [8, 35, 49];
+// Packet path in React Flow coordinates (node-center X positions), so the dot
+// lives inside the viewport and stays glued to the links at any zoom level.
+const NODE_CENTER_X = { pc: 80, sw1: 280, sw2: 480, gw1: 680 } as const;
+const LINK_Y = 170;
+const SUCCESS_PATH = [NODE_CENTER_X.pc, NODE_CENTER_X.sw1, NODE_CENTER_X.sw2, NODE_CENTER_X.gw1];
+const BLOCKED_PATH = [NODE_CENTER_X.pc, NODE_CENTER_X.sw1, NODE_CENTER_X.sw2];
+
+// The mission remounts <Topology> (keyed on the event-log length) after every
+// console command. The viewport is kept here, outside the component, so the
+// player's zoom/pan survives those remounts instead of snapping back to fit.
+let lastViewport: Viewport | null = null;
 
 function DeviceNode({ data }: NodeProps<DeviceNode>) {
   return (
@@ -123,7 +133,7 @@ export default function Topology({ packetStatus }: { packetStatus: PacketStatus 
   const path = packetStatus === "blocked" ? BLOCKED_PATH : SUCCESS_PATH;
 
   useEffect(() => {
-    controls.set({ left: `${path[0]}%`, opacity: packetStatus === "idle" ? 0 : 1 });
+    controls.set({ left: `${path[0]}px`, opacity: packetStatus === "idle" ? 0 : 1 });
     return () => {
       runId.current += 1;
       controls.stop();
@@ -133,7 +143,7 @@ export default function Topology({ packetStatus }: { packetStatus: PacketStatus 
   useEffect(() => {
     if (!isPlaying || stepIndex >= path.length - 1) return;
     const currentRun = ++runId.current;
-    void controls.start({ left: `${path[stepIndex + 1]}%` }, { duration: 0.7, ease: "easeInOut" }).then(() => {
+    void controls.start({ left: `${path[stepIndex + 1]}px` }, { duration: 0.7, ease: "easeInOut" }).then(() => {
       if (runId.current === currentRun) {
         setStepIndex((value) => value + 1);
       }
@@ -159,7 +169,7 @@ export default function Topology({ packetStatus }: { packetStatus: PacketStatus 
     pause();
     const nextIndex = stepIndex + 1;
     const currentRun = ++runId.current;
-    void controls.start({ left: `${path[nextIndex]}%` }, { duration: 0.45, ease: "easeInOut" }).then(() => {
+    void controls.start({ left: `${path[nextIndex]}px` }, { duration: 0.45, ease: "easeInOut" }).then(() => {
       if (runId.current === currentRun) setStepIndex(nextIndex);
     });
   }
@@ -167,40 +177,52 @@ export default function Topology({ packetStatus }: { packetStatus: PacketStatus 
   function reset() {
     runId.current += 1;
     controls.stop();
-    controls.set({ left: `${path[0]}%`, opacity: 1 });
+    controls.set({ left: `${path[0]}px`, opacity: 1 });
     setStepIndex(0);
     setIsPlaying(false);
   }
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className="relative mt-4 overflow-x-auto rounded-xl border border-slate-800 bg-[#07101f]">
-        <div className="relative h-[360px] min-w-[760px]">
+      <div className="relative mt-4 overflow-hidden rounded-xl border border-slate-800 bg-[#07101f]">
+        <div className="relative h-[360px] w-full">
           <ReactFlow
             nodes={NODES}
             edges={EDGES.map((edge) => edge.id === "sw1-sw2" ? { ...edge, label: packetStatus === "success" ? "trunk · VLAN 10, 20" : "trunk · VLAN 10 only" } : edge)}
             nodeTypes={NODE_TYPES}
             nodesConnectable={false}
             nodesDraggable={false}
-            panOnDrag={false}
-            zoomOnDoubleClick={false}
+            panOnDrag
             zoomOnScroll={false}
-            zoomOnPinch={false}
+            zoomOnDoubleClick={false}
+            zoomOnPinch
+            minZoom={0.35}
+            maxZoom={2.5}
+            defaultViewport={lastViewport ?? undefined}
+            fitView={lastViewport === null}
+            fitViewOptions={{ padding: 0.15 }}
+            onMoveEnd={(_, viewport) => {
+              lastViewport = viewport;
+            }}
             proOptions={{ hideAttribution: true }}
           >
             <Background color="#1e293b" gap={24} size={1} />
-            <Controls showZoom={false} showFitView={false} showInteractive={false} />
+            <Controls position="bottom-right" showInteractive={false} />
+            {packetStatus !== "idle" && (
+              <motion.div
+                animate={controls}
+                className={`pointer-events-none absolute z-10 h-3 w-3 rounded-full shadow-[0_0_16px_currentColor] ${packetStatus === "success" ? "text-emerald-300" : "text-rose-300"}`}
+                initial={{ left: `${path[0]}px`, opacity: 1 }}
+                style={{ top: `${LINK_Y}px` }}
+                title={packetStatus === "success" ? "Packet reached GW1" : "Packet stopped at the trunk"}
+              >
+                <span className={`block h-full w-full rounded-full ${packetStatus === "success" ? "bg-emerald-300" : "bg-rose-300"}`} />
+              </motion.div>
+            )}
           </ReactFlow>
-          {packetStatus !== "idle" && (
-            <motion.div
-              animate={controls}
-              className={`pointer-events-none absolute top-[calc(50%-6px)] z-10 h-3 w-3 rounded-full shadow-[0_0_16px_currentColor] ${packetStatus === "success" ? "text-emerald-300" : "text-rose-300"}`}
-              initial={{ left: `${path[0]}%`, opacity: 1 }}
-              title={packetStatus === "success" ? "Packet reached GW1" : "Packet stopped at the trunk"}
-            >
-              <span className={`block h-full w-full rounded-full ${packetStatus === "success" ? "bg-emerald-300" : "bg-rose-300"}`} />
-            </motion.div>
-          )}
+          <div className="pointer-events-none absolute bottom-2 left-2 rounded-md border border-slate-800 bg-slate-950/80 px-2 py-1 text-[10px] text-slate-500">
+            drag to pan · pinch / + − to zoom
+          </div>
         </div>
       </div>
       <PacketControls packetStatus={packetStatus} isPlaying={isPlaying} stepIndex={stepIndex} stepCount={path.length} onPlay={play} onPause={pause} onStep={step} onReset={reset} />
