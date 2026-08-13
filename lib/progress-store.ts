@@ -22,6 +22,7 @@ import {
 } from "./skills";
 import { LAB_TEMPLATES } from "./lab-templates";
 import type { ExamScoreHistory } from "./readiness";
+import { applyReviewResult, type ReviewSchedule } from "./review";
 
 export type QuizResult = { correct: number; total: number; perfect: boolean };
 
@@ -67,6 +68,10 @@ export type ProgressData = {
   examResults: ExamScoreHistory;
   /** Question ids already served per exam kind, so retakes draw fresh mixes. */
   examSeen: Record<string, string[]>;
+  /** SM-2-lite per-objective review schedules (adaptive review). */
+  reviewSchedule: Record<string, ReviewSchedule>;
+  /** Question ids already served per objective, so review sessions draw fresh. */
+  reviewSeen: Record<string, string[]>;
   /** Lab completions keyed by lab id → completed variant ids. */
   labResults: Record<string, { variantIds: string[]; cleanRuns: number; lastRunAt: number }>;
 };
@@ -92,6 +97,8 @@ export const INITIAL_PROGRESS: ProgressData = {
   skills: {},
   examResults: {},
   examSeen: {},
+  reviewSchedule: {},
+  reviewSeen: {},
   labResults: {},
 };
 
@@ -114,6 +121,8 @@ type ProgressState = ProgressData & {
   recordExamResult: (kind: string, pct: number, passed: boolean, objectiveIds: string[]) => void;
   /** Remember the questions an exam served, so the next retake draws fresh ones. */
   recordExamSeen: (kind: string, ids: string[]) => void;
+  /** Record an adaptive-review question: skill + mastery bump, schedule update, 5 XP when correct. */
+  recordReviewQuestion: (objectiveId: string, questionKind: "recall" | "interpret", correct: boolean, questionId: string) => void;
   /** Record a completed lab variant (drives configuration/troubleshooting skill + variant evidence). */
   recordLabResult: (labId: string, variantId: string, clean: boolean, skill: "configure" | "troubleshoot") => void;
   /** Apply a merged cloud snapshot; a no-op (same state ref) when nothing changed. */
@@ -258,6 +267,23 @@ export const useProgressStore = create<ProgressState>()(
             examSeen: { ...state.examSeen, [kind]: [...seen].slice(0, 400) },
           };
         }),
+      recordReviewQuestion: (objectiveId, questionKind, correct, questionId) =>
+        set((state) => {
+          const objective = objectivesFor([objectiveId])[0];
+          if (!objective) return state;
+          const now = Date.now();
+          const { schedules, reviewSeen } = applyReviewResult(state.reviewSchedule, state.reviewSeen, objectiveId, questionId, correct, now);
+          const skills = recordQuizSkill(state.skills, [objective], questionKind, correct ? 1 : 0, 1);
+          const mastery = recordQuizMastery(state.mastery, [objectiveId], correct ? 1 : 0, 1);
+          return {
+            ...state,
+            mastery,
+            skills,
+            reviewSchedule: schedules,
+            reviewSeen,
+            xp: correct ? state.xp + 5 : state.xp,
+          };
+        }),
       recordLabResult: (labId, variantId, clean, skill) =>
         set((state) => {
           const template = LAB_TEMPLATES.find((candidate) => candidate.id === labId);
@@ -296,6 +322,8 @@ export const useProgressStore = create<ProgressState>()(
             skills: state.skills,
             examResults: state.examResults,
             examSeen: state.examSeen,
+            reviewSchedule: state.reviewSchedule,
+            reviewSeen: state.reviewSeen,
             labResults: state.labResults,
           };
           // Returning the same reference when nothing changed keeps zustand
@@ -329,6 +357,8 @@ export const useProgressStore = create<ProgressState>()(
         skills: state.skills,
         examResults: state.examResults,
         examSeen: state.examSeen,
+        reviewSchedule: state.reviewSchedule,
+        reviewSeen: state.reviewSeen,
         labResults: state.labResults,
         lastSyncedAt: state.lastSyncedAt,
       }),
@@ -350,6 +380,9 @@ export const useProgressStore = create<ProgressState>()(
         examResults: (persisted as Partial<ProgressData>).examResults ?? current.examResults,
         // Old saves predate per-kind seen-question tracking — start empty.
         examSeen: (persisted as Partial<ProgressData>).examSeen ?? current.examSeen,
+        // Old saves predate adaptive review — start with empty schedules/seen.
+        reviewSchedule: (persisted as Partial<ProgressData>).reviewSchedule ?? current.reviewSchedule,
+        reviewSeen: (persisted as Partial<ProgressData>).reviewSeen ?? current.reviewSeen,
         labResults: (persisted as Partial<ProgressData>).labResults ?? current.labResults,
         lastSyncedAt: (persisted as Partial<ProgressData>).lastSyncedAt ?? current.lastSyncedAt,
       }),

@@ -1,5 +1,6 @@
 import { getWeakObjectives } from "./mastery";
 import type { BossRecords, DailyState, ProgressData, QuizResult } from "./progress-store";
+import type { ReviewSchedule } from "./review";
 import type { SkillMap, ObjectiveSkillState } from "./skills";
 
 /**
@@ -35,6 +36,8 @@ export function buildSnapshot(state: ProgressData, now: number = Date.now()): Pr
     skills: state.skills ?? {},
     examResults: state.examResults ?? {},
     examSeen: state.examSeen ?? {},
+    reviewSchedule: state.reviewSchedule ?? {},
+    reviewSeen: state.reviewSeen ?? {},
     labResults: state.labResults ?? {},
     lastSyncedAt: state.lastSyncedAt,
     updatedAt: now,
@@ -102,6 +105,29 @@ function mergeExamResults(
     if (!existing || entry.pct > existing.pct) results[kind] = entry;
   }
   return results;
+}
+
+/**
+ * Adaptive-review schedules merge freshest-first: the schedule with the later
+ * due time wins, so a stale device can't pull a reviewed objective back into
+ * due status. Seen-question tracking unions per objective (capped like local).
+ */
+function mergeReviewState(
+  left: ProgressSnapshot["reviewSchedule"],
+  right: ProgressSnapshot["reviewSchedule"],
+  seenLeft: ProgressSnapshot["reviewSeen"],
+  seenRight: ProgressSnapshot["reviewSeen"],
+): { reviewSchedule: ProgressSnapshot["reviewSchedule"]; reviewSeen: ProgressSnapshot["reviewSeen"] } {
+  const reviewSchedule: ProgressSnapshot["reviewSchedule"] = { ...left };
+  for (const [objectiveId, schedule] of Object.entries(right)) {
+    const existing = reviewSchedule[objectiveId];
+    if (!existing || (schedule.due ?? 0) > (existing.due ?? 0)) reviewSchedule[objectiveId] = schedule;
+  }
+  const reviewSeen: ProgressSnapshot["reviewSeen"] = { ...seenLeft };
+  for (const [objectiveId, ids] of Object.entries(seenRight)) {
+    reviewSeen[objectiveId] = union(reviewSeen[objectiveId] ?? [], ids).slice(0, 400);
+  }
+  return { reviewSchedule, reviewSeen };
 }
 
 /**
@@ -178,6 +204,7 @@ export function mergeProgress(left: ProgressSnapshot, right: ProgressSnapshot): 
     skills: mergeSkills(left.skills ?? {}, right.skills ?? {}),
     examResults: mergeExamResults(left.examResults ?? {}, right.examResults ?? {}),
     examSeen: mergeExamSeen(left.examSeen ?? {}, right.examSeen ?? {}),
+    ...mergeReviewState(left.reviewSchedule ?? {}, right.reviewSchedule ?? {}, left.reviewSeen ?? {}, right.reviewSeen ?? {}),
     labResults: mergeLabResults(left.labResults ?? {}, right.labResults ?? {}),
     lastSyncedAt: Math.max(left.lastSyncedAt ?? 0, right.lastSyncedAt ?? 0) || null,
     updatedAt: Math.max(left.updatedAt, right.updatedAt),

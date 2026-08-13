@@ -31,6 +31,7 @@ import MasteryPanel from "@/components/mastery-panel";
 import ReadinessReport from "@/components/readiness-report";
 import ExamHall from "@/components/exam-hall";
 import LabsPanel from "@/components/labs-panel";
+import AdaptiveReview from "@/components/adaptive-review";
 import { getReadinessReportV2 } from "@/lib/readiness";
 import BadgesPanel from "@/components/badges-panel";
 import TrainingGrounds from "@/components/training-grounds";
@@ -55,6 +56,7 @@ import { resetLockControlPlaneMission, startLockControlPlaneMission, type LockCo
 import { resetAutomatorPrimeMission, startAutomatorPrimeMission, type AutomatorPrimeMissionState } from "@/lib/automator-prime-mission";
 import { advanceQuiz as advanceQuizStep, answerQuiz as answerQuizStep, getArcQuiz, quizScore, startQuiz, type QuizSessionState } from "@/lib/quiz";
 import { dueCards, getFlashcardDeck } from "@/lib/flashcards";
+import { buildReviewQueue, dueReviewCount, type ReviewItem, type ReviewLabItem, type ReviewQuestionItem } from "@/lib/review";
 import { getBadgeStatus } from "@/lib/badges";
 import { rescueFor } from "@/lib/rescues";
 import CliBasicsMission from "@/components/cli-basics-mission";
@@ -290,7 +292,7 @@ function MissionWorkspace({
 }
 
 export default function Home() {
-  const { xp, streak, weakTopics, completedMissions, completeReview, awardMission, mastery, recordMissionResult, cardReviews, recordQuizResult, reviewFlashcard, quizResults, syncBadges, skills, examResults, examSeen, labResults, recordExamResult, recordExamSeen, recordLabResult } = useProgressStore();
+  const { xp, streak, weakTopics, completedMissions, completeReview, awardMission, mastery, recordMissionResult, cardReviews, recordQuizResult, reviewFlashcard, quizResults, syncBadges, skills, examResults, examSeen, reviewSchedule, reviewSeen, labResults, recordExamResult, recordExamSeen, recordReviewQuestion, recordLabResult } = useProgressStore();
   const [mission, setMission] = useState<MissionState>(resetMission);
   const [stpMission, setStpMission] = useState<StpMissionState>(resetStpMission);
   const [ecMission, setEcMission] = useState<EcMissionState>(resetEcMission);
@@ -310,6 +312,11 @@ export default function Home() {
   const [flashcardsOpen, setFlashcardsOpen] = useState(false);
   const [examHallOpen, setExamHallOpen] = useState(false);
   const [labsOpen, setLabsOpen] = useState(false);
+  const [labsPreselect, setLabsPreselect] = useState<{ labId: string; variantId: string } | null>(null);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [reviewItems, setReviewItems] = useState<ReviewItem[]>([]);
+  const [reviewIndex, setReviewIndex] = useState(0);
+  const [reviewAnswers, setReviewAnswers] = useState<Record<string, string>>({});
   const [cliBasics, setCliBasics] = useState<CliBasicsMissionState>(resetCliBasicsMission);
   const [showAndPing, setShowAndPing] = useState<ShowAndPingMissionState>(resetShowAndPingMission);
   const [packetTrail, setPacketTrail] = useState<PacketTrailMissionState>(resetPacketTrailMission);
@@ -1201,6 +1208,44 @@ export default function Home() {
     setFlashcardsOpen(false);
   }
 
+  const dueReviews = dueReviewCount(skills, reviewSchedule);
+
+  function openReview() {
+    setReviewIndex(0);
+    setReviewAnswers({});
+    setReviewItems(
+      buildReviewQueue({
+        skills,
+        schedules: reviewSchedule,
+        reviewSeen,
+        labResults,
+        seed: `review:v${Math.floor(Math.random() * 1e6)}`,
+      }).items,
+    );
+    setReviewOpen(true);
+  }
+
+  function exitReview() {
+    setReviewOpen(false);
+    setReviewItems([]);
+    setReviewIndex(0);
+    setReviewAnswers({});
+  }
+
+  function answerReviewQuestion(item: ReviewQuestionItem, value: string) {
+    recordReviewQuestion(item.objectiveId, item.questionKind, value === item.correct, item.questionId);
+    setReviewAnswers((map) => ({ ...map, [item.id]: value }));
+  }
+
+  function advanceReview() {
+    setReviewIndex((index) => index + 1);
+  }
+
+  function launchReviewLab(item: ReviewLabItem) {
+    setLabsPreselect({ labId: item.labId, variantId: item.variantId });
+    setLabsOpen(true);
+  }
+
   function openArc(arcId: string) {
     switch (arcId) {
       case "vlan-that-vanished":
@@ -1386,7 +1431,32 @@ export default function Home() {
   }
 
   if (labsOpen) {
-    return <LabsPanel labResults={labResults} onRecordResult={recordLabResult} onExit={() => setLabsOpen(false)} />;
+    return (
+      <LabsPanel
+        labResults={labResults}
+        onRecordResult={recordLabResult}
+        onExit={() => {
+          setLabsOpen(false);
+          setLabsPreselect(null);
+        }}
+        preselect={labsPreselect}
+      />
+    );
+  }
+
+  if (reviewOpen) {
+    return (
+      <AdaptiveReview
+        items={reviewItems}
+        index={reviewIndex}
+        answers={reviewAnswers}
+        onAnswer={answerReviewQuestion}
+        onAdvance={advanceReview}
+        onLaunchLab={launchReviewLab}
+        onExit={exitReview}
+        onFinish={exitReview}
+      />
+    );
   }
 
   if (quizArc && quizSession) {
@@ -1612,6 +1682,20 @@ export default function Home() {
           </div>
           <button className="rounded-lg bg-cyan-300 px-4 py-2 text-sm font-black text-slate-950 transition hover:bg-cyan-200" onClick={openFlashcards} type="button">
             Review ({dueFlashcards.length} due)
+          </button>
+        </div>
+        <div className="mt-6 flex flex-col justify-between gap-4 rounded-xl border border-violet-300/30 bg-violet-300/5 p-5 sm:flex-row sm:items-center">
+          <div>
+            <p className="font-bold text-violet-100">Adaptive review</p>
+            <p className="mt-1 text-sm text-slate-400">{dueReviews} weak objective{dueReviews === 1 ? "" : "s"} due · fresh questions + lab variants · spaced repetition</p>
+          </div>
+          <button
+            className={`rounded-lg px-4 py-2 text-sm font-black transition ${dueReviews > 0 ? "bg-violet-300 text-slate-950 hover:bg-violet-200" : "cursor-default border border-slate-700 text-slate-500"}`}
+            disabled={dueReviews === 0}
+            onClick={openReview}
+            type="button"
+          >
+            {dueReviews > 0 ? `Review weak spots (${dueReviews})` : "All caught up"}
           </button>
         </div>
         <div className="mt-10">

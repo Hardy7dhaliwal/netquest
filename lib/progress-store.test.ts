@@ -263,6 +263,8 @@ describe("progress", () => {
       skills: {},
       examResults: {},
       examSeen: {},
+      reviewSchedule: {},
+      reviewSeen: {},
       labResults: {},
       lastSyncedAt: 1234,
     });
@@ -291,6 +293,8 @@ describe("progress", () => {
       skills: {},
       examResults: {},
       examSeen: {},
+      reviewSchedule: {},
+      reviewSeen: {},
       labResults: {},
       lastSyncedAt: before.lastSyncedAt,
     });
@@ -319,6 +323,8 @@ describe("progress", () => {
       skills: {},
       examResults: {},
       examSeen: {},
+      reviewSchedule: {},
+      reviewSeen: {},
       labResults: {},
       lastSyncedAt: 99,
     });
@@ -370,5 +376,26 @@ describe("progress", () => {
     useProgressStore.getState().recordExamSeen("mock-a", ["q2", "q3"]);
     expect(useProgressStore.getState().examSeen["mock-a"]).toEqual(["q1", "q2", "q3"]);
     expect(useProgressStore.getState().examSeen["mock-b"]).toBeUndefined();
+  });
+
+  it("records a correct adaptive-review question: skill, schedule, seen, and 5 XP", () => {
+    useProgressStore.setState(INITIAL_PROGRESS);
+    const xpBefore = useProgressStore.getState().xp;
+    useProgressStore.getState().recordReviewQuestion("3.2.b", "recall", true, "x-ospf-1");
+    const state = useProgressStore.getState();
+    expect(state.xp).toBe(xpBefore + 5);
+    expect(state.skills["3.2.b"].scores.recall).toBeGreaterThan(0);
+    expect(state.mastery["3.2.b"]).toBeGreaterThan(0);
+    expect(state.reviewSchedule["3.2.b"].interval).toBe(1);
+    expect(state.reviewSeen["3.2.b"]).toEqual(["x-ospf-1"]);
+  });
+
+  it("records a missed adaptive-review question without XP and resets the interval", () => {
+    useProgressStore.setState(INITIAL_PROGRESS);
+    useProgressStore.getState().recordReviewQuestion("4.3", "interpret", false, "x-q");
+    const state = useProgressStore.getState();
+    expect(state.xp).toBe(0);
+    expect(state.reviewSchedule["4.3"].interval).toBe(0);
+    expect(state.reviewSeen["4.3"]).toEqual(["x-q"]);
   });
 });

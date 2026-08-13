@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Wordmark } from "@/components/wordmark";
 import { LAB_TEMPLATES } from "@/lib/lab-templates";
 import {
@@ -29,14 +29,25 @@ export default function LabsPanel({
   labResults,
   onRecordResult,
   onExit,
+  preselect,
 }: {
   labResults: Record<string, { variantIds: string[]; cleanRuns: number; lastRunAt: number }>;
   onRecordResult: (labId: string, variantId: string, clean: boolean, skill: "configure" | "troubleshoot") => void;
   onExit: () => void;
+  /** Launch straight into a lab+variant (used by adaptive review). */
+  preselect?: { labId: string; variantId: string } | null;
 }) {
   const [template, setTemplate] = useState<LabTemplate | null>(null);
   const [state, setState] = useState<LabState | null>(null);
   const [command, setCommand] = useState("");
+
+  // Adaptive review hands off a specific lab+variant: jump straight in.
+  useEffect(() => {
+    if (!preselect || template) return;
+    const t = LAB_TEMPLATES.find((candidate) => candidate.id === preselect.labId);
+    if (t) beginLab(t, preselect.variantId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preselect]);
 
   function beginLab(t: LabTemplate, variantId: string) {
     setTemplate(t);

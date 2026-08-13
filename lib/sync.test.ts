@@ -25,6 +25,8 @@ function snap(overrides: Partial<ProgressSnapshot> = {}): ProgressSnapshot {
     skills: {},
     examResults: {},
     examSeen: {},
+    reviewSchedule: {},
+    reviewSeen: {},
     labResults: {},
     lastSyncedAt: null,
     updatedAt: 0,
@@ -162,6 +164,17 @@ describe("mergeProgress", () => {
     );
     expect(merged.examSeen["mock-a"]).toEqual(["eb-arch-1", "x-ospf-1", "x-ospf-2"]);
     expect(merged.examSeen["mock-b"]).toEqual(["eb-virt-1"]);
+  });
+
+  it("merges review schedules freshest-first and unions seen questions per objective", () => {
+    const merged = mergeProgress(
+      snap({ reviewSchedule: { "3.2.b": { ease: 2, interval: 3, due: 300 } }, reviewSeen: { "3.2.b": ["q1"] } }),
+      snap({ reviewSchedule: { "3.2.b": { ease: 2, interval: 5, due: 500 } }, reviewSeen: { "3.2.b": ["q2"], "4.3": ["q9"] } }),
+    );
+    // The later due time wins, so a stale device can't pull an objective back into due.
+    expect(merged.reviewSchedule["3.2.b"]).toEqual({ ease: 2, interval: 5, due: 500 });
+    expect(merged.reviewSeen["3.2.b"]).toEqual(["q1", "q2"]);
+    expect(merged.reviewSeen["4.3"]).toEqual(["q9"]);
   });
 
   it("is idempotent once converged", () => {
