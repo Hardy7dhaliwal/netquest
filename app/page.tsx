@@ -1565,6 +1565,7 @@ export default function Home() {
         <TrainingGrounds />
         <SyncPanel />
         <div className="mt-6 flex flex-col justify-between gap-4 rounded-xl border border-slate-800 bg-slate-900/60 p-5 sm:flex-row sm:items-center"><div><p className="font-bold">Keep your streak alive</p><p className="mt-1 text-sm text-slate-400">A quick review is worth 5 XP while you warm up.</p></div><button className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-bold text-slate-200 transition hover:border-cyan-300/50 hover:text-cyan-200" onClick={completeReview} type="button">Log 5 XP review</button></div>
+        <footer className="mt-4 text-center text-xs text-slate-600">NetQuest · deploy-probe-v1</footer>
       </section>
     </main>
   );
