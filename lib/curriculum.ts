@@ -350,20 +350,24 @@ export const CURRICULUM_PLANS: Record<string, ObjectivePlan> = {
   },
   "3.2.c": {
     objectiveId: "3.2.c",
-    subskills: ["eBGP peering basics", "Neighbor states and multihop", "Best-path attribute order", "show ip bgp interpretation"],
+    subskills: ["eBGP peering basics", "Neighbor states and multihop", "Best-path attribute order", "Final tie-breakers (oldest path, router ID, cluster list)", "show ip bgp interpretation"],
     lesson:
-      "eBGP peers directly connected ASes. The session climbs Idle→Connect→Active→OpenSent→OpenConfirm→Established. Default TTL is 1 (directly connected); ebgp-multihop raises it for indirect peers. Best-path selection follows a strict order: weight (Cisco-local), local preference, locally originated, AS path length, origin type, MED, then eBGP-over-iBGP and tie-breakers. show ip bgp marks the winner with a > and shows the path attributes, so interpreting it means tracing which attribute decided the outcome.",
+      "eBGP peers directly connected ASes. The session climbs Idle→Connect→Active→OpenSent→OpenConfirm→Established. Default TTL is 1 (directly connected); ebgp-multihop raises it for indirect peers. When several paths reach one prefix, BGP picks the best with a strict 13-step comparison — the first attribute that differs decides, and the rest are never reached. The order: (1) highest weight (Cisco-local), (2) highest local preference, (3) locally originated (network/aggregate/redistribute), (4) shortest AS path length, (5) lowest origin code (IGP < EGP < incomplete), (6) lowest MED, (7) eBGP over iBGP (then confederation external over internal), (8) lowest IGP metric to the BGP next hop, (9) multiple-path/load-balancing check, (10) oldest path — the one received first, chosen for stability over recency, (11) lowest BGP router ID of the advertising router, (12) shortest cluster list — fewest route-reflector hops for reflected iBGP paths, (13) lowest neighbor address. show ip bgp marks the winner with a > and shows the path attributes, so interpreting it means tracing which attribute decided the outcome.",
     scenarios: [
       "A peer two hops away never reaches Established — which eBGP attribute and command fix it?",
       "Two paths to the same prefix: one has lower MED, the other a shorter AS path — which is preferred, and in what order are they compared?",
       "show ip bgp shows path A marked best even though path B has a shorter AS path — which higher-priority attribute (weight or local preference) must be overriding it?",
+      "Two eBGP paths tie on every attribute through MED and both are external — which tie-breakers decide next (oldest path, then lowest router ID)?",
+      "Two iBGP paths via different route reflectors tie on every earlier attribute and the router ID — which reflector-path attribute (cluster list) breaks the tie?",
     ],
     misconceptions: [
       "eBGP neighbors can be anywhere — the default TTL of 1 assumes a direct link; multihop must be explicit.",
       "MED decides most path choices — weight, local preference, and AS path all come before MED.",
       "The > marker in show ip bgp means the newest path — it marks the BEST path, chosen by the attribute order, not by recency.",
+      "BGP prefers the most recently learned path as a tie-breaker — it prefers the OLDEST path, because re-selecting on every update would flap the best path.",
+      "MED is the final tie-breaker — after MED come eBGP-over-iBGP, IGP metric, oldest path, router ID, cluster list, and neighbor address.",
     ],
-    handsOn: "Bring up a directly connected eBGP session, verify with show ip bgp summary, fix a two-hop peer with ebgp-multihop, and interpret show ip bgp to name the attribute that decided the best path.",
+    handsOn: "Bring up a directly connected eBGP session, verify with show ip bgp summary, fix a two-hop peer with ebgp-multihop, and interpret show ip bgp to name the attribute that decided the best path — including the late tie-breakers when attributes tie.",
   },
   "3.2.d": {
     objectiveId: "3.2.d",
