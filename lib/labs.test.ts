@@ -660,6 +660,47 @@ describe("gap-topic labs", () => {
     }
   });
 
+  it("completes the iBGP route-reflector lab once the reflected path is restored", () => {
+    const template = findLab("lab-ibgp-rr");
+    const a = runLab(template, "a", ["show ip bgp 10.1.0.0/24"], "rr", "neighbor 10.0.0.3 route-reflector-client", "show ip bgp 10.1.0.0/24");
+    expect(a.status).toBe("complete");
+    expect(a.clean).toBe(true);
+    const b = runLab(template, "b", ["show ip bgp 172.16.0.0/24"], "rr", "bgp cluster-id 2.2.2.2", "show ip bgp 172.16.0.0/24");
+    expect(b.status).toBe("complete");
+    expect(b.clean).toBe(true);
+  });
+
+  it("rejects the other variant's iBGP route-reflector fix", () => {
+    const template = findLab("lab-ibgp-rr");
+    let state = startLab(template, "a");
+    state = runLabCommand(state, template, "show ip bgp 10.1.0.0/24");
+    state = answerLabDiagnose(state, template, "rr");
+    // Variant B's fix (cluster-id) must NOT apply on variant A (missing client statement).
+    state = runLabCommand(state, template, "bgp cluster-id 2.2.2.2");
+    expect(state.stepIndex).toBe(2); // still on configure
+    expect(state.clean).toBe(false);
+  });
+
+  it("rejects the shared-cluster-id distractor in the route-reflector lab", () => {
+    const template = findLab("lab-ibgp-rr");
+    let state = startLab(template, "b");
+    state = runLabCommand(state, template, "show ip bgp 172.16.0.0/24");
+    state = answerLabDiagnose(state, template, "rr");
+    // Setting the cluster-id to 3.3.3.3 is a distractor — R2 needs its OWN 2.2.2.2.
+    state = runLabCommand(state, template, "bgp cluster-id 3.3.3.3");
+    expect(state.stepIndex).toBe(2);
+    expect(state.clean).toBe(false);
+  });
+
+  it("shows cluster lists in the iBGP route-reflector output and picks the shortest", () => {
+    const template = findLab("lab-ibgp-rr");
+    const a = runLab(template, "a", ["show ip bgp 10.1.0.0/24"], "rr", "neighbor 10.0.0.3 route-reflector-client", "show ip bgp 10.1.0.0/24");
+    const last = a.cliHistory[a.cliHistory.length - 1].output;
+    expect(last).toContain("Cluster list:  1.1.1.1");
+    expect(last).toContain("Cluster list:  2.2.2.2, 3.3.3.3");
+    expect(last).toContain("shortest cluster list wins");
+  });
+
   it("completes the PBR lab once the policy is enforced", () => {
     const template = findLab("lab-pbr");
     const a = runLab(template, "a", ["show route-map"], "enforcement", "ip policy route-map VOICE-PBR", "show ip policy");

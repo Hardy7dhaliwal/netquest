@@ -2,7 +2,7 @@
 
 Interactive, game-style CCNP ENCOR learning platform.
 
-Current phase: **Phase 2 MVP + "learn and pass" upgrade** — the full ENCOR v1.2 blueprint is playable (**47/47 objectives, 100% exam weight** across 17 missions) with evidence-based coverage states, per-assessment-type mastery, a diagnostic exam + two full-length timed mocks (with multi-domain mixed items and no-repeat retakes), a five-dimension readiness report, a **38-lab hands-on library covering every 4.x and 6.x objective** (plus deep 3.x/5.x labs), **adaptive review** (spaced repetition over your weakest subskills), an **interactive mission map** (zoom/pan, device tooltips, clickable link explanations, SVG icons, animated traffic), and the whole learning loop: rescue engine, glossary, arc quizzes, flashcards, badges, daily challenge, boss battles with difficulty tiers, streak calendar, and **cross-device cloud sync** via Supabase. **Live on Vercel** — deploy note in Development below.
+Current phase: **Phase 2 MVP + "learn and pass" upgrade** — the full ENCOR v1.2 blueprint is playable (**47/47 objectives, 100% exam weight** across 17 missions) with evidence-based coverage states, per-assessment-type mastery, a diagnostic exam + two full-length timed mocks (with multi-domain mixed items and no-repeat retakes), a five-dimension readiness report, a **39-lab hands-on library covering every 4.x and 6.x objective** (plus deep 3.x/5.x labs), **adaptive review** (spaced repetition over your weakest subskills), an **interactive mission map** (zoom/pan, device tooltips, clickable link explanations, SVG icons, animated traffic), and the whole learning loop: rescue engine, glossary, arc quizzes, flashcards, badges, daily challenge, boss battles with difficulty tiers, streak calendar, and **cross-device cloud sync** via Supabase. **Live on Vercel** — deploy note in Development below.
 
 ## Product docs
 
@@ -52,7 +52,7 @@ The two missions with visual network maps (**The Packet Trail** and **The VLAN T
 - **SVG device icons** — hand-drawn inline SVGs shared via `components/device-icons.tsx` (PC / switch with port LEDs / router / envelope packet), `currentColor`-based so they inherit each map's accent; the packet animation is an envelope SVG that stays glued to the links at any zoom.
 - **Animated traffic** — links flow with moving dashes (`traffic-flow` / `edge-flow` keyframes in `globals.css`); active paths flow, inactive links stay static gray.
 
-## Hands-on labs — 38 labs, 2 variants each
+## Hands-on labs — 39 labs, 2 variants each
 
 The **labs panel** (dashboard → Hands-on labs) runs text-simulated IOS-style labs through the inspect → diagnose → configure → verify loop. Every lab has **2 variants** (different addressing, interfaces, symptoms, distractors — so memorizing one solution path fails), accepts **alternate valid commands**, gates fixes by protocol/variant to prevent cross-variant leakage, and notes simulator limits with pointers to CML/EVE-NG/Cisco DevNet sandboxes for real-device behavior. Clean runs across ≥2 variants feed the **Independent** mastery band.
 
@@ -129,6 +129,12 @@ The **labs panel** (dashboard → Hands-on labs) runs text-simulated IOS-style l
 | The fast link is the backup | 3.2.a | Manual `delay` (EIGRP) or `ip ospf cost` (OSPF) inflates the fiber path's metric — satellite wins |
 | The password is a shared secret | 5.1.a | Vty lines skip `login local` (shared line password), or `login local` with an empty user database |
 
+### iBGP route reflection — 1 lab (`lib/lab-templates-extra7.ts`)
+
+| Lab | Objective | Fault scenario |
+| --- | --- | --- |
+| The reflector that never reflects | 3.2.c | Missing `route-reflector-client` (reflected path never arrives), or a shared `cluster-id` suppressing the redundant path — shortest cluster list wins |
+
 ## Mock exams
 
 The **exam hall** (dashboard → Exam hall) runs blueprint-aligned practice exams, never real exam items:
@@ -164,7 +170,7 @@ lib/skills.ts                Per-assessment-type mastery (recall/interpret/confi
 lib/exams.ts                 Diagnostic + 2 mock exams, domain-weighted, timed, multi-domain blend + retakes
 lib/exam-bank.ts             Multi-domain mixed exam items (16, 2+ domains each)
 lib/labs.ts                  Variant lab engine (inspect-diagnose-configure-verify, alternate commands)
-lib/lab-templates.ts         Core labs (4) + lab-templates-extra.ts (7) + -extra2.ts (10) + -extra3.ts (7) + -extra4.ts (3) + -extra5.ts (4) + -extra6.ts (3) = 38
+lib/lab-templates.ts         Core labs (4) + lab-templates-extra.ts (7) + -extra2.ts (10) + -extra3.ts (7) + -extra4.ts (3) + -extra5.ts (4) + -extra6.ts (3) + -extra7.ts (1) = 39
 lib/rescue.ts, rescues.ts    Rescue mini-lesson types + 46-entry phase-keyed catalog
 lib/glossary.ts              Networking term glossary
 lib/quiz.ts                  Per-arc checkpoint quizzes (bank shared with rescues/boss)
@@ -180,7 +186,7 @@ lib/supabase.ts              Cookie-based browser client (@supabase/ssr)
 lib/supabase-server.ts       Server client for the magic-link callback route
 lib/progress-store.ts        zustand + localStorage: XP, streak, mastery, skills, exam/review/lab results, sync fields
 lib/<arc>-mission.ts         14 field-mission engines + 3 beginner engines (deterministic)
-lib/*.test.ts                553 unit tests across 37 files
+lib/*.test.ts                557 unit tests across 37 files
 components/*.tsx             Mission renderers + device-icons, topology, console-panel, hint-ladder, glossary,
                              coverage-dashboard, mastery-panel, badges-panel, readiness-report,
                              arc-quiz, flashcard-review, gauntlet, training-grounds, streak-calendar,
@@ -203,7 +209,7 @@ Conventions (keep these when adding features):
 ```bash
 npm install
 npm run dev       # start dev server
-npm test          # vitest (553 unit tests)
+npm test          # vitest (557 unit tests)
 npm run build     # production build
 npm run lint      # eslint (see known notes)
 ```
@@ -214,7 +220,7 @@ npm run lint      # eslint (see known notes)
 
 ## Testing
 
-553 deterministic unit tests across 37 files:
+557 deterministic unit tests across 37 files:
 
 | Area | Files | Tests |
 | --- | --- | ---: |
@@ -223,7 +229,7 @@ npm run lint      # eslint (see known notes)
 | Overlay arcs | tunnel-vision, fabric-express, sdwan, campus-fabric | 66 |
 | Assurance + finale | signal-detective, lock-control-plane, automator-prime | 60 |
 | Learning systems | rescue, rescues, glossary, mastery, quiz, flashcards, badges, readiness, boss, streak, review (adaptive) | 117 |
-| Learn-and-pass engines | curriculum, skills, exams, labs (incl. full 4.x/6.x + 5.4.a–d + 3.2/5.1 lab-coverage assertions), exam-bank | 139 |
+| Learn-and-pass engines | curriculum, skills, exams, labs (incl. full 4.x/6.x + 5.4.a–d + 3.2/5.1 lab-coverage assertions), exam-bank | 143 |
 | Core + sync | progress-store, encor-catalog, sync, smoke | 61 |
 
 ## Known notes
