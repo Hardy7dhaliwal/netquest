@@ -29,7 +29,9 @@ export type BossRecords = {
   bestAccuracy: number;
 };
 
-type ProgressData = {
+export type SyncStatus = "idle" | "syncing" | "synced" | "error";
+
+export type ProgressData = {
   xp: number;
   streak: number;
   weakTopics: string[];
@@ -43,7 +45,15 @@ type ProgressData = {
   daily: DailyState | null;
   /** Lifetime boss-battle stats. */
   bossRecords: BossRecords;
+  /** When the store last converged with the cloud (ms epoch). */
+  lastSyncedAt: number | null;
+  syncStatus: SyncStatus;
+  /** Human-readable sync state, e.g. an error detail. */
+  syncMessage: string | null;
 };
+
+/** The persistable data a cloud sync carries (syncStatus/message are transient UI). */
+export type RemoteProgress = Omit<ProgressData, "syncStatus" | "syncMessage">;
 
 export const INITIAL_PROGRESS: ProgressData = {
   xp: 0,
@@ -56,6 +66,9 @@ export const INITIAL_PROGRESS: ProgressData = {
   badges: [],
   daily: null,
   bossRecords: { battles: 0, victories: 0, bestAccuracy: 0 },
+  lastSyncedAt: null,
+  syncStatus: "idle",
+  syncMessage: null,
 };
 
 type ProgressState = ProgressData & {
@@ -73,6 +86,10 @@ type ProgressState = ProgressData & {
   claimDaily: (arcId: string) => void;
   /** Finish a boss battle: XP (tier-based when passed), records, and under-pressure mastery on a win. */
   recordBossResult: (arcId: string, victory: boolean, accuracy: number, xp?: number) => void;
+  /** Apply a merged cloud snapshot; a no-op (same state ref) when nothing changed. */
+  applyRemote: (remote: RemoteProgress) => void;
+  /** Surface sync progress or errors in the UI. */
+  setSyncStatus: (status: SyncStatus, message?: string | null) => void;
   reset: () => void;
 };
 
@@ -172,6 +189,31 @@ export const useProgressStore = create<ProgressState>()(
             xp: state.xp + awarded,
           };
         }),
+      applyRemote: (remote) =>
+        set((state) => {
+          const { lastSyncedAt, ...data } = remote;
+          const current = {
+            xp: state.xp,
+            streak: state.streak,
+            weakTopics: state.weakTopics,
+            completedMissions: state.completedMissions,
+            mastery: state.mastery,
+            quizResults: state.quizResults,
+            cardReviews: state.cardReviews,
+            badges: state.badges,
+            daily: state.daily,
+            bossRecords: state.bossRecords,
+          };
+          // Returning the same reference when nothing changed keeps zustand
+          // from notifying, so a converged sync can't loop with auto-sync.
+          if (JSON.stringify(data) === JSON.stringify(current)) {
+            if (state.lastSyncedAt === lastSyncedAt) return state;
+            return { ...state, lastSyncedAt, syncStatus: "synced", syncMessage: null };
+          }
+          return { ...state, ...data, lastSyncedAt, syncStatus: "synced", syncMessage: null };
+        }),
+      setSyncStatus: (status, message = null) =>
+        set((state) => ({ ...state, syncStatus: status, syncMessage: message })),
       reset: () => set(INITIAL_PROGRESS),
     }),
     {
@@ -189,6 +231,7 @@ export const useProgressStore = create<ProgressState>()(
         badges: state.badges,
         daily: state.daily,
         bossRecords: state.bossRecords,
+        lastSyncedAt: state.lastSyncedAt,
       }),
       merge: (persisted, current) => ({
         ...current,
@@ -201,6 +244,7 @@ export const useProgressStore = create<ProgressState>()(
         badges: (persisted as Partial<ProgressData>).badges ?? current.badges,
         daily: (persisted as Partial<ProgressData>).daily ?? current.daily,
         bossRecords: (persisted as Partial<ProgressData>).bossRecords ?? current.bossRecords,
+        lastSyncedAt: (persisted as Partial<ProgressData>).lastSyncedAt ?? current.lastSyncedAt,
       }),
     },
   ),

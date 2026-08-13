@@ -242,4 +242,69 @@ describe("progress", () => {
       vi.useRealTimers();
     }
   });
+
+  it("applies a merged cloud snapshot and stamps the sync time", () => {
+    useProgressStore.getState().applyRemote({
+      xp: 999,
+      streak: 3,
+      weakTopics: ["STP"],
+      completedMissions: ["vlan-that-vanished"],
+      mastery: { "3.1.a": 95 },
+      quizResults: {},
+      cardReviews: {},
+      badges: ["cli-apprentice"],
+      daily: null,
+      bossRecords: { battles: 1, victories: 1, bestAccuracy: 1 },
+      lastSyncedAt: 1234,
+    });
+
+    const state = useProgressStore.getState();
+    expect(state.xp).toBe(999);
+    expect(state.mastery["3.1.a"]).toBe(95);
+    expect(state.lastSyncedAt).toBe(1234);
+    expect(state.syncStatus).toBe("synced");
+  });
+
+  it("is a no-op (same state reference) when the cloud snapshot is identical", () => {
+    const before = useProgressStore.getState();
+    useProgressStore.getState().applyRemote({
+      xp: 0,
+      streak: 0,
+      weakTopics: ["VLANs and trunks"],
+      completedMissions: [],
+      mastery: {},
+      quizResults: {},
+      cardReviews: {},
+      badges: [],
+      daily: null,
+      bossRecords: { battles: 0, victories: 0, bestAccuracy: 0 },
+      lastSyncedAt: before.lastSyncedAt,
+    });
+    expect(useProgressStore.getState()).toBe(before);
+  });
+
+  it("surfaces sync status messages", () => {
+    useProgressStore.getState().setSyncStatus("error", "Network down");
+    expect(useProgressStore.getState().syncStatus).toBe("error");
+    expect(useProgressStore.getState().syncMessage).toBe("Network down");
+  });
+
+  it("persists lastSyncedAt", () => {
+    useProgressStore.getState().applyRemote({
+      xp: 0,
+      streak: 0,
+      weakTopics: ["VLANs and trunks"],
+      completedMissions: [],
+      mastery: {},
+      quizResults: {},
+      cardReviews: {},
+      badges: [],
+      daily: null,
+      bossRecords: { battles: 0, victories: 0, bestAccuracy: 0 },
+      lastSyncedAt: 99,
+    });
+
+    const persisted = JSON.parse(values.get("netquest-progress") ?? "{}") as { state: { lastSyncedAt: number } };
+    expect(persisted.state.lastSyncedAt).toBe(99);
+  });
 });
