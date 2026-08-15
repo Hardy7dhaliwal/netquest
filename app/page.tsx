@@ -139,6 +139,7 @@ function MissionWorkspace({
   next?: NextMission | null;
 }) {
   const [command, setCommand] = useState("");
+  const [confirmReset, setConfirmReset] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const objectiveState = [
     mission.inspectedVlans,
@@ -175,9 +176,21 @@ function MissionWorkspace({
             <button className="rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:border-slate-500 hover:text-white" onClick={onExit} type="button">
               Back to dashboard
             </button>
-            <button className="rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:border-slate-500 hover:text-white" onClick={onReset} type="button">
-              Reset mission
-            </button>
+            {confirmReset ? (
+              <span className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-rose-300">Reset progress?</span>
+                <button className="rounded-lg bg-rose-300 px-3 py-2 text-xs font-bold text-slate-950 transition hover:bg-rose-200" onClick={() => { setConfirmReset(false); onReset(); }} type="button">
+                  Yes, reset
+                </button>
+                <button className="rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:border-slate-500 hover:text-white" onClick={() => setConfirmReset(false)} type="button">
+                  Cancel
+                </button>
+              </span>
+            ) : (
+              <button className="rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:border-slate-500 hover:text-white" onClick={() => setConfirmReset(true)} type="button">
+                Reset mission
+              </button>
+            )}
           </div>
         </div>
       </header>
