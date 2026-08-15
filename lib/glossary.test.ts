@@ -35,6 +35,36 @@ describe("networking glossary", () => {
       expect(terms).toContain(missionTerm);
     }
   });
+
+  it("covers the advanced terms across routing, SD-WAN, security, and automation arcs", () => {
+    const terms = GLOSSARY.map((entry) => entry.term.toLowerCase());
+    for (const required of [
+      // Routing / BGP
+      "bgp", "ibgp", "route reflector", "cluster list", "best-path selection", "autonomous system",
+      "as path", "med", "local preference", "weight", "administrative distance",
+      // FHRP / overlay / multicast
+      "hsrp", "vrrp", "fhrp", "vrf", "gre", "ipsec", "crypto map", "lisp",
+      "multicast", "pim", "rpf", "igmp", "ssm", "bidirectional pim", "msdp",
+      "vxlan", "vtep", "underlay/overlay",
+      // SD-WAN / SD-Access
+      "sd-wan", "vmanage", "vsmart", "vbond", "vedge/cedge", "omp", "tloc", "bfd",
+      "sd-access", "control plane", "data plane",
+      // Virtualization / services
+      "hypervisor", "virtual machine", "virtual switch", "nat", "pat", "ntp", "ptp",
+      "qos", "dscp", "class map", "policy map",
+      // Security
+      "trustsec", "sgt", "macsec", "ngfw", "nac", "802.1x", "endpoint security",
+      "defense in depth", "aaa", "radius", "tacacs+", "copp", "acl", "infrastructure acl",
+      // Automation / assurance
+      "netconf", "restconf", "yang", "json", "rest api", "python", "eem",
+      "agent vs agentless", "catalyst center", "telemetry",
+      "netflow", "flexible netflow", "ip sla", "snmp", "syslog", "traceroute", "conditional debug",
+      // Switching extras
+      "pagp", "span", "rspan/erspan",
+    ]) {
+      expect(terms, `missing glossary term: ${required}`).toContain(required);
+    }
+  });
 });
 
 describe("tokenizeGlossaryText", () => {
