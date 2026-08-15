@@ -1,7 +1,8 @@
 "use client";
 import { Wordmark } from "@/components/wordmark";
+import { NextMissionButton, type NextMission } from "@/components/next-mission-button";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { ConsolePanel, type InsertSignal } from "@/components/console-panel";
 import { GlossaryText } from "@/components/glossary-text";
@@ -26,10 +27,12 @@ export default function ShowAndPingMission({
   mission,
   onChange,
   onExit,
+  next,
 }: {
   mission: ShowAndPingMissionState;
   onChange: (next: ShowAndPingMissionState) => void;
   onExit: () => void;
+  next?: NextMission | null;
 }) {
   const complete = mission.status === "complete";
   const stepIndex = complete ? SHOW_PING_STEPS.length : SHOW_PING_STEPS.indexOf(mission.step as (typeof SHOW_PING_STEPS)[number]);
@@ -37,6 +40,8 @@ export default function ShowAndPingMission({
 
   const tsRef = useRef(0);
   const [insertSignal, setInsertSignal] = useState<InsertSignal | null>(null);
+  const [revealed, setRevealed] = useState(false);
+  useEffect(() => setRevealed(false), [mission.step]);
 
   function insertCommand(command: string) {
     tsRef.current += 1;
@@ -88,10 +93,19 @@ export default function ShowAndPingMission({
                 <p className="mt-3 text-[10px] font-semibold uppercase tracking-widest text-amber-200/60">Step {stepIndex + 1} of {SHOW_PING_STEPS.length}</p>
                 <p className="mt-2 text-sm font-bold text-slate-100">{guide.what}</p>
                 <p className="mt-2 text-xs leading-5 text-slate-400"><span className="font-semibold text-amber-200/80">Look for:</span> <GlossaryText text={guide.lookFor} /></p>
-                <button className="mt-4 w-full rounded-lg bg-amber-300 px-3 py-2 text-xs font-black text-slate-950 transition hover:bg-amber-200" onClick={() => insertCommand(guide.command)} type="button">
-                  Insert command: <code className="font-mono"> {guide.command}</code>
-                </button>
-                <p className="mt-2 text-center text-[10px] text-slate-500">Then press Enter to run it.</p>
+                {revealed ? (
+                  <>
+                    <p className="mt-4 rounded-lg border border-amber-300/30 bg-amber-300/10 px-3 py-2 text-center font-mono text-sm text-amber-100">{guide.command}</p>
+                    <button className="mt-2 w-full rounded-lg bg-amber-300 px-3 py-2 text-xs font-black text-slate-950 transition hover:bg-amber-200" onClick={() => insertCommand(guide.command)} type="button">
+                      Insert command
+                    </button>
+                    <p className="mt-2 text-center text-[10px] text-slate-500">Then press Enter to run it.</p>
+                  </>
+                ) : (
+                  <button className="mt-4 w-full rounded-lg border border-amber-300/40 px-3 py-2 text-xs font-bold text-amber-200 transition hover:bg-amber-300/10" onClick={() => setRevealed(true)} type="button">
+                    Reveal command
+                  </button>
+                )}
               </>
             ) : (
               <p className="mt-3 text-sm leading-6 text-slate-300">All five steps done — you can now read a network and prove it works. That is the foundation of every troubleshooting mission.</p>
@@ -105,6 +119,7 @@ export default function ShowAndPingMission({
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">Mission complete</p>
               <p className="mt-2 text-2xl font-black">Path verified: 100%. +50 XP</p>
               <p className="mt-2 text-sm text-slate-400">show vlan brief · show interfaces trunk · show running-config · ping — the four commands you will use in every mission ahead.</p>
+            <NextMissionButton next={next} />
             </div>
           )}
           <ConsolePanel

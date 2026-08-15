@@ -11,6 +11,7 @@ import {
 } from "@/lib/tunnel-vision-mission";
 import { HintLadder } from "@/components/hint-ladder";
 import { CommandReference } from "@/components/command-reference";
+import { NextMissionButton, type NextMission } from "@/components/next-mission-button";
 import { ConsolePanel } from "@/components/console-panel";
 import { GlossaryText } from "@/components/glossary-text";
 
@@ -131,10 +132,12 @@ export default function TunnelVisionMission({
   mission,
   onChange,
   onExit,
+  next,
 }: {
   mission: TunnelVisionMissionState;
   onChange: (next: TunnelVisionMissionState) => void;
   onExit: () => void;
+  next?: NextMission | null;
 }) {
   const complete = mission.status === "complete";
   const activePhase = mission.phase === "complete" ? "checkpoint" : mission.phase;
@@ -211,6 +214,7 @@ export default function TunnelVisionMission({
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">{complete ? "Mission complete" : copy.label}</p>
               <h2 className="mt-2 text-3xl font-black tracking-tight">{complete ? "The overlay is sealed." : copy.title}</h2>
               <p className="mt-3 max-w-xl text-sm leading-6 text-slate-400"><GlossaryText text={complete ? "You isolated the guests in VRF GUEST, ran the overlay through a GRE tunnel, and encrypted it end to end with an IPsec crypto map." : copy.prompt} /></p>
+              {complete && <NextMissionButton next={next} />}
             </div>
             <span className="rounded-full border border-cyan-300/20 bg-cyan-300/5 px-3 py-1 text-xs font-bold text-cyan-200">{mission.attempts} attempt{mission.attempts === 1 ? "" : "s"}</span>
           </div>

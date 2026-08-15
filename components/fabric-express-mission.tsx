@@ -17,6 +17,7 @@ import {
 } from "@/lib/fabric-express-mission";
 import { HintLadder } from "@/components/hint-ladder";
 import { CommandReference } from "@/components/command-reference";
+import { NextMissionButton, type NextMission } from "@/components/next-mission-button";
 import { ConsolePanel } from "@/components/console-panel";
 import { GlossaryText } from "@/components/glossary-text";
 
@@ -144,10 +145,12 @@ export default function FabricExpressMission({
   mission,
   onChange,
   onExit,
+  next,
 }: {
   mission: FabricExpressMissionState;
   onChange: (next: FabricExpressMissionState) => void;
   onExit: () => void;
+  next?: NextMission | null;
 }) {
   const complete = mission.status === "complete";
   const activePhase = mission.phase === "complete" ? "vxlan-check" : mission.phase;
@@ -232,6 +235,7 @@ export default function FabricExpressMission({
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">{complete ? "Mission complete" : copy.label}</p>
               <h2 className="mt-2 text-3xl font-black tracking-tight">{complete ? "The overlay is clear." : copy.title}</h2>
               <p className="mt-3 max-w-xl text-sm leading-6 text-slate-400"><GlossaryText text={complete ? "You read the hypervisor and the VM correctly, inspected the vSwitch and its uplinks, and traced the VXLAN overlay from the VTEP to its peers." : copy.prompt} /></p>
+              {complete && <NextMissionButton next={next} />}
             </div>
             <span className="rounded-full border border-cyan-300/20 bg-cyan-300/5 px-3 py-1 text-xs font-bold text-cyan-200">{mission.attempts} attempt{mission.attempts === 1 ? "" : "s"}</span>
           </div>

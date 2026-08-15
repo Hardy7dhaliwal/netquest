@@ -1,5 +1,6 @@
 "use client";
 import { Wordmark } from "@/components/wordmark";
+import { NextMissionButton, type NextMission } from "@/components/next-mission-button";
 
 import { Fragment } from "react";
 import { motion } from "framer-motion";
@@ -81,10 +82,12 @@ export default function PacketTrailMission({
   mission,
   onChange,
   onExit,
+  next,
 }: {
   mission: PacketTrailMissionState;
   onChange: (next: PacketTrailMissionState) => void;
   onExit: () => void;
+  next?: NextMission | null;
 }) {
   const complete = mission.status === "complete";
   const atCheckpoint = mission.stepIndex >= PACKET_TRAIL_STOPS;
@@ -109,6 +112,7 @@ export default function PacketTrailMission({
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">Tour complete</p>
             <p className="mt-2 text-2xl font-black">You can read the map now. +50 XP</p>
             <p className="mt-2 text-sm text-slate-400"><GlossaryText text="Access ports place devices in one VLAN · trunks carry many VLANs between switches · ping proves the whole path." /></p>
+            <NextMissionButton next={next} />
           </div>
         )}
 

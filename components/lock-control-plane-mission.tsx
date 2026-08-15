@@ -17,6 +17,7 @@ import {
 } from "@/lib/lock-control-plane-mission";
 import { HintLadder } from "@/components/hint-ladder";
 import { CommandReference } from "@/components/command-reference";
+import { NextMissionButton, type NextMission } from "@/components/next-mission-button";
 import { ConsolePanel } from "@/components/console-panel";
 import { GlossaryText } from "@/components/glossary-text";
 
@@ -135,10 +136,12 @@ export default function LockControlPlaneMission({
   mission,
   onChange,
   onExit,
+  next,
 }: {
   mission: LockControlPlaneMissionState;
   onChange: (next: LockControlPlaneMissionState) => void;
   onExit: () => void;
+  next?: NextMission | null;
 }) {
   const complete = mission.status === "complete";
   const activePhase = mission.phase === "complete" ? "design" : mission.phase;
@@ -219,6 +222,7 @@ export default function LockControlPlaneMission({
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">{complete ? "Mission complete" : copy.label}</p>
               <h2 className="mt-2 text-3xl font-black tracking-tight">{complete ? "The plane is locked." : copy.title}</h2>
               <p className="mt-3 max-w-xl text-sm leading-6 text-slate-400"><GlossaryText text={complete ? "You locked the VTY door, centralized auth with AAA + ISE, blocked the infrastructure from the outside, policed the control plane, secured the API — and saw how endpoint security, NGFW, TrustSec, and MACsec finish the job." : copy.prompt} /></p>
+              {complete && <NextMissionButton next={next} />}
             </div>
             <span className="rounded-full border border-cyan-300/20 bg-cyan-300/5 px-3 py-1 text-xs font-bold text-cyan-200">{mission.attempts} attempt{mission.attempts === 1 ? "" : "s"}</span>
           </div>

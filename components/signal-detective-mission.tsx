@@ -15,6 +15,7 @@ import {
 } from "@/lib/signal-detective-mission";
 import { HintLadder } from "@/components/hint-ladder";
 import { CommandReference } from "@/components/command-reference";
+import { NextMissionButton, type NextMission } from "@/components/next-mission-button";
 import { ConsolePanel } from "@/components/console-panel";
 import { GlossaryText } from "@/components/glossary-text";
 
@@ -170,10 +171,12 @@ export default function SignalDetectiveMission({
   mission,
   onChange,
   onExit,
+  next,
 }: {
   mission: SignalDetectiveMissionState;
   onChange: (next: SignalDetectiveMissionState) => void;
   onExit: () => void;
+  next?: NextMission | null;
 }) {
   const complete = mission.status === "complete";
   const activePhase = mission.phase === "complete" ? "final-check" : mission.phase;
@@ -261,6 +264,7 @@ export default function SignalDetectiveMission({
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">{complete ? "Mission complete" : copy.label}</p>
               <h2 className="mt-2 text-3xl font-black tracking-tight">{complete ? "The case is closed." : copy.title}</h2>
               <p className="mt-3 max-w-xl text-sm leading-6 text-slate-400"><GlossaryText text={complete ? "You caught ACL 150 dropping the app's UDP/9999 traffic, then built the watch: NetFlow records, a SPAN mirror, an IP SLA baseline — and a RESTCONF API to manage it all programmatically." : copy.prompt} /></p>
+              {complete && <NextMissionButton next={next} />}
             </div>
             <span className="rounded-full border border-cyan-300/20 bg-cyan-300/5 px-3 py-1 text-xs font-bold text-cyan-200">{mission.attempts} attempt{mission.attempts === 1 ? "" : "s"}</span>
           </div>

@@ -64,6 +64,7 @@ import ShowAndPingMission from "@/components/show-and-ping-mission";
 import PacketTrailMission from "@/components/packet-trail-mission";
 import { HintLadder } from "@/components/hint-ladder";
 import { CommandReference } from "@/components/command-reference";
+import { NextMissionButton, type NextMission } from "@/components/next-mission-button";
 import { GlossaryText } from "@/components/glossary-text";
 import { Wordmark } from "@/components/wordmark";
 import { CLI_BASICS_STEPS, resetCliBasicsMission, startCliBasicsMission, type CliBasicsMissionState } from "@/lib/cli-basics-mission";
@@ -129,11 +130,13 @@ function MissionWorkspace({
   onChange,
   onReset,
   onExit,
+  next,
 }: {
   mission: MissionState;
   onChange: (next: MissionState) => void;
   onReset: () => void;
   onExit: () => void;
+  next?: NextMission | null;
 }) {
   const [command, setCommand] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -284,6 +287,7 @@ function MissionWorkspace({
             <p className="mt-3 text-sm leading-6 text-slate-400"><GlossaryText text="You found the missing allowed VLAN, repaired the trunk, and verified the gateway path." /></p>
             <div className="mt-6 rounded-xl border border-emerald-300/20 bg-emerald-300/5 py-4 text-xl font-black text-emerald-200">+150 XP</div>
             <button className="mt-6 w-full rounded-lg bg-emerald-300 px-4 py-3 text-sm font-bold text-slate-950 transition hover:bg-emerald-200" onClick={onReset} type="button">Run it again</button>
+            <NextMissionButton next={next} />
           </div>
         </div>
       )}
@@ -362,6 +366,21 @@ export default function Home() {
   // The single next mission to play: the first one in play order the player hasn't finished.
   const nextMission = MISSION_CATALOG.find((m) => !completedMissions.includes(m.id)) ?? null;
   const nextMissionIndex = nextMission ? MISSION_CATALOG.indexOf(nextMission) + 1 : null;
+
+  // The mission after a given one in play order that is still unplayed — the
+  // target for a completion banner's "Next mission" button. Searching forward
+  // from the current mission keeps this stable even before the completion
+  // award lands in `completedMissions`.
+  function nextAfter(id: string): NextMission | null {
+    const index = MISSION_CATALOG.findIndex((m) => m.id === id);
+    for (let i = index + 1; i < MISSION_CATALOG.length; i++) {
+      const candidate = MISSION_CATALOG[i];
+      if (!completedMissions.includes(candidate.id)) {
+        return { title: candidate.title, onOpen: () => OPENERS[candidate.id]() };
+      }
+    }
+    return null;
+  }
 
   useEffect(() => {
     void useProgressStore.persist.rehydrate();
@@ -1480,21 +1499,21 @@ export default function Home() {
   }
 
   if (cliBasics.status !== "not_started") {
-    return <CliBasicsMission mission={cliBasics} onChange={updateCliBasics} onExit={exitCliBasicsMission} />;
+    return <CliBasicsMission mission={cliBasics} onChange={updateCliBasics} onExit={exitCliBasicsMission} next={nextAfter("console-basics")} />;
   }
 
   if (showAndPing.status !== "not_started") {
-    return <ShowAndPingMission mission={showAndPing} onChange={updateShowAndPing} onExit={exitShowAndPingMission} />;
+    return <ShowAndPingMission mission={showAndPing} onChange={updateShowAndPing} onExit={exitShowAndPingMission} next={nextAfter("show-and-ping")} />;
   }
 
   if (packetTrail.status !== "not_started") {
-    return <PacketTrailMission mission={packetTrail} onChange={updatePacketTrail} onExit={exitPacketTrailMission} />;
+    return <PacketTrailMission mission={packetTrail} onChange={updatePacketTrail} onExit={exitPacketTrailMission} next={nextAfter("packet-trail")} />;
   }
 
   if (stpMission.status !== "not_started") {
     return (
       <RescueLauncher rescue={stpMission.status === "complete" ? null : rescueFor("stp", stpMission.phase)}>
-        <StpMission mission={stpMission} onChange={updateStpMission} onExit={exitStpMission} />
+        <StpMission mission={stpMission} onChange={updateStpMission} onExit={exitStpMission} next={nextAfter("stp-storm")} />
       </RescueLauncher>
     );
   }
@@ -1502,7 +1521,7 @@ export default function Home() {
   if (ecMission.status !== "not_started") {
     return (
       <RescueLauncher rescue={ecMission.status === "complete" ? null : rescueFor("ec", ecMission.phase)}>
-        <EtherchannelMission mission={ecMission} onChange={updateEcMission} onExit={exitEcMission} />
+        <EtherchannelMission mission={ecMission} onChange={updateEcMission} onExit={exitEcMission} next={nextAfter("bundled-bottleneck")} />
       </RescueLauncher>
     );
   }
@@ -1510,7 +1529,7 @@ export default function Home() {
   if (ospfMission.status !== "not_started") {
     return (
       <RescueLauncher rescue={ospfMission.status === "complete" ? null : rescueFor("ospf", ospfMission.phase)}>
-        <OspfMission mission={ospfMission} onChange={updateOspfMission} onExit={exitOspfMission} />
+        <OspfMission mission={ospfMission} onChange={updateOspfMission} onExit={exitOspfMission} next={nextAfter("area-zero-hero")} />
       </RescueLauncher>
     );
   }
@@ -1518,7 +1537,7 @@ export default function Home() {
   if (edgeMission.status !== "not_started") {
     return (
       <RescueLauncher rescue={edgeMission.status === "complete" ? null : rescueFor("edge", edgeMission.phase)}>
-        <EdgeMission mission={edgeMission} onChange={updateEdgeMission} onExit={exitEdgeMission} />
+        <EdgeMission mission={edgeMission} onChange={updateEdgeMission} onExit={exitEdgeMission} next={nextAfter("edge-has-opinions")} />
       </RescueLauncher>
     );
   }
@@ -1526,7 +1545,7 @@ export default function Home() {
   if (gatewayMission.status !== "not_started") {
     return (
       <RescueLauncher rescue={gatewayMission.status === "complete" ? null : rescueFor("gateway", gatewayMission.phase)}>
-        <GatewayMission mission={gatewayMission} onChange={updateGatewayMission} onExit={exitGatewayMission} />
+        <GatewayMission mission={gatewayMission} onChange={updateGatewayMission} onExit={exitGatewayMission} next={nextAfter("gateway-at-dawn")} />
       </RescueLauncher>
     );
   }
@@ -1534,7 +1553,7 @@ export default function Home() {
   if (edgeServicesMission.status !== "not_started") {
     return (
       <RescueLauncher rescue={edgeServicesMission.status === "complete" ? null : rescueFor("edge-services", edgeServicesMission.phase)}>
-        <EdgeServicesMission mission={edgeServicesMission} onChange={updateEdgeServicesMission} onExit={exitEdgeServicesMission} />
+        <EdgeServicesMission mission={edgeServicesMission} onChange={updateEdgeServicesMission} onExit={exitEdgeServicesMission} next={nextAfter("edge-services")} />
       </RescueLauncher>
     );
   }
@@ -1542,7 +1561,7 @@ export default function Home() {
   if (tunnelVisionMission.status !== "not_started") {
     return (
       <RescueLauncher rescue={tunnelVisionMission.status === "complete" ? null : rescueFor("tunnel-vision", tunnelVisionMission.phase)}>
-        <TunnelVisionMission mission={tunnelVisionMission} onChange={updateTunnelVisionMission} onExit={exitTunnelVisionMission} />
+        <TunnelVisionMission mission={tunnelVisionMission} onChange={updateTunnelVisionMission} onExit={exitTunnelVisionMission} next={nextAfter("tunnel-vision")} />
       </RescueLauncher>
     );
   }
@@ -1550,7 +1569,7 @@ export default function Home() {
   if (fabricExpressMission.status !== "not_started") {
     return (
       <RescueLauncher rescue={fabricExpressMission.status === "complete" ? null : rescueFor("fabric-express", fabricExpressMission.phase)}>
-        <FabricExpressMission mission={fabricExpressMission} onChange={updateFabricExpressMission} onExit={exitFabricExpressMission} />
+        <FabricExpressMission mission={fabricExpressMission} onChange={updateFabricExpressMission} onExit={exitFabricExpressMission} next={nextAfter("fabric-express")} />
       </RescueLauncher>
     );
   }
@@ -1558,7 +1577,7 @@ export default function Home() {
   if (sdwanMission.status !== "not_started") {
     return (
       <RescueLauncher rescue={sdwanMission.status === "complete" ? null : rescueFor("sdwan", sdwanMission.phase)}>
-        <SdwanMission mission={sdwanMission} onChange={updateSdwanMission} onExit={exitSdwanMission} />
+        <SdwanMission mission={sdwanMission} onChange={updateSdwanMission} onExit={exitSdwanMission} next={nextAfter("sdwan-overlay")} />
       </RescueLauncher>
     );
   }
@@ -1566,7 +1585,7 @@ export default function Home() {
   if (signalDetectiveMission.status !== "not_started") {
     return (
       <RescueLauncher rescue={signalDetectiveMission.status === "complete" ? null : rescueFor("signal-detective", signalDetectiveMission.phase)}>
-        <SignalDetectiveMission mission={signalDetectiveMission} onChange={updateSignalDetectiveMission} onExit={exitSignalDetectiveMission} />
+        <SignalDetectiveMission mission={signalDetectiveMission} onChange={updateSignalDetectiveMission} onExit={exitSignalDetectiveMission} next={nextAfter("signal-detective")} />
       </RescueLauncher>
     );
   }
@@ -1574,7 +1593,7 @@ export default function Home() {
   if (campusFabricMission.status !== "not_started") {
     return (
       <RescueLauncher rescue={campusFabricMission.status === "complete" ? null : rescueFor("campus-fabric", campusFabricMission.phase)}>
-        <CampusFabricMission mission={campusFabricMission} onChange={updateCampusFabricMission} onExit={exitCampusFabricMission} />
+        <CampusFabricMission mission={campusFabricMission} onChange={updateCampusFabricMission} onExit={exitCampusFabricMission} next={nextAfter("campus-fabric")} />
       </RescueLauncher>
     );
   }
@@ -1582,7 +1601,7 @@ export default function Home() {
   if (lockControlPlaneMission.status !== "not_started") {
     return (
       <RescueLauncher rescue={lockControlPlaneMission.status === "complete" ? null : rescueFor("lock-the-control-plane", lockControlPlaneMission.phase)}>
-        <LockControlPlaneMission mission={lockControlPlaneMission} onChange={updateLockControlPlaneMission} onExit={exitLockControlPlaneMission} />
+        <LockControlPlaneMission mission={lockControlPlaneMission} onChange={updateLockControlPlaneMission} onExit={exitLockControlPlaneMission} next={nextAfter("lock-the-control-plane")} />
       </RescueLauncher>
     );
   }
@@ -1590,7 +1609,7 @@ export default function Home() {
   if (automatorPrimeMission.status !== "not_started") {
     return (
       <RescueLauncher rescue={automatorPrimeMission.status === "complete" ? null : rescueFor("automator-prime", automatorPrimeMission.phase)}>
-        <AutomatorPrimeMission mission={automatorPrimeMission} onChange={updateAutomatorPrimeMission} onExit={exitAutomatorPrimeMission} />
+        <AutomatorPrimeMission mission={automatorPrimeMission} onChange={updateAutomatorPrimeMission} onExit={exitAutomatorPrimeMission} next={nextAfter("automator-prime")} />
       </RescueLauncher>
     );
   }
@@ -1598,7 +1617,7 @@ export default function Home() {
   if (mission.status !== "not_started") {
     return (
       <RescueLauncher rescue={mission.status === "complete" ? null : rescueFor("vlan")}>
-        <MissionWorkspace mission={mission} onChange={updateMission} onReset={resetCurrentMission} onExit={exitVlanMission} />
+        <MissionWorkspace mission={mission} onChange={updateMission} onReset={resetCurrentMission} onExit={exitVlanMission} next={nextAfter("vlan-that-vanished")} />
       </RescueLauncher>
     );
   }

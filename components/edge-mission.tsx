@@ -22,6 +22,7 @@ import {
 } from "@/lib/edge-mission";
 import { HintLadder } from "@/components/hint-ladder";
 import { CommandReference } from "@/components/command-reference";
+import { NextMissionButton, type NextMission } from "@/components/next-mission-button";
 import { GlossaryText } from "@/components/glossary-text";
 
 const phaseCopy = {
@@ -132,10 +133,12 @@ export default function EdgeMission({
   mission,
   onChange,
   onExit,
+  next,
 }: {
   mission: EdgeMissionState;
   onChange: (next: EdgeMissionState) => void;
   onExit: () => void;
+  next?: NextMission | null;
 }) {
   const [command, setCommand] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -207,6 +210,7 @@ export default function EdgeMission({
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">{complete ? "Mission complete" : copy.label}</p>
               <h2 className="mt-2 text-3xl font-black tracking-tight">{complete ? "The edge is open for business." : copy.title}</h2>
               <p className="mt-3 max-w-xl text-sm leading-6 text-slate-400"><GlossaryText text={complete ? "You matched EIGRP and OSPF to their strengths, typed the eBGP fix and verified Established, and steered traffic with PBR — including the router's own." : copy.prompt} /></p>
+              {complete && <NextMissionButton next={next} />}
             </div>
             <span className="rounded-full border border-cyan-300/20 bg-cyan-300/5 px-3 py-1 text-xs font-bold text-cyan-200">{mission.attempts} attempt{mission.attempts === 1 ? "" : "s"}</span>
           </div>
