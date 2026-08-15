@@ -10,7 +10,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "test": "vitest"
+    "test": "vitest run --pool=threads --maxWorkers=1 --no-file-parallelism --no-isolate"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",

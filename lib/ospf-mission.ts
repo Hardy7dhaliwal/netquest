@@ -142,17 +142,19 @@ export function runOspfCommand(state: OspfMissionState, rawCommand: string): Osp
   } else if (state.phase === "summarize" && state.cliMode === "config-router" && command === "area 1 range 172.16.0.0 255.255.252.0") {
     output = state.summarySet ? "Summary already installed." : "Route summary for area 1 installed — 24 /30 routes collapse into one /22.";
     next = { ...state, summarySet: true };
-  } else if (state.phase === "filter" && state.cliMode === "config-router" && command === "ip prefix-list labdeny seq 5 deny 192.168.50.0/24") {
+  } else if (state.phase === "filter" && (state.cliMode === "config" || state.cliMode === "config-router") && command === "ip prefix-list labdeny seq 5 deny 192.168.50.0/24") {
     output = "Prefix-list LabDeny created — the lab prefix 192.168.50.0/24 is denied.";
-  } else if (state.phase === "filter" && state.cliMode === "config-router" && command === "ip prefix-list labdeny seq 10 permit 0.0.0.0/0 le 32") {
+  } else if (state.phase === "filter" && (state.cliMode === "config" || state.cliMode === "config-router") && command === "ip prefix-list labdeny seq 10 permit 0.0.0.0/0 le 32") {
     output = "Prefix-list LabDeny completed — everything else is permitted.";
   } else if (state.phase === "filter" && state.cliMode === "config-router" && command === "area 1 filter-list prefix labdeny out") {
     output = state.filterSet ? "Filter already applied." : "Type-3 LSA filter applied at the ABR edge — the lab prefix can no longer leave area 1.";
     next = { ...state, filterSet: true };
   } else if (command.startsWith("router ospf") && state.cliMode !== "config") {
     output = "Enter configuration mode first: configure terminal, then router ospf 1.";
-  } else if ((command.startsWith("network") || command.startsWith("area") || command.startsWith("ip prefix-list")) && state.cliMode !== "config-router") {
+  } else if ((command.startsWith("network") || command.startsWith("area")) && state.cliMode !== "config-router") {
     output = "These are router configuration commands — enter router ospf 1 first (configure terminal, then router ospf 1).";
+  } else if (command.startsWith("ip prefix-list") && state.cliMode !== "config" && state.cliMode !== "config-router") {
+    output = "ip prefix-list is a configuration command — enter configuration mode first (configure terminal).";
   } else {
     output = INVALID;
   }

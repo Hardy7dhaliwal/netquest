@@ -226,7 +226,7 @@ function MissionWorkspace({
               </p>
             </div>
           </div>
-          <Topology key={mission.eventLog.length} packetStatus={mission.packetStatus} />
+          <Topology packetStatus={mission.packetStatus} />
           <div className="mt-5 rounded-lg border border-slate-800 bg-slate-950/80 p-4 text-sm text-slate-400">
             <span className="font-semibold text-slate-200">Lab note:</span> <GlossaryText text="VLAN 20 exists on both switches. The inter-switch trunk currently permits only VLAN 10." />
           </div>

@@ -23,6 +23,7 @@ import {
 import { LAB_TEMPLATES } from "./lab-templates";
 import type { ExamScoreHistory } from "./readiness";
 import { applyReviewResult, type ReviewSchedule } from "./review";
+import { buildSnapshot, mergeProgress, type ProgressSnapshot } from "./sync";
 
 export type QuizResult = { correct: number; total: number; perfect: boolean };
 
@@ -306,8 +307,7 @@ export const useProgressStore = create<ProgressState>()(
         }),
       applyRemote: (remote) =>
         set((state) => {
-          const { lastSyncedAt, ...data } = remote;
-          const current = {
+          const currentData = {
             xp: state.xp,
             streak: state.streak,
             weakTopics: state.weakTopics,
@@ -326,13 +326,22 @@ export const useProgressStore = create<ProgressState>()(
             reviewSeen: state.reviewSeen,
             labResults: state.labResults,
           };
-          // Returning the same reference when nothing changed keeps zustand
-          // from notifying, so a converged sync can't loop with auto-sync.
-          if (JSON.stringify(data) === JSON.stringify(current)) {
+          const { lastSyncedAt, ...remoteData } = remote;
+
+          if (JSON.stringify(remoteData) === JSON.stringify(currentData)) {
             if (state.lastSyncedAt === lastSyncedAt) return state;
             return { ...state, lastSyncedAt, syncStatus: "synced", syncMessage: null };
           }
-          return { ...state, ...data, lastSyncedAt, syncStatus: "synced", syncMessage: null };
+
+          const snapshot = buildSnapshot(state);
+          const remoteSnapshot: ProgressSnapshot = {
+            ...remote,
+            updatedAt: remote.lastSyncedAt ?? Date.now(),
+          };
+          const merged = mergeProgress(snapshot, remoteSnapshot);
+          const { updatedAt, ...mergedData } = merged;
+
+          return { ...state, ...mergedData, syncStatus: "synced", syncMessage: null };
         }),
       setSyncStatus: (status, message = null) =>
         set((state) => ({ ...state, syncStatus: status, syncMessage: message })),
