@@ -1,4 +1,5 @@
 import { iosHelpForMode } from "./ios-help";
+import { tryRunDo } from "./ios-do";
 
 export type SignalStatus = "not_started" | "in_progress" | "complete";
 export type SignalPhase = "diagnose" | "flow" | "span" | "sla" | "controller" | "netconf" | "final-check" | "complete";
@@ -230,6 +231,9 @@ export function runSignalCommand(state: SignalDetectiveMissionState, rawCommand:
   const command = rawCommand.trim().toLowerCase().replace(/\s+/g, " ");
   const cliPhase = state.phase === "diagnose" || state.phase === "span" || state.phase === "sla" || state.phase === "netconf";
   if (!command || state.status === "complete" || !cliPhase) return state;
+
+  const didDo = tryRunDo(state, rawCommand, signalPromptFor(state.cliMode), runSignalCommand);
+  if (didDo) return didDo;
 
   let output = "";
   let nextMode = state.cliMode;

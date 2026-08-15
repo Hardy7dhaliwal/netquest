@@ -1,4 +1,5 @@
 import { iosHelpForMode } from "./ios-help";
+import { tryRunDo } from "./ios-do";
 
 export type AutomatorStatus = "not_started" | "in_progress" | "complete";
 export type AutomatorPhase = "python" | "json" | "yang" | "apis" | "rest" | "eem" | "agent" | "complete";
@@ -150,6 +151,10 @@ export function runAutomatorCommand(state: AutomatorPrimeMissionState, rawComman
   const codePhase = state.phase === "python" || state.phase === "json";
   const cliPhase = codePhase || state.phase === "eem";
   if (!trimmed || state.status === "complete" || !cliPhase) return state;
+
+  const didDo = tryRunDo(state, rawCommand, automatorPromptFor(state.phase, state.cliMode), runAutomatorCommand);
+  if (didDo) return didDo;
+
   // Python and JSON ignore whitespace — strip ALL of it so any spacing or line
   // breaks a player uses still match. IOS commands keep single-space runs.
   const command = codePhase ? strip(rawCommand) : trimmed.replace(/\s+/g, " ");

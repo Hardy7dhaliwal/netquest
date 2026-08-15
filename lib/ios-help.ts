@@ -35,6 +35,7 @@ const PRIVILEGED: HelpCommand[] = [
 ];
 
 const CONFIG: HelpCommand[] = [
+  { cmd: "do", desc: "Run an EXEC command from config mode" },
   { cmd: "interface", desc: "Configure an interface" },
   { cmd: "router", desc: "Enter a routing process" },
   { cmd: "ip", desc: "Global IP configuration" },
@@ -48,6 +49,7 @@ const CONFIG: HelpCommand[] = [
 ];
 
 const CONFIG_IF: HelpCommand[] = [
+  { cmd: "do", desc: "Run an EXEC command from config mode" },
   { cmd: "ip", desc: "Interface IP configuration" },
   { cmd: "shutdown", desc: "Shut down the interface" },
   { cmd: "switchport", desc: "Set switching mode characteristics" },
@@ -61,6 +63,7 @@ const CONFIG_IF: HelpCommand[] = [
 ];
 
 const CONFIG_ROUTER: HelpCommand[] = [
+  { cmd: "do", desc: "Run an EXEC command from config mode" },
   { cmd: "network", desc: "Enable routing on an interface" },
   { cmd: "area", desc: "OSPF area configuration" },
   { cmd: "router-id", desc: "Set the router ID" },
@@ -72,6 +75,7 @@ const CONFIG_ROUTER: HelpCommand[] = [
 ];
 
 const CONFIG_VRF: HelpCommand[] = [
+  { cmd: "do", desc: "Run an EXEC command from config mode" },
   { cmd: "rd", desc: "Route distinguisher" },
   { cmd: "address-family", desc: "Enter an address family" },
   { cmd: "end", desc: "Return to privileged EXEC" },
@@ -80,6 +84,7 @@ const CONFIG_VRF: HelpCommand[] = [
 ];
 
 const CONFIG_ISAKMP: HelpCommand[] = [
+  { cmd: "do", desc: "Run an EXEC command from config mode" },
   { cmd: "encryption", desc: "Set the IKE encryption algorithm" },
   { cmd: "hash", desc: "Set the IKE integrity algorithm" },
   { cmd: "authentication", desc: "Set the IKE authentication method" },
@@ -90,6 +95,7 @@ const CONFIG_ISAKMP: HelpCommand[] = [
 ];
 
 const CONFIG_CRYPTO_MAP: HelpCommand[] = [
+  { cmd: "do", desc: "Run an EXEC command from config mode" },
   { cmd: "set", desc: "Set crypto map attributes" },
   { cmd: "match", desc: "Match an access list" },
   { cmd: "end", desc: "Return to privileged EXEC" },

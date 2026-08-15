@@ -1,4 +1,5 @@
 import { iosHelpForMode } from "./ios-help";
+import { tryRunDo } from "./ios-do";
 
 export type EdgeServicesStatus = "not_started" | "in_progress" | "complete";
 export type EdgeServicesPhase = "qos" | "ntp" | "nat-config" | "nat-drill" | "multicast" | "complete";
@@ -133,6 +134,9 @@ export function runEdgeServicesCommand(state: EdgeServicesMissionState, rawComma
   const command = rawCommand.trim().toLowerCase().replace(/\s+/g, " ");
   const cliPhase = state.phase === "nat-config" || state.phase === "nat-drill";
   if (!command || state.status === "complete" || !cliPhase) return state;
+
+  const didDo = tryRunDo(state, rawCommand, edgeServicesPromptFor(state.cliMode), runEdgeServicesCommand);
+  if (didDo) return didDo;
 
   let output = "";
   let nextMode = state.cliMode;

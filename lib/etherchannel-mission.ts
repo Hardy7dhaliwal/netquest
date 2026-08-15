@@ -1,4 +1,5 @@
 import { iosHelpForMode } from "./ios-help";
+import { tryRunDo } from "./ios-do";
 
 export type EcStatus = "not_started" | "in_progress" | "complete";
 export type EcPhase = "evidence" | "cause" | "config" | "verify" | "complete";
@@ -106,6 +107,9 @@ export function runEcCommand(state: EcMissionState, rawCommand: string): EcMissi
   const command = rawCommand.trim().toLowerCase().replace(/\s+/g, " ");
   const cliPhase = state.phase === "config" || state.phase === "verify";
   if (!command || state.status === "complete" || !cliPhase) return state;
+
+  const didDo = tryRunDo(state, rawCommand, ecPromptFor(state.cliMode), runEcCommand);
+  if (didDo) return didDo;
 
   let output = "";
   let nextMode = state.cliMode;

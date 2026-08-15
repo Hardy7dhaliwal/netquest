@@ -1,4 +1,5 @@
 import { iosHelpForMode } from "./ios-help";
+import { tryRunDo } from "./ios-do";
 
 export type GatewayStatus = "not_started" | "in_progress" | "complete";
 export type GatewayPhase = "design" | "ha" | "hsrp-config" | "failover" | "vrrp" | "complete";
@@ -128,6 +129,9 @@ export function runGatewayCommand(state: GatewayMissionState, rawCommand: string
   const command = rawCommand.trim().toLowerCase().replace(/\s+/g, " ");
   const cliPhase = state.phase === "hsrp-config" || state.phase === "failover";
   if (!command || state.status === "complete" || !cliPhase) return state;
+
+  const didDo = tryRunDo(state, rawCommand, gatewayPromptFor(state.cliMode, state.device), runGatewayCommand);
+  if (didDo) return didDo;
 
   let output = "";
   let nextMode = state.cliMode;

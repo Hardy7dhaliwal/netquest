@@ -1,4 +1,5 @@
 import { iosHelpForMode } from "./ios-help";
+import { tryRunDo } from "./ios-do";
 
 export type LockStatus = "not_started" | "in_progress" | "complete";
 export type LockPhase = "local" | "aaa" | "iacl" | "copp" | "rest" | "design" | "complete";
@@ -147,6 +148,9 @@ export function runLockCommand(state: LockControlPlaneMissionState, rawCommand: 
   const command = rawCommand.trim().toLowerCase().replace(/\s+/g, " ");
   const cliPhase = state.phase === "local" || state.phase === "aaa";
   if (!command || state.status === "complete" || !cliPhase) return state;
+
+  const didDo = tryRunDo(state, rawCommand, lockPromptFor(state.cliMode), runLockCommand);
+  if (didDo) return didDo;
 
   let output = "";
   let nextMode = state.cliMode;

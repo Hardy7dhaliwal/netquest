@@ -1,4 +1,5 @@
 import { iosHelpForMode } from "./ios-help";
+import { tryRunDo } from "./ios-do";
 
 export type TunnelStatus = "not_started" | "in_progress" | "complete";
 export type TunnelPhase = "vrf" | "gre" | "ipsec" | "cryptomap" | "checkpoint" | "complete";
@@ -201,6 +202,9 @@ export function runTunnelCommand(state: TunnelVisionMissionState, rawCommand: st
   const command = rawCommand.trim().toLowerCase().replace(/\s+/g, " ");
   const cliPhase = state.phase === "vrf" || state.phase === "gre" || state.phase === "ipsec" || state.phase === "cryptomap";
   if (!command || state.status === "complete" || !cliPhase) return state;
+
+  const didDo = tryRunDo(state, rawCommand, tunnelPromptFor(state.cliMode), runTunnelCommand);
+  if (didDo) return didDo;
 
   let output = "";
   let nextMode = state.cliMode;

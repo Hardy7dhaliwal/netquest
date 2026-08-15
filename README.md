@@ -186,7 +186,7 @@ lib/supabase.ts              Cookie-based browser client (@supabase/ssr)
 lib/supabase-server.ts       Server client for the magic-link callback route
 lib/progress-store.ts        zustand + localStorage: XP, streak, mastery, skills, exam/review/lab results, sync fields
 lib/<arc>-mission.ts         14 field-mission engines + 3 beginner engines (deterministic)
-lib/*.test.ts                565 unit tests across 38 files
+lib/*.test.ts                574 unit tests across 39 files
 components/*.tsx             Mission renderers + device-icons, topology, console-panel, hint-ladder, glossary,
                              coverage-dashboard, mastery-panel, badges-panel, readiness-report,
                              arc-quiz, flashcard-review, gauntlet, training-grounds, streak-calendar,
@@ -209,7 +209,7 @@ Conventions (keep these when adding features):
 ```bash
 npm install
 npm run dev       # start dev server
-npm test          # vitest (565 unit tests)
+npm test          # vitest (574 unit tests)
 npm run build     # production build
 npm run lint      # eslint (see known notes)
 ```
@@ -220,7 +220,7 @@ npm run lint      # eslint (see known notes)
 
 ## Testing
 
-565 deterministic unit tests across 38 files:
+574 deterministic unit tests across 39 files:
 
 | Area | Files | Tests |
 | --- | --- | ---: |
@@ -228,7 +228,7 @@ npm run lint      # eslint (see known notes)
 | Field engines | mission (VLAN), stp, etherchannel, ospf, edge, gateway, edge-services | 94 |
 | Overlay arcs | tunnel-vision, fabric-express, sdwan, campus-fabric | 66 |
 | Assurance + finale | signal-detective, lock-control-plane, automator-prime | 60 |
-| Learning systems | rescue, rescues, glossary, ios-help, mastery, quiz, flashcards, badges, readiness, boss, streak, review (adaptive) | 124 |
+| Learning systems | rescue, rescues, glossary, ios-help, ios-do, mastery, quiz, flashcards, badges, readiness, boss, streak, review (adaptive) | 133 |
 | Learn-and-pass engines | curriculum, skills, exams, labs (incl. full 4.x/6.x + 5.4.a–d + 3.2/5.1 lab-coverage assertions), exam-bank | 143 |
 | Core + sync | progress-store, encor-catalog, sync, smoke | 61 |
 

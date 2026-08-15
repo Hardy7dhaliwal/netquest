@@ -1,4 +1,5 @@
 import { iosHelpForMode } from "./ios-help";
+import { tryRunDo } from "./ios-do";
 
 export type OspfStatus = "not_started" | "in_progress" | "complete";
 export type OspfPhase = "evidence" | "cause" | "config" | "verify" | "summarize" | "filter" | "complete";
@@ -109,6 +110,10 @@ export function runOspfCommand(state: OspfMissionState, rawCommand: string): Osp
   if (!command || state.status === "complete" || !cliPhase) return state;
 
   const device = ospfDeviceFor(state.phase);
+
+  const didDo = tryRunDo(state, rawCommand, ospfPromptFor(state.cliMode, device), runOspfCommand);
+  if (didDo) return didDo;
+
   let output = "";
   let nextMode = state.cliMode;
   let next = state;
