@@ -1,5 +1,6 @@
 import { iosHelpForMode } from "./ios-help";
 import { tryRunDo } from "./ios-do";
+import { normalizeIosCommand } from "./ios-abbrev";
 
 export type AutomatorStatus = "not_started" | "in_progress" | "complete";
 export type AutomatorPhase = "python" | "json" | "yang" | "apis" | "rest" | "eem" | "agent" | "complete";
@@ -157,7 +158,7 @@ export function runAutomatorCommand(state: AutomatorPrimeMissionState, rawComman
 
   // Python and JSON ignore whitespace — strip ALL of it so any spacing or line
   // breaks a player uses still match. IOS commands keep single-space runs.
-  const command = codePhase ? strip(rawCommand) : trimmed.replace(/\s+/g, " ");
+  const command = codePhase ? strip(rawCommand) : normalizeIosCommand(rawCommand);
 
   let output = "";
   let nextMode = state.cliMode;

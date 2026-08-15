@@ -1,5 +1,6 @@
 import { iosHelpForMode } from "./ios-help";
 import { tryRunDo } from "./ios-do";
+import { normalizeIosCommand } from "./ios-abbrev";
 
 export type StpStatus = "not_started" | "in_progress" | "complete";
 export type StpPhase = "root_election" | "bpdu_guard" | "root_guard" | "mst_concept" | "complete";
@@ -105,7 +106,7 @@ function interfaceSummary(port: string, guardLine: string): string {
 }
 
 export function runStpCommand(state: StpMissionState, rawCommand: string): StpMissionState {
-  const command = rawCommand.trim().toLowerCase().replace(/\s+/g, " ");
+  const command = normalizeIosCommand(rawCommand);
   const cliPhase = state.phase === "bpdu_guard" || state.phase === "root_guard";
   if (!command || state.status === "complete" || !cliPhase) return state;
 

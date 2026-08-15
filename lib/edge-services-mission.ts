@@ -1,5 +1,6 @@
 import { iosHelpForMode } from "./ios-help";
 import { tryRunDo } from "./ios-do";
+import { normalizeIosCommand } from "./ios-abbrev";
 
 export type EdgeServicesStatus = "not_started" | "in_progress" | "complete";
 export type EdgeServicesPhase = "qos" | "ntp" | "nat-config" | "nat-drill" | "multicast" | "complete";
@@ -131,7 +132,7 @@ function natTranslations(): string {
 }
 
 export function runEdgeServicesCommand(state: EdgeServicesMissionState, rawCommand: string): EdgeServicesMissionState {
-  const command = rawCommand.trim().toLowerCase().replace(/\s+/g, " ");
+  const command = normalizeIosCommand(rawCommand);
   const cliPhase = state.phase === "nat-config" || state.phase === "nat-drill";
   if (!command || state.status === "complete" || !cliPhase) return state;
 

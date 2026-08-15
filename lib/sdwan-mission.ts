@@ -1,4 +1,5 @@
 import { iosHelpForMode } from "./ios-help";
+import { normalizeIosCommand } from "./ios-abbrev";
 
 export type SdwanStatus = "not_started" | "in_progress" | "complete";
 export type SdwanPhase = "planes" | "omp" | "tlocs" | "tlocs-check" | "benefit" | "complete";
@@ -126,7 +127,7 @@ function controlConnections(): string {
 }
 
 export function runSdwanCommand(state: SdwanMissionState, rawCommand: string): SdwanMissionState {
-  const command = rawCommand.trim().toLowerCase().replace(/\s+/g, " ");
+  const command = normalizeIosCommand(rawCommand);
   if (!command || state.status === "complete" || state.phase !== "tlocs") return state;
 
   let output = "";

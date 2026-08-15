@@ -493,8 +493,10 @@ export default function Home() {
   }
 
   function resetCurrentMission() {
-    const next = resetMission();
-    setMission(next);
+    // startMission() restarts the mission in place (status "in_progress"), so
+    // the console stays mounted — resetMission() would flip status back to
+    // "not_started" and kick the player to the dashboard.
+    setMission(startMission());
     localStorage.removeItem("netquest-vlan-mission");
   }
 

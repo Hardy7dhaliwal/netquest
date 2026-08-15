@@ -1,4 +1,5 @@
 import { tryRunDo } from "./ios-do";
+import { normalizeIosCommand } from "./ios-abbrev";
 
 export type CliBasicsStatus = "not_started" | "in_progress" | "complete";
 export type CliBasicsStep = "help" | "enable" | "configure" | "end" | "show-version" | "complete";
@@ -90,7 +91,7 @@ function helpOutput(mode: CliMode): string {
 }
 
 export function runCliBasicsCommand(state: CliBasicsMissionState, rawCommand: string): CliBasicsMissionState {
-  const command = rawCommand.trim().toLowerCase().replace(/\s+/g, " ");
+  const command = normalizeIosCommand(rawCommand);
   if (!command || state.status === "complete") return state;
 
   const didDo = tryRunDo(state, rawCommand, cliBasicsPromptFor(state.cliMode), runCliBasicsCommand);

@@ -1,5 +1,6 @@
 import { iosHelpForMode } from "./ios-help";
 import { tryRunDo } from "./ios-do";
+import { normalizeIosCommand } from "./ios-abbrev";
 
 export type CliMode = "exec" | "privileged" | "config" | "interface";
 export type MissionStatus = "not_started" | "in_progress" | "complete";
@@ -125,7 +126,7 @@ export function sendPing(state: MissionState): MissionState {
 }
 
 export function runCommand(state: MissionState, rawCommand: string): MissionState {
-  const command = rawCommand.trim().toLowerCase().replace(/\s+/g, " ");
+  const command = normalizeIosCommand(rawCommand);
   if (!command) return state;
 
   const didDo = tryRunDo(state, rawCommand, promptFor(state.cliMode), runCommand);

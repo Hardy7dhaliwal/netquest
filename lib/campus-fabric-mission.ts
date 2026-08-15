@@ -1,4 +1,5 @@
 import { iosHelpForMode } from "./ios-help";
+import { normalizeIosCommand } from "./ios-abbrev";
 
 export type CampusStatus = "not_started" | "in_progress" | "complete";
 export type CampusPhase = "roles" | "lisp" | "lisp-check" | "interop" | "complete";
@@ -120,7 +121,7 @@ function lispSite(): string {
 }
 
 export function runCampusCommand(state: CampusFabricMissionState, rawCommand: string): CampusFabricMissionState {
-  const command = rawCommand.trim().toLowerCase().replace(/\s+/g, " ");
+  const command = normalizeIosCommand(rawCommand);
   if (!command || state.status === "complete" || state.phase !== "lisp") return state;
 
   let output = "";

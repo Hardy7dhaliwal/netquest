@@ -1,5 +1,6 @@
 import { seededRng } from "./boss";
 import { iosHelpForMode } from "./ios-help";
+import { normalizeIosCommand } from "./ios-abbrev";
 
 /**
  * Hands-on labs (PRD "learn and pass" — realistic labs).
@@ -147,7 +148,7 @@ export function runLabCommand(state: LabState, template: LabTemplate, rawCommand
   if (state.status === "complete") return state;
   const step = template.steps[state.stepIndex];
   if (!step) return state;
-  const command = rawCommand.trim().toLowerCase().replace(/\s+/g, " ");
+  const command = normalizeIosCommand(rawCommand);
   if (!command) return state;
 
   const variant = getLabVariant(template, state.variantId);
@@ -169,7 +170,7 @@ export function runLabCommand(state: LabState, template: LabTemplate, rawCommand
 
   if (step.kind === "inspect" || step.kind === "verify") {
     const commands = typeof step.commands === "function" ? step.commands(variant) : (step.commands ?? []);
-    const match = commands.find((candidate) => candidate.trim().toLowerCase().replace(/\s+/g, " ") === command);
+    const match = commands.find((candidate) => normalizeIosCommand(candidate) === command);
     if (match) {
       const next = advance(state, template, step.kind === "verify" ? "Verification output shown — confirm the fix." : "Inspection output shown.", "info");
       return {
@@ -188,7 +189,7 @@ export function runLabCommand(state: LabState, template: LabTemplate, rawCommand
 
   if (step.kind === "configure") {
     const accepted = typeof step.acceptedCommands === "function" ? step.acceptedCommands(variant) : (step.acceptedCommands ?? []);
-    const match = accepted.find((candidate) => candidate.trim().toLowerCase().replace(/\s+/g, " ") === command);
+    const match = accepted.find((candidate) => normalizeIosCommand(candidate) === command);
     if (match) {
       const next = advance(state, template, `Fix applied — ${step.explain}`, "success");
       return {
@@ -196,7 +197,7 @@ export function runLabCommand(state: LabState, template: LabTemplate, rawCommand
         cliHistory: [...state.cliHistory, { input: rawCommand, output: step.appliedOutput?.(variant) ?? "", prompt: "R1(config)#" }],
       };
     }
-    const distractor = variant.distractors.find((candidate) => candidate.trim().toLowerCase().replace(/\s+/g, " ") === command);
+    const distractor = variant.distractors.find((candidate) => normalizeIosCommand(candidate) === command);
     return {
       ...state,
       attempts: state.attempts + 1,

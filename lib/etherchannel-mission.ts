@@ -1,5 +1,6 @@
 import { iosHelpForMode } from "./ios-help";
 import { tryRunDo } from "./ios-do";
+import { normalizeIosCommand } from "./ios-abbrev";
 
 export type EcStatus = "not_started" | "in_progress" | "complete";
 export type EcPhase = "evidence" | "cause" | "config" | "verify" | "complete";
@@ -104,7 +105,7 @@ function channelSummary(bundled: boolean): string {
 }
 
 export function runEcCommand(state: EcMissionState, rawCommand: string): EcMissionState {
-  const command = rawCommand.trim().toLowerCase().replace(/\s+/g, " ");
+  const command = normalizeIosCommand(rawCommand);
   const cliPhase = state.phase === "config" || state.phase === "verify";
   if (!command || state.status === "complete" || !cliPhase) return state;
 

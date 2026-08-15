@@ -1,4 +1,5 @@
 import { iosHelpForMode } from "./ios-help";
+import { normalizeIosCommand } from "./ios-abbrev";
 
 export type FabricStatus = "not_started" | "in_progress" | "complete";
 export type FabricPhase = "hypervisor" | "vm" | "vswitch" | "vswitch-check" | "vxlan" | "vxlan-check" | "complete";
@@ -161,7 +162,7 @@ function nvePeers(): string {
 }
 
 export function runFabricCommand(state: FabricExpressMissionState, rawCommand: string): FabricExpressMissionState {
-  const command = rawCommand.trim().toLowerCase().replace(/\s+/g, " ");
+  const command = normalizeIosCommand(rawCommand);
   const cliPhase = state.phase === "vswitch" || state.phase === "vxlan";
   if (!command || state.status === "complete" || !cliPhase) return state;
 

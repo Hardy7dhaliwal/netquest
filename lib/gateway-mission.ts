@@ -1,5 +1,6 @@
 import { iosHelpForMode } from "./ios-help";
 import { tryRunDo } from "./ios-do";
+import { normalizeIosCommand } from "./ios-abbrev";
 
 export type GatewayStatus = "not_started" | "in_progress" | "complete";
 export type GatewayPhase = "design" | "ha" | "hsrp-config" | "failover" | "vrrp" | "complete";
@@ -126,7 +127,7 @@ function standbySummary(state: GatewayMissionState, device: GatewayDevice): stri
 }
 
 export function runGatewayCommand(state: GatewayMissionState, rawCommand: string): GatewayMissionState {
-  const command = rawCommand.trim().toLowerCase().replace(/\s+/g, " ");
+  const command = normalizeIosCommand(rawCommand);
   const cliPhase = state.phase === "hsrp-config" || state.phase === "failover";
   if (!command || state.status === "complete" || !cliPhase) return state;
 

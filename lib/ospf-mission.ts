@@ -1,5 +1,6 @@
 import { iosHelpForMode } from "./ios-help";
 import { tryRunDo } from "./ios-do";
+import { normalizeIosCommand } from "./ios-abbrev";
 
 export type OspfStatus = "not_started" | "in_progress" | "complete";
 export type OspfPhase = "evidence" | "cause" | "config" | "verify" | "summarize" | "filter" | "complete";
@@ -105,7 +106,7 @@ function neighborTable(): string {
 }
 
 export function runOspfCommand(state: OspfMissionState, rawCommand: string): OspfMissionState {
-  const command = rawCommand.trim().toLowerCase().replace(/\s+/g, " ");
+  const command = normalizeIosCommand(rawCommand);
   const cliPhase = state.phase === "config" || state.phase === "verify" || state.phase === "summarize" || state.phase === "filter";
   if (!command || state.status === "complete" || !cliPhase) return state;
 

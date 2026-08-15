@@ -1,5 +1,6 @@
 import { iosHelpForMode } from "./ios-help";
 import { tryRunDo } from "./ios-do";
+import { normalizeIosCommand } from "./ios-abbrev";
 
 export type EdgeStatus = "not_started" | "in_progress" | "complete";
 export type EdgePhase = "igp" | "convergence" | "bgp-state" | "bgp-fix" | "pbr" | "local" | "complete";
@@ -118,7 +119,7 @@ function bgpSummary(state: EdgeMissionState): string {
 }
 
 export function runEdgeCommand(state: EdgeMissionState, rawCommand: string): EdgeMissionState {
-  const command = rawCommand.trim().toLowerCase().replace(/\s+/g, " ");
+  const command = normalizeIosCommand(rawCommand);
   if (!command || state.status === "complete" || state.phase !== "bgp-fix") return state;
 
   const didDo = tryRunDo(state, rawCommand, edgePromptFor(state.cliMode), runEdgeCommand);

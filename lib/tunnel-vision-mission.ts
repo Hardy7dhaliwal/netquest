@@ -1,5 +1,6 @@
 import { iosHelpForMode } from "./ios-help";
 import { tryRunDo } from "./ios-do";
+import { normalizeIosCommand } from "./ios-abbrev";
 
 export type TunnelStatus = "not_started" | "in_progress" | "complete";
 export type TunnelPhase = "vrf" | "gre" | "ipsec" | "cryptomap" | "checkpoint" | "complete";
@@ -199,7 +200,7 @@ function showCryptoIpsecSa(): string {
 }
 
 export function runTunnelCommand(state: TunnelVisionMissionState, rawCommand: string): TunnelVisionMissionState {
-  const command = rawCommand.trim().toLowerCase().replace(/\s+/g, " ");
+  const command = normalizeIosCommand(rawCommand);
   const cliPhase = state.phase === "vrf" || state.phase === "gre" || state.phase === "ipsec" || state.phase === "cryptomap";
   if (!command || state.status === "complete" || !cliPhase) return state;
 

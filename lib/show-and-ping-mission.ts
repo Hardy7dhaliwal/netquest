@@ -1,5 +1,6 @@
 import { iosHelpForMode } from "./ios-help";
 import { tryRunDo } from "./ios-do";
+import { normalizeIosCommand } from "./ios-abbrev";
 
 export type ShowAndPingStatus = "not_started" | "in_progress" | "complete";
 export type ShowAndPingStep = "enable" | "show-vlan" | "show-trunk" | "show-running" | "ping" | "complete";
@@ -100,7 +101,7 @@ function showRunningConfig(): string {
 }
 
 export function runShowAndPingCommand(state: ShowAndPingMissionState, rawCommand: string): ShowAndPingMissionState {
-  const command = rawCommand.trim().toLowerCase().replace(/\s+/g, " ");
+  const command = normalizeIosCommand(rawCommand);
   if (!command || state.status === "complete") return state;
 
   const didDo = tryRunDo(state, rawCommand, showPingPromptFor(state.cliMode), runShowAndPingCommand);

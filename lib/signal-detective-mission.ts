@@ -1,5 +1,6 @@
 import { iosHelpForMode } from "./ios-help";
 import { tryRunDo } from "./ios-do";
+import { normalizeIosCommand } from "./ios-abbrev";
 
 export type SignalStatus = "not_started" | "in_progress" | "complete";
 export type SignalPhase = "diagnose" | "flow" | "span" | "sla" | "controller" | "netconf" | "final-check" | "complete";
@@ -228,7 +229,7 @@ function netconfJson(): string {
 }
 
 export function runSignalCommand(state: SignalDetectiveMissionState, rawCommand: string): SignalDetectiveMissionState {
-  const command = rawCommand.trim().toLowerCase().replace(/\s+/g, " ");
+  const command = normalizeIosCommand(rawCommand);
   const cliPhase = state.phase === "diagnose" || state.phase === "span" || state.phase === "sla" || state.phase === "netconf";
   if (!command || state.status === "complete" || !cliPhase) return state;
 

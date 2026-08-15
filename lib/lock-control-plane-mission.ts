@@ -1,5 +1,6 @@
 import { iosHelpForMode } from "./ios-help";
 import { tryRunDo } from "./ios-do";
+import { normalizeIosCommand } from "./ios-abbrev";
 
 export type LockStatus = "not_started" | "in_progress" | "complete";
 export type LockPhase = "local" | "aaa" | "iacl" | "copp" | "rest" | "design" | "complete";
@@ -145,7 +146,7 @@ function aaaServers(): string {
 }
 
 export function runLockCommand(state: LockControlPlaneMissionState, rawCommand: string): LockControlPlaneMissionState {
-  const command = rawCommand.trim().toLowerCase().replace(/\s+/g, " ");
+  const command = normalizeIosCommand(rawCommand);
   const cliPhase = state.phase === "local" || state.phase === "aaa";
   if (!command || state.status === "complete" || !cliPhase) return state;
 
