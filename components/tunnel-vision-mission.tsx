@@ -82,9 +82,9 @@ const phaseHints: Record<string, string[]> = {
 const VRF_COMMANDS = [
   { command: "enable", description: "Enter privileged EXEC mode.", mode: "user EXEC" },
   { command: "configure terminal", description: "Enter global configuration mode.", mode: "privileged" },
-  { command: "vrf definition GUEST", description: "Create the guest VRF.", mode: "global config" },
-  { command: "rd 65000:20", description: "Give the VRF its route distinguisher.", mode: "VRF config" },
-  { command: "interface gi0/1", description: "Enter the guest LAN port.", mode: "global config" },
+  { command: "vrf definition GUEST", description: "Create the guest VRF.", mode: "config" },
+  { command: "rd 65000:20", description: "Give the VRF its route distinguisher.", mode: "VRF" },
+  { command: "interface gi0/1", description: "Enter the guest LAN port.", mode: "config" },
   { command: "vrf forwarding GUEST", description: "Bind the port to the VRF — strips its IP address.", mode: "interface" },
   { command: "ip address 192.168.20.1 255.255.255.0", description: "Re-add the address inside the VRF.", mode: "interface" },
   { command: "show vrf brief", description: "Verify GUEST exists with its interface.", mode: "privileged" },
@@ -93,7 +93,7 @@ const VRF_COMMANDS = [
 const GRE_COMMANDS = [
   { command: "enable", description: "Enter privileged EXEC mode.", mode: "user EXEC" },
   { command: "configure terminal", description: "Enter global configuration mode.", mode: "privileged" },
-  { command: "interface tunnel 0", description: "Create the overlay tunnel.", mode: "global config" },
+  { command: "interface tunnel 0", description: "Create the overlay tunnel.", mode: "config" },
   { command: "ip address 10.99.0.2 255.255.255.252", description: "Address the tunnel on the overlay subnet.", mode: "interface" },
   { command: "tunnel source gi0/0", description: "The WAN interface carrying the tunnel.", mode: "interface" },
   { command: "tunnel destination 203.0.113.1", description: "The HQ WAN address.", mode: "interface" },
@@ -104,24 +104,24 @@ const GRE_COMMANDS = [
 const IPSEC_COMMANDS = [
   { command: "enable", description: "Enter privileged EXEC mode.", mode: "user EXEC" },
   { command: "configure terminal", description: "Enter global configuration mode.", mode: "privileged" },
-  { command: "crypto isakmp policy 10", description: "Create IKE phase 1 policy 10.", mode: "global config" },
+  { command: "crypto isakmp policy 10", description: "Create IKE phase 1 policy 10.", mode: "config" },
   { command: "encryption aes 256", description: "Phase 1 encryption.", mode: "ISAKMP policy" },
   { command: "authentication pre-share", description: "Phase 1 authentication method.", mode: "ISAKMP policy" },
   { command: "hash sha256", description: "Phase 1 integrity.", mode: "ISAKMP policy" },
   { command: "group 14", description: "Phase 1 Diffie-Hellman group.", mode: "ISAKMP policy" },
-  { command: "crypto isakmp key c1scoHQ address 203.0.113.1", description: "Pre-shared key for the HQ peer.", mode: "global config" },
-  { command: "crypto ipsec transform-set TS esp-aes 256 esp-sha-hmac", description: "Phase 2 transform set (explicit 256-bit).", mode: "global config" },
+  { command: "crypto isakmp key c1scoHQ address 203.0.113.1", description: "Pre-shared key for the HQ peer.", mode: "config" },
+  { command: "crypto ipsec transform-set TS esp-aes 256 esp-sha-hmac", description: "Phase 2 transform set (explicit 256-bit).", mode: "config" },
 ];
 
 const CRYPTOMAP_COMMANDS = [
   { command: "enable", description: "Enter privileged EXEC mode.", mode: "user EXEC" },
   { command: "configure terminal", description: "Enter global configuration mode.", mode: "privileged" },
-  { command: "access-list 101 permit gre host 198.51.100.2 host 203.0.113.1", description: "Match the GRE flow between WAN endpoints.", mode: "global config" },
-  { command: "crypto map CMAP 10 ipsec-isakmp", description: "Create the crypto map.", mode: "global config" },
+  { command: "access-list 101 permit gre host 198.51.100.2 host 203.0.113.1", description: "Match the GRE flow between WAN endpoints.", mode: "config" },
+  { command: "crypto map CMAP 10 ipsec-isakmp", description: "Create the crypto map.", mode: "config" },
   { command: "set peer 203.0.113.1", description: "The HQ peer.", mode: "crypto map" },
   { command: "set transform-set TS", description: "Use the esp-256-aes transform set.", mode: "crypto map" },
   { command: "match address 101", description: "Protect whatever ACL 101 matches.", mode: "crypto map" },
-  { command: "interface gi0/0", description: "Enter the WAN interface.", mode: "global config" },
+  { command: "interface gi0/0", description: "Enter the WAN interface.", mode: "config" },
   { command: "crypto map CMAP", description: "Apply the map to the WAN.", mode: "interface" },
   { command: "show crypto ipsec sa", description: "Verify ACTIVE SAS and counters.", mode: "privileged" },
 ];

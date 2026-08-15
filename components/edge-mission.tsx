@@ -125,7 +125,7 @@ const EDGE_BGP_COMMANDS = [
   { command: "enable", description: "Enter privileged EXEC mode.", mode: "user EXEC" },
   { command: "configure terminal", description: "Enter global configuration mode.", mode: "privileged" },
   { command: "router bgp 65100", description: "Enter BGP router configuration.", mode: "config" },
-  { command: "neighbor 203.0.113.2 ebgp-multihop 2", description: "Allow a two-hop eBGP peer.", mode: "config-router" },
+  { command: "neighbor 203.0.113.2 ebgp-multihop 2", description: "Allow a two-hop eBGP peer.", mode: "router" },
   { command: "show ip bgp summary", description: "Verify the session is Established.", mode: "privileged" },
 ];
 

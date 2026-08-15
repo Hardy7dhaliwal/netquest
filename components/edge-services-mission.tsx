@@ -131,8 +131,8 @@ const NAT_CONFIG_COMMANDS = [
   { command: "ip nat inside", description: "Mark gi0/0 as the NAT inside interface.", mode: "interface" },
   { command: "interface gi0/1", description: "Enter the WAN-facing (outside) interface.", mode: "config" },
   { command: "ip nat outside", description: "Mark gi0/1 as the NAT outside interface.", mode: "interface" },
-  { command: "access-list 1 permit 10.0.1.0 0.0.0.255", description: "Permit the LAN subnet for translation.", mode: "global config" },
-  { command: "ip nat inside source list 1 interface gi0/1 overload", description: "Enable PAT: overload the WAN address.", mode: "global config" },
+  { command: "access-list 1 permit 10.0.1.0 0.0.0.255", description: "Permit the LAN subnet for translation.", mode: "config" },
+  { command: "ip nat inside source list 1 interface gi0/1 overload", description: "Enable PAT: overload the WAN address.", mode: "config" },
   { command: "show ip nat statistics", description: "Verify translations are active.", mode: "privileged" },
 ];
 

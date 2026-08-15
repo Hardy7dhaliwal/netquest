@@ -106,7 +106,7 @@ const AREA_FIX_COMMANDS = [
   { command: "enable", description: "Enter privileged EXEC mode.", mode: "user EXEC" },
   { command: "configure terminal", description: "Enter global configuration mode.", mode: "privileged" },
   { command: "router ospf 1", description: "Enter OSPF process 1 configuration.", mode: "config" },
-  { command: "network 10.0.2.0 0.0.0.255 area 0", description: "Put the shared link in the backbone area.", mode: "router config" },
+  { command: "network 10.0.2.0 0.0.0.255 area 0", description: "Put the shared link in the backbone area.", mode: "router" },
 ];
 
 const VERIFY_COMMANDS = [
@@ -118,16 +118,16 @@ const SUMMARY_COMMANDS = [
   { command: "enable", description: "Enter privileged EXEC mode.", mode: "user EXEC" },
   { command: "configure terminal", description: "Enter global configuration mode.", mode: "privileged" },
   { command: "router ospf 1", description: "Enter OSPF process 1 configuration.", mode: "config" },
-  { command: "area 1 range 172.16.0.0 255.255.252.0", description: "Advertise one /22 summary into area 0.", mode: "router config" },
+  { command: "area 1 range 172.16.0.0 255.255.252.0", description: "Advertise one /22 summary into area 0.", mode: "router" },
 ];
 
 const FILTER_COMMANDS = [
   { command: "enable", description: "Enter privileged EXEC mode.", mode: "user EXEC" },
   { command: "configure terminal", description: "Enter global configuration mode.", mode: "privileged" },
   { command: "router ospf 1", description: "Enter OSPF process 1 configuration.", mode: "config" },
-  { command: "ip prefix-list LabDeny seq 5 deny 192.168.50.0/24", description: "Deny the lab prefix in the list.", mode: "router config" },
-  { command: "ip prefix-list LabDeny seq 10 permit 0.0.0.0/0 le 32", description: "Permit everything else.", mode: "router config" },
-  { command: "area 1 filter-list prefix LabDeny out", description: "Block the Type-3 LSA as it leaves area 1.", mode: "router config" },
+  { command: "ip prefix-list LabDeny seq 5 deny 192.168.50.0/24", description: "Deny the lab prefix in the list.", mode: "router" },
+  { command: "ip prefix-list LabDeny seq 10 permit 0.0.0.0/0 le 32", description: "Permit everything else.", mode: "router" },
+  { command: "area 1 filter-list prefix LabDeny out", description: "Block the Type-3 LSA as it leaves area 1.", mode: "router" },
 ];
 
 export default function OspfMission({
