@@ -1,3 +1,5 @@
+import { iosHelpForMode } from "./ios-help";
+
 export type ShowAndPingStatus = "not_started" | "in_progress" | "complete";
 export type ShowAndPingStep = "enable" | "show-vlan" | "show-trunk" | "show-running" | "ping" | "complete";
 export type CliMode = "exec" | "privileged" | "config";
@@ -104,7 +106,9 @@ export function runShowAndPingCommand(state: ShowAndPingMissionState, rawCommand
   let nextMode = state.cliMode;
   let next: ShowAndPingMissionState = state;
 
-  if (command === "help" || command === "?") {
+  if (command === "?") {
+    output = iosHelpForMode(state.cliMode);
+  } else if (command === "help") {
     output = state.cliMode === "privileged"
       ? [
           "Commands available in privileged EXEC mode:",

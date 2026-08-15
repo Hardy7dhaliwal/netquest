@@ -1,3 +1,5 @@
+import { iosHelpForMode } from "./ios-help";
+
 export type EdgeServicesStatus = "not_started" | "in_progress" | "complete";
 export type EdgeServicesPhase = "qos" | "ntp" | "nat-config" | "nat-drill" | "multicast" | "complete";
 export type EdgeServicesCliMode = "user" | "privileged" | "config" | "config-if";
@@ -136,7 +138,9 @@ export function runEdgeServicesCommand(state: EdgeServicesMissionState, rawComma
   let nextMode = state.cliMode;
   let next = state;
 
-  if (command === "help" || command === "?") {
+  if (command === "?") {
+    output = iosHelpForMode(state.cliMode);
+  } else if (command === "help") {
     output =
       state.phase === "nat-config"
         ? "Commands: enable, configure terminal, interface gi0/0, ip nat inside, interface gi0/1, ip nat outside, access-list 1 permit 10.0.1.0 0.0.0.255, ip nat inside source list 1 interface gi0/1 overload, show ip nat statistics, end, exit, help"

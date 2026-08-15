@@ -1,3 +1,5 @@
+import { iosHelpForMode } from "./ios-help";
+
 export type FabricStatus = "not_started" | "in_progress" | "complete";
 export type FabricPhase = "hypervisor" | "vm" | "vswitch" | "vswitch-check" | "vxlan" | "vxlan-check" | "complete";
 export type FabricCliMode = "user" | "privileged";
@@ -167,7 +169,9 @@ export function runFabricCommand(state: FabricExpressMissionState, rawCommand: s
   let nextMode = state.cliMode;
   let next = state;
 
-  if (command === "help" || command === "?") {
+  if (command === "?") {
+    output = iosHelpForMode(state.cliMode);
+  } else if (command === "help") {
     output =
       state.phase === "vswitch"
         ? "Commands: enable, esxcli network vswitch standard list, esxcli network vswitch standard uplink list, exit, help"

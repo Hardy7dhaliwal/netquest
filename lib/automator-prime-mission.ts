@@ -1,3 +1,5 @@
+import { iosHelpForMode } from "./ios-help";
+
 export type AutomatorStatus = "not_started" | "in_progress" | "complete";
 export type AutomatorPhase = "python" | "json" | "yang" | "apis" | "rest" | "eem" | "agent" | "complete";
 export type AutomatorCliMode = "user" | "privileged" | "config" | "repl";
@@ -156,7 +158,9 @@ export function runAutomatorCommand(state: AutomatorPrimeMissionState, rawComman
   let nextMode = state.cliMode;
   let next = state;
 
-  if (command === "help" || command === "?") {
+  if (command === "?") {
+    output = iosHelpForMode(state.cliMode);
+  } else if (command === "help") {
     output = state.phase === "python" ? PYTHON_HELP : state.phase === "json" ? JSON_HELP : EEM_HELP;
   } else if (state.phase === "python" && state.cliMode === "repl" && command === PY_IMPORT) {
     output = state.pyImport ? "requests is already imported." : "requests loaded — the HTTP client for RESTCONF.";

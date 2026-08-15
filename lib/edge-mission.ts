@@ -1,3 +1,5 @@
+import { iosHelpForMode } from "./ios-help";
+
 export type EdgeStatus = "not_started" | "in_progress" | "complete";
 export type EdgePhase = "igp" | "convergence" | "bgp-state" | "bgp-fix" | "pbr" | "local" | "complete";
 export type EdgeCliMode = "user" | "privileged" | "config" | "config-router";
@@ -122,7 +124,9 @@ export function runEdgeCommand(state: EdgeMissionState, rawCommand: string): Edg
   let nextMode = state.cliMode;
   let next = state;
 
-  if (command === "help" || command === "?") {
+  if (command === "?") {
+    output = iosHelpForMode(state.cliMode);
+  } else if (command === "help") {
     output = "Commands: enable, configure terminal, router bgp 65100, neighbor 203.0.113.2 ebgp-multihop 2, show ip bgp summary, exit, end, help";
   } else if (command === "end") {
     nextMode = "privileged";

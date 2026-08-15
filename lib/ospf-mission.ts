@@ -1,3 +1,5 @@
+import { iosHelpForMode } from "./ios-help";
+
 export type OspfStatus = "not_started" | "in_progress" | "complete";
 export type OspfPhase = "evidence" | "cause" | "config" | "verify" | "summarize" | "filter" | "complete";
 export type OspfCliMode = "user" | "privileged" | "config" | "config-router";
@@ -111,7 +113,9 @@ export function runOspfCommand(state: OspfMissionState, rawCommand: string): Osp
   let nextMode = state.cliMode;
   let next = state;
 
-  if (command === "help" || command === "?") {
+  if (command === "?") {
+    output = iosHelpForMode(state.cliMode);
+  } else if (command === "help") {
     output =
       state.phase === "config"
         ? "Commands: enable, configure terminal, router ospf 1, network 10.0.2.0 0.0.0.255 area 0, end, exit, help"

@@ -1,4 +1,5 @@
 import { seededRng } from "./boss";
+import { iosHelpForMode } from "./ios-help";
 
 /**
  * Hands-on labs (PRD "learn and pass" — realistic labs).
@@ -151,7 +152,15 @@ export function runLabCommand(state: LabState, template: LabTemplate, rawCommand
 
   const variant = getLabVariant(template, state.variantId);
 
-  if (command === "help" || command === "?") {
+  if (command === "?") {
+    const mode = step.kind === "configure" ? "config" : "privileged";
+    return {
+      ...state,
+      clean: false,
+      cliHistory: [...state.cliHistory, { input: rawCommand, output: iosHelpForMode(mode), prompt: step.kind === "configure" ? "R1(config)#" : "R1#" }],
+    };
+  }
+  if (command === "help") {
     const commands = typeof step.commands === "function" ? step.commands(variant) : (step.commands ?? []);
     const accepted = typeof step.acceptedCommands === "function" ? step.acceptedCommands(variant) : (step.acceptedCommands ?? []);
     const hint = commands.length ? commands[0] : accepted.length ? `e.g. ${accepted[0]}` : "Look at the prompt — which command inspects this?";

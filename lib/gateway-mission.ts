@@ -1,3 +1,5 @@
+import { iosHelpForMode } from "./ios-help";
+
 export type GatewayStatus = "not_started" | "in_progress" | "complete";
 export type GatewayPhase = "design" | "ha" | "hsrp-config" | "failover" | "vrrp" | "complete";
 export type GatewayCliMode = "user" | "privileged" | "config" | "config-if";
@@ -131,7 +133,9 @@ export function runGatewayCommand(state: GatewayMissionState, rawCommand: string
   let nextMode = state.cliMode;
   let next = state;
 
-  if (command === "help" || command === "?") {
+  if (command === "?") {
+    output = iosHelpForMode(state.cliMode);
+  } else if (command === "help") {
     output =
       state.phase === "hsrp-config"
         ? "Commands: enable, configure terminal, interface gi0/1, standby 1 ip 10.30.0.1, standby 1 priority 110, standby 1 preempt, show standby, end, exit, help"

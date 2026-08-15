@@ -1,3 +1,5 @@
+import { iosHelpForMode } from "./ios-help";
+
 export type StpStatus = "not_started" | "in_progress" | "complete";
 export type StpPhase = "root_election" | "bpdu_guard" | "root_guard" | "mst_concept" | "complete";
 export type SwitchId = "SW1" | "SW2";
@@ -110,7 +112,9 @@ export function runStpCommand(state: StpMissionState, rawCommand: string): StpMi
   let nextMode = state.cliMode;
   let next = state;
 
-  if (command === "help" || command === "?") {
+  if (command === "?") {
+    output = iosHelpForMode(state.cliMode);
+  } else if (command === "help") {
     output =
       state.phase === "bpdu_guard"
         ? "Commands: enable, configure terminal, interface gi0/5, spanning-tree bpduguard enable, show spanning-tree interface gi0/5, end, exit, help"

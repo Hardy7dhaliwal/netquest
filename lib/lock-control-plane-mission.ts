@@ -1,3 +1,5 @@
+import { iosHelpForMode } from "./ios-help";
+
 export type LockStatus = "not_started" | "in_progress" | "complete";
 export type LockPhase = "local" | "aaa" | "iacl" | "copp" | "rest" | "design" | "complete";
 export type LockCliMode = "user" | "privileged" | "config";
@@ -150,7 +152,9 @@ export function runLockCommand(state: LockControlPlaneMissionState, rawCommand: 
   let nextMode = state.cliMode;
   let next = state;
 
-  if (command === "help" || command === "?") {
+  if (command === "?") {
+    output = iosHelpForMode(state.cliMode);
+  } else if (command === "help") {
     output =
       state.phase === "local"
         ? "Commands: enable, configure terminal, username admin secret C1scoBranch!, line vty 0 4, login local, transport input ssh, end, show running-config | include line vty, exit, help"

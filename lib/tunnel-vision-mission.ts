@@ -1,3 +1,5 @@
+import { iosHelpForMode } from "./ios-help";
+
 export type TunnelStatus = "not_started" | "in_progress" | "complete";
 export type TunnelPhase = "vrf" | "gre" | "ipsec" | "cryptomap" | "checkpoint" | "complete";
 export type TunnelCliMode = "user" | "privileged" | "config" | "config-if" | "config-vrf" | "config-isakmp" | "config-crypto-map";
@@ -204,7 +206,9 @@ export function runTunnelCommand(state: TunnelVisionMissionState, rawCommand: st
   let nextMode = state.cliMode;
   let next = state;
 
-  if (command === "help" || command === "?") {
+  if (command === "?") {
+    output = iosHelpForMode(state.cliMode);
+  } else if (command === "help") {
     output =
       state.phase === "vrf"
         ? "Commands: enable, configure terminal, vrf definition GUEST, rd 65000:20, interface gi0/1, vrf forwarding GUEST, ip address 192.168.20.1 255.255.255.0, show vrf brief, end, exit, help"

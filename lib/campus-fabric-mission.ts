@@ -1,3 +1,5 @@
+import { iosHelpForMode } from "./ios-help";
+
 export type CampusStatus = "not_started" | "in_progress" | "complete";
 export type CampusPhase = "roles" | "lisp" | "lisp-check" | "interop" | "complete";
 export type CampusCliMode = "user" | "privileged";
@@ -125,7 +127,9 @@ export function runCampusCommand(state: CampusFabricMissionState, rawCommand: st
   let nextMode = state.cliMode;
   let next = state;
 
-  if (command === "help" || command === "?") {
+  if (command === "?") {
+    output = iosHelpForMode(state.cliMode);
+  } else if (command === "help") {
     output = "Commands: enable, show lisp session, show lisp map-cache, show lisp site, exit, help";
   } else if (command === "exit" || command === "end") {
     nextMode = "user";

@@ -1,3 +1,5 @@
+import { iosHelpForMode } from "./ios-help";
+
 export type EcStatus = "not_started" | "in_progress" | "complete";
 export type EcPhase = "evidence" | "cause" | "config" | "verify" | "complete";
 export type EcCliMode = "user" | "privileged" | "config" | "config-if";
@@ -109,7 +111,9 @@ export function runEcCommand(state: EcMissionState, rawCommand: string): EcMissi
   let nextMode = state.cliMode;
   let next = state;
 
-  if (command === "help" || command === "?") {
+  if (command === "?") {
+    output = iosHelpForMode(state.cliMode);
+  } else if (command === "help") {
     output =
       state.phase === "config"
         ? "Commands: enable, configure terminal, interface gi0/2, channel-group 1 mode active, show etherchannel summary, end, exit, help"

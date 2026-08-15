@@ -1,3 +1,5 @@
+import { iosHelpForMode } from "./ios-help";
+
 export type SignalStatus = "not_started" | "in_progress" | "complete";
 export type SignalPhase = "diagnose" | "flow" | "span" | "sla" | "controller" | "netconf" | "final-check" | "complete";
 export type SignalCliMode = "user" | "privileged" | "config";
@@ -233,7 +235,9 @@ export function runSignalCommand(state: SignalDetectiveMissionState, rawCommand:
   let nextMode = state.cliMode;
   let next = state;
 
-  if (command === "help" || command === "?") {
+  if (command === "?") {
+    output = iosHelpForMode(state.cliMode);
+  } else if (command === "help") {
     output =
       state.phase === "diagnose"
         ? "Commands: enable, ping 10.20.0.1, traceroute 10.20.0.1, show interface gi0/1, debug ip packet access-list 150, undebug all, exit, help"

@@ -1,3 +1,5 @@
+import { iosHelpForMode } from "./ios-help";
+
 export type CliMode = "exec" | "privileged" | "config" | "interface";
 export type MissionStatus = "not_started" | "in_progress" | "complete";
 export type PingResult = "success" | "failed" | null;
@@ -130,7 +132,9 @@ export function runCommand(state: MissionState, rawCommand: string): MissionStat
   let nextMode = state.cliMode;
   let nextEvents = state.eventLog;
 
-  if (command === "help" || command === "?") {
+  if (command === "?") {
+    output = iosHelpForMode(state.cliMode);
+  } else if (command === "help") {
     output = "Commands: enable, configure terminal, interface g0/1, show vlan brief, show interfaces trunk, show running-config, ping 10.20.0.1, exit, end";
   } else if (command === "end") {
     nextMode = "privileged";

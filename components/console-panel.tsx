@@ -64,7 +64,7 @@ export function ConsolePanel({
           <p className="font-mono text-xs font-bold text-slate-200">{deviceName} · console</p>
           <span className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-emerald-300"><span className="h-1.5 w-1.5 rounded-full bg-emerald-300" /> connected</span>
         </div>
-        <p className="mt-2 font-mono text-xs text-slate-500">Type <span className="text-cyan-300">help</span> for available commands.</p>
+        <p className="mt-2 font-mono text-xs text-slate-500">Type <span className="text-cyan-300">?</span> to list commands, or <span className="text-cyan-300">help</span> for a hint.</p>
       </div>
       <div className="flex-1 space-y-3 overflow-y-auto p-4 font-mono text-xs leading-5" aria-live="polite">
         {history.length === 0 ? emptyText : history.map((entry, index) => (

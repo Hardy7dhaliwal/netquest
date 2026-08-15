@@ -1,3 +1,5 @@
+import { iosHelpForMode } from "./ios-help";
+
 export type SdwanStatus = "not_started" | "in_progress" | "complete";
 export type SdwanPhase = "planes" | "omp" | "tlocs" | "tlocs-check" | "benefit" | "complete";
 export type SdwanCliMode = "user" | "privileged";
@@ -131,7 +133,9 @@ export function runSdwanCommand(state: SdwanMissionState, rawCommand: string): S
   let nextMode = state.cliMode;
   let next = state;
 
-  if (command === "help" || command === "?") {
+  if (command === "?") {
+    output = iosHelpForMode(state.cliMode);
+  } else if (command === "help") {
     output = "Commands: enable, show omp tlocs, show bfd sessions, show control connections, exit, help";
   } else if (command === "exit" || command === "end") {
     nextMode = "user";

@@ -41,6 +41,20 @@ describe("The VLAN That Vanished mission", () => {
     expect(state.cliHistory[2].output).toContain("switchport trunk allowed vlan 10");
   });
 
+  it("'?' lists mode commands without revealing the fix, while help still hints", () => {
+    const atUser = runCommand(resetMission(), "?");
+    expect(atUser.cliHistory.at(-1)?.output).toContain("Exec commands");
+    expect(atUser.cliHistory.at(-1)?.output).toContain("enable");
+    expect(atUser.cliHistory.at(-1)?.output).not.toContain("switchport trunk allowed vlan add 20");
+
+    const atPrivileged = runCommand(commandSequence("enable"), "?");
+    expect(atPrivileged.cliHistory.at(-1)?.output).toContain("configure terminal");
+    expect(atPrivileged.cliHistory.at(-1)?.output).not.toContain("switchport trunk allowed vlan add 20");
+
+    const helped = runCommand(commandSequence("enable"), "help");
+    expect(helped.cliHistory.at(-1)?.output).toContain("interface g0/1");
+  });
+
   it("adds VLAN 20 and succeeds on the post-fix ping", () => {
     const state = commandSequence(
       "enable",
