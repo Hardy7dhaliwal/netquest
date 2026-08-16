@@ -35,6 +35,18 @@ describe("normalizeIosCommand", () => {
     expect(normalizeIosCommand("sh int tunnel 0")).toBe("show interface tunnel 0");
   });
 
+  it("resolves show ip int as the singular interface", () => {
+    expect(normalizeIosCommand("sh ip int br")).toBe("show ip interface brief");
+    expect(normalizeIosCommand("sh ip int gi0/1")).toBe("show ip interface gi0/1");
+    expect(normalizeIosCommand("show ip int brief")).toBe("show ip interface brief");
+  });
+
+  it("expands no shut and wr", () => {
+    expect(normalizeIosCommand("no shut")).toBe("no shutdown");
+    expect(normalizeIosCommand("wr")).toBe("write memory");
+    expect(normalizeIosCommand("WR")).toBe("write memory");
+  });
+
   it("expands interface entry", () => {
     expect(normalizeIosCommand("int g0/1")).toBe("interface g0/1");
     expect(normalizeIosCommand("int gi0/1")).toBe("interface gi0/1");

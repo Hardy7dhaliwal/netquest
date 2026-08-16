@@ -21,6 +21,8 @@ const LEADING: Record<string, string> = {
   con: "configure",
   int: "interface",
   shut: "shutdown",
+  // `wr` is the classic IOS "save the config" shortcut: write memory.
+  wr: "write memory",
 };
 
 /**
@@ -40,6 +42,8 @@ const TOKEN: Record<string, string> = {
   trans: "translations",
   sess: "session",
   conn: "connections",
+  // `no shut` → `no shutdown` (and `shut` already maps in LEADING).
+  shut: "shutdown",
 };
 
 /**
@@ -84,11 +88,18 @@ export function normalizeIosCommand(raw: string): string {
       continue;
     }
 
-    // `show int <keyword>` → `show interfaces <keyword>`, otherwise
-    // `show int <ifname>` → `show interface <ifname>`.
-    if (out[0] === "show" && (tok === "int" || tok === "intf")) {
-      out.push(INTERFACE_KEYWORDS.has(next) ? "interfaces" : "interface");
-      continue;
+    // `show int <keyword>` → `show interfaces <keyword>`; `show int <ifname>`
+    // → `show interface <ifname>`. But `show ip int …` is always the singular
+    // `interface` (`show ip interface brief`, `show ip interface gi0/1`).
+    if (tok === "int" || tok === "intf") {
+      if (out[i - 1] === "show") {
+        out.push(INTERFACE_KEYWORDS.has(next) ? "interfaces" : "interface");
+        continue;
+      }
+      if (out[i - 1] === "ip" && out[i - 2] === "show") {
+        out.push("interface");
+        continue;
+      }
     }
 
     out.push(TOKEN[tok] ?? tok);
