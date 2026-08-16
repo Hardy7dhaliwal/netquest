@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { ConsolePanel, type InsertSignal } from "@/components/console-panel";
 import { GlossaryText } from "@/components/glossary-text";
+import { MissionPrimer } from "@/components/mission-primer";
 import {
   cliBasicsPromptFor,
   CLI_BASICS_STEPS,
@@ -70,6 +71,7 @@ export default function CliBasicsMission({
               <GlossaryText text="A brand-new switch is on the bench and you have the console cable. Before you can troubleshoot anything, you need five commands: how to ask for help, enter the right modes, and look at the device." />
             </p>
           </section>
+          <MissionPrimer missionId="console-basics" />
           <section className="rounded-xl border border-slate-800 bg-slate-900/70 p-5">
             <div className="flex items-center justify-between">
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">Your steps</p>

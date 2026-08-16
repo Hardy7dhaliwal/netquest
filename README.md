@@ -174,6 +174,7 @@ lib/labs.ts                  Variant lab engine (inspect-diagnose-configure-veri
 lib/lab-templates.ts         Core labs (4) + lab-templates-extra.ts (7) + -extra2.ts (10) + -extra3.ts (7) + -extra4.ts (3) + -extra5.ts (4) + -extra6.ts (3) + -extra7.ts (1) = 39
 lib/rescue.ts, rescues.ts    Rescue mini-lesson types + 46-entry phase-keyed catalog
 lib/glossary.ts              Networking term glossary
+lib/mission-primers.ts       Plain-language concept primer per mission
 lib/ios-help.ts, ios-do.ts   Realistic `?` help + `do <exec>` from config mode
 lib/ios-abbrev.ts            IOS abbreviations + unambiguous-prefix expansion
 lib/ios-console.ts           IOS Tab completion (position-aware, vocab fallback)
@@ -190,7 +191,7 @@ lib/supabase.ts              Cookie-based browser client (@supabase/ssr)
 lib/supabase-server.ts       Server client for the magic-link callback route
 lib/progress-store.ts        zustand + localStorage: XP, streak, mastery, skills, exam/review/lab results, sync fields
 lib/<arc>-mission.ts         14 field-mission engines + 3 beginner engines (deterministic)
-lib/*.test.ts                598 unit tests across 41 files
+lib/*.test.ts                601 unit tests across 42 files
 components/*.tsx             Mission renderers + device-icons, topology, console-panel, hint-ladder, glossary,
                              coverage-dashboard, mastery-panel, badges-panel, readiness-report,
                              arc-quiz, flashcard-review, gauntlet, training-grounds, streak-calendar,
@@ -213,7 +214,7 @@ Conventions (keep these when adding features):
 ```bash
 npm install
 npm run dev       # start dev server
-npm test          # vitest (598 unit tests)
+npm test          # vitest (601 unit tests)
 npm run build     # production build
 npm run lint      # eslint (see known notes)
 ```
@@ -224,7 +225,7 @@ npm run lint      # eslint (see known notes)
 
 ## Testing
 
-598 deterministic unit tests across 41 files:
+601 deterministic unit tests across 42 files:
 
 | Area | Files | Tests |
 | --- | --- | ---: |
@@ -232,7 +233,7 @@ npm run lint      # eslint (see known notes)
 | Field engines | mission (VLAN), stp, etherchannel, ospf, edge, gateway, edge-services | 94 |
 | Overlay arcs | tunnel-vision, fabric-express, sdwan, campus-fabric | 66 |
 | Assurance + finale | signal-detective, lock-control-plane, automator-prime | 60 |
-| Learning systems | rescue, rescues, glossary, ios-help, ios-do, ios-abbrev, ios-console, mastery, quiz, flashcards, badges, readiness, boss, streak, review (adaptive) | 157 |
+| Learning systems | rescue, rescues, glossary, ios-help, ios-do, ios-abbrev, ios-console, mastery, quiz, flashcards, badges, readiness, boss, streak, review (adaptive), mission-primers | 160 |
 | Learn-and-pass engines | curriculum, skills, exams, labs (incl. full 4.x/6.x + 5.4.a–d + 3.2/5.1 lab-coverage assertions), exam-bank | 143 |
 | Core + sync | progress-store, encor-catalog, sync, smoke | 61 |
 

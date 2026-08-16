@@ -66,6 +66,7 @@ import { HintLadder } from "@/components/hint-ladder";
 import { CommandReference } from "@/components/command-reference";
 import { NextMissionButton, type NextMission } from "@/components/next-mission-button";
 import { GlossaryText } from "@/components/glossary-text";
+import { MissionPrimer } from "@/components/mission-primer";
 import { Wordmark } from "@/components/wordmark";
 import { CLI_BASICS_STEPS, resetCliBasicsMission, startCliBasicsMission, type CliBasicsMissionState } from "@/lib/cli-basics-mission";
 import { SHOW_PING_STEPS, resetShowAndPingMission, startShowAndPingMission, type ShowAndPingMissionState } from "@/lib/show-and-ping-mission";
@@ -204,6 +205,7 @@ function MissionWorkspace({
               <GlossaryText text="After a switch upgrade, Sales users on VLAN 20 cannot reach their gateway. The access port and gateway are configured, but traffic crossing the inter-switch trunk is failing." />
             </p>
           </section>
+          <MissionPrimer missionId="vlan-that-vanished" />
           <section className="rounded-xl border border-slate-800 bg-slate-900/70 p-5">
             <div className="flex items-center justify-between">
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">Objectives</p>

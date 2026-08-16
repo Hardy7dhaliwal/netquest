@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { ConsolePanel, type InsertSignal } from "@/components/console-panel";
 import { GlossaryText } from "@/components/glossary-text";
+import { MissionPrimer } from "@/components/mission-primer";
 import {
   runShowAndPingCommand,
   SHOW_PING_STEPS,
@@ -70,6 +71,7 @@ export default function ShowAndPingMission({
               <GlossaryText text="Nothing is broken — your job is to look around and learn what the outputs mean. Run each read-only command, read its answer, and finish with a successful ping." />
             </p>
           </section>
+          <MissionPrimer missionId="show-and-ping" />
           <section className="rounded-xl border border-slate-800 bg-slate-900/70 p-5">
             <div className="flex items-center justify-between">
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">Your steps</p>

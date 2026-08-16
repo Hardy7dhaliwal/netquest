@@ -20,6 +20,7 @@ import { CommandReference } from "@/components/command-reference";
 import { NextMissionButton, type NextMission } from "@/components/next-mission-button";
 import { ConsolePanel } from "@/components/console-panel";
 import { GlossaryText } from "@/components/glossary-text";
+import { MissionPrimer } from "@/components/mission-primer";
 
 const phaseCopy = {
   python: {
@@ -209,6 +210,7 @@ export default function AutomatorPrimeMission({
             <h2 className="mt-3 text-xl font-bold">The network is going automated.</h2>
             <p className="mt-3 text-sm leading-6 text-slate-400"><GlossaryText text="The operations team scripts everything now. You write the Python probe that reads devices over RESTCONF, construct the JSON payloads the controllers accept, understand the YANG model behind them, call the SD-WAN Manager API, read the response codes, build the EEM applet that saves configs on change — then choose how to orchestrate the whole fleet." /></p>
           </section>
+          <MissionPrimer missionId="automator-prime" />
           <section className="rounded-xl border border-slate-800 bg-slate-900/70 p-5">
             <div className="flex items-center justify-between">
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">Mission progress</p>

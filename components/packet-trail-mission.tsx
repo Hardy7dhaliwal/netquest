@@ -5,6 +5,7 @@ import { NextMissionButton, type NextMission } from "@/components/next-mission-b
 import { Fragment } from "react";
 import { motion } from "framer-motion";
 import { GlossaryText } from "@/components/glossary-text";
+import { MissionPrimer } from "@/components/mission-primer";
 import { DEVICE_ICONS, PacketIcon, type DeviceKind } from "@/components/device-icons";
 
 import {
@@ -107,6 +108,7 @@ export default function PacketTrailMission({
       </header>
 
       <div className="mx-auto max-w-6xl space-y-5 p-5 lg:p-8">
+        <MissionPrimer missionId="packet-trail" />
         {complete && (
           <div className="rounded-xl border border-emerald-300/30 bg-emerald-300/10 p-5 text-center">
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">Tour complete</p>

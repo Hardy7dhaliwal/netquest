@@ -24,6 +24,7 @@ import { HintLadder } from "@/components/hint-ladder";
 import { CommandReference } from "@/components/command-reference";
 import { NextMissionButton, type NextMission } from "@/components/next-mission-button";
 import { GlossaryText } from "@/components/glossary-text";
+import { MissionPrimer } from "@/components/mission-primer";
 
 const phaseCopy = {
   igp: {
@@ -178,6 +179,7 @@ export default function EdgeMission({
             <h2 className="mt-3 text-xl font-bold">The edge router decides.</h2>
             <p className="mt-3 text-sm leading-6 text-slate-400"><GlossaryText text="R-EDGE is the campus border: it runs an IGP internally, peers eBGP with the ISP, and steers special traffic with PBR. Pick the right protocol comparison, type the eBGP fix, verify the session, then make the edge route with opinions." /></p>
           </section>
+          <MissionPrimer missionId="edge-has-opinions" />
           <section className="rounded-xl border border-slate-800 bg-slate-900/70 p-5">
             <div className="flex items-center justify-between">
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">Mission progress</p>
