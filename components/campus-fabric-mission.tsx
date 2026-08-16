@@ -186,6 +186,7 @@ export default function CampusFabricMission({
                 onRun={(command) => onChange(runCampusCommand(mission, command))}
                 inputId="campus-fabric-cli"
                 emptyText={emptyText}
+                completions={LISP_COMMANDS.map((entry) => entry.command)}
               />
               <CommandReference commands={LISP_COMMANDS} title="LISP control plane commands" />
             </div>

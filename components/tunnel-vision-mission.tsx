@@ -232,6 +232,7 @@ export default function TunnelVisionMission({
                 onRun={(command) => onChange(runTunnelCommand(mission, command))}
                 inputId="tunnel-cli"
                 emptyText={emptyText}
+                completions={(mission.phase === "vrf" ? VRF_COMMANDS : mission.phase === "gre" ? GRE_COMMANDS : mission.phase === "ipsec" ? IPSEC_COMMANDS : CRYPTOMAP_COMMANDS).map((entry) => entry.command)}
               />
               <CommandReference
                 commands={mission.phase === "vrf" ? VRF_COMMANDS : mission.phase === "gre" ? GRE_COMMANDS : mission.phase === "ipsec" ? IPSEC_COMMANDS : CRYPTOMAP_COMMANDS}

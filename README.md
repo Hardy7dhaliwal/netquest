@@ -152,7 +152,7 @@ The **exam hall** (dashboard → Exam hall) runs blueprint-aligned practice exam
 - **Adaptive review** — a spaced-repetition queue over the **weakest due subskills** (`lib/review.ts`): each in-scope objective contributes a fresh recall/interpret question from its arc bank (never re-serving seen ids) and, when a lab covers it, a lab item that prefers uncompleted variants. Correct answers stretch the objective's SM-2-lite interval (+5 XP each) and misses reschedule it for sooner; lab runs from review feed the variant evidence for Independent. The schedule and seen-question map persist across devices via the sync blob.
 - **Rescue engine** — 46 mini-lessons keyed to mission phases, shown when a player is stuck (`lib/rescues.ts` + `HintLadder` + `rescue-panel`). Every phase of every mission is covered (enforced by tests).
 - **Glossary** — 119 networking terms with clickable inline references in mission briefs and hints (`lib/glossary.ts` + `GlossaryText`).
-- **IOS-faithful CLI** — `?` lists the commands available at the current mode level (never the answer), `do <exec>` runs a `show` from config mode, and **unambiguous-prefix abbreviation** (`sh ip ospf ne`, `conf t`, `no shut`, `wr`) matches real IOS; ambiguous prefixes stay rejected like IOS's "Ambiguous command" (`lib/ios-help.ts`, `lib/ios-do.ts`, `lib/ios-abbrev.ts`).
+- **IOS-faithful CLI** — `?` lists the commands available at the current mode level (never the answer), `do <exec>` runs a `show` from config mode, **unambiguous-prefix abbreviation** (`sh ip ospf ne`, `conf t`, `no shut`, `wr`) matches real IOS, **Tab completes** the current word against the step's accepted commands (with a keyword-vocabulary fallback), and **↑/↓ recall** previously run commands like a device's CLI history buffer (`lib/ios-help.ts`, `lib/ios-do.ts`, `lib/ios-abbrev.ts`, `lib/ios-console.ts`, `components/use-ios-console.ts`).
 - **Coverage dashboard** — per-domain progress and exam-weight percentages against the 47-objective blueprint, with evidence-based status chips + per-objective mastery.
 - **Arc quizzes** — per-arc checkpoint quizzes over the arc's full vetted rescue-question bank (+25 XP perfect / +10 partial, once per arc).
 - **Flashcards** — SM-2-lite spaced repetition over a per-arc deck (+5 XP per due card remembered).
@@ -176,6 +176,7 @@ lib/rescue.ts, rescues.ts    Rescue mini-lesson types + 46-entry phase-keyed cat
 lib/glossary.ts              Networking term glossary
 lib/ios-help.ts, ios-do.ts   Realistic `?` help + `do <exec>` from config mode
 lib/ios-abbrev.ts            IOS abbreviations + unambiguous-prefix expansion
+lib/ios-console.ts           IOS Tab completion (position-aware, vocab fallback)
 lib/quiz.ts                  Per-arc checkpoint quizzes (bank shared with rescues/boss)
 lib/flashcards.ts            SM-2-lite card scheduling
 lib/badges.ts                Achievement badges over the mastery map
@@ -189,7 +190,7 @@ lib/supabase.ts              Cookie-based browser client (@supabase/ssr)
 lib/supabase-server.ts       Server client for the magic-link callback route
 lib/progress-store.ts        zustand + localStorage: XP, streak, mastery, skills, exam/review/lab results, sync fields
 lib/<arc>-mission.ts         14 field-mission engines + 3 beginner engines (deterministic)
-lib/*.test.ts                589 unit tests across 40 files
+lib/*.test.ts                598 unit tests across 41 files
 components/*.tsx             Mission renderers + device-icons, topology, console-panel, hint-ladder, glossary,
                              coverage-dashboard, mastery-panel, badges-panel, readiness-report,
                              arc-quiz, flashcard-review, gauntlet, training-grounds, streak-calendar,
@@ -212,7 +213,7 @@ Conventions (keep these when adding features):
 ```bash
 npm install
 npm run dev       # start dev server
-npm test          # vitest (589 unit tests)
+npm test          # vitest (598 unit tests)
 npm run build     # production build
 npm run lint      # eslint (see known notes)
 ```
@@ -223,7 +224,7 @@ npm run lint      # eslint (see known notes)
 
 ## Testing
 
-589 deterministic unit tests across 40 files:
+598 deterministic unit tests across 41 files:
 
 | Area | Files | Tests |
 | --- | --- | ---: |
@@ -231,7 +232,7 @@ npm run lint      # eslint (see known notes)
 | Field engines | mission (VLAN), stp, etherchannel, ospf, edge, gateway, edge-services | 94 |
 | Overlay arcs | tunnel-vision, fabric-express, sdwan, campus-fabric | 66 |
 | Assurance + finale | signal-detective, lock-control-plane, automator-prime | 60 |
-| Learning systems | rescue, rescues, glossary, ios-help, ios-do, ios-abbrev, mastery, quiz, flashcards, badges, readiness, boss, streak, review (adaptive) | 148 |
+| Learning systems | rescue, rescues, glossary, ios-help, ios-do, ios-abbrev, ios-console, mastery, quiz, flashcards, badges, readiness, boss, streak, review (adaptive) | 157 |
 | Learn-and-pass engines | curriculum, skills, exams, labs (incl. full 4.x/6.x + 5.4.a–d + 3.2/5.1 lab-coverage assertions), exam-bank | 143 |
 | Core + sync | progress-store, encor-catalog, sync, smoke | 61 |
 

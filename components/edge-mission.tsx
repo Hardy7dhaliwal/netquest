@@ -1,8 +1,8 @@
 "use client";
 import { Wordmark } from "@/components/wordmark";
 
-import { useRef, useState } from "react";
-import type { FormEvent } from "react";
+import { useRef } from "react";
+import { useIosConsole } from "@/components/use-ios-console";
 
 import {
   chooseBgpState,
@@ -140,8 +140,11 @@ export default function EdgeMission({
   onExit: () => void;
   next?: NextMission | null;
 }) {
-  const [command, setCommand] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const { command, setCommand, submit, handleKeyDown } = useIosConsole({
+    onRun: (value) => onChange(runEdgeCommand(mission, value)),
+    completions: EDGE_BGP_COMMANDS.map((entry) => entry.command),
+  });
 
   const complete = mission.status === "complete";
   const activePhase = mission.phase === "complete" ? "local" : mission.phase;
@@ -154,14 +157,6 @@ export default function EdgeMission({
     else if (mission.phase === "bgp-state") onChange(chooseBgpState(mission, option as EdgeBgpStateOption));
     else if (mission.phase === "pbr") onChange(choosePbr(mission, option as EdgePbrOption));
     else onChange(chooseLocal(mission, option as EdgeLocalOption));
-  }
-
-  function submitCommand(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!command.trim()) return;
-    onChange(runEdgeCommand(mission, command));
-    setCommand("");
-    inputRef.current?.focus();
   }
 
   return (
@@ -227,7 +222,7 @@ export default function EdgeMission({
                     <p className="font-mono text-xs font-bold text-slate-200">R-EDGE · console</p>
                     <span className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-emerald-300"><span className="h-1.5 w-1.5 rounded-full bg-emerald-300" /> connected</span>
                   </div>
-                  <p className="mt-2 font-mono text-xs text-slate-500">Type <span className="text-cyan-300">help</span> for available commands.</p>
+                  <p className="mt-2 font-mono text-xs text-slate-500">Type <span className="text-cyan-300">help</span> for available commands. <span className="text-cyan-300">Tab</span> completes, <span className="text-cyan-300">↑↓</span> recall commands.</p>
                 </div>
                 <div className="max-h-64 space-y-3 overflow-y-auto p-4 font-mono text-xs leading-5" aria-live="polite">
                   {mission.cliHistory.length === 0 && <p className="text-slate-600">Enable, enter BGP configuration, raise the TTL for the two-hop peer, then verify with <span className="text-slate-400">show ip bgp summary</span>.</p>}
@@ -238,11 +233,11 @@ export default function EdgeMission({
                     </div>
                   ))}
                 </div>
-                <form className="border-t border-slate-800 p-3" onSubmit={submitCommand}>
+                <form className="border-t border-slate-800 p-3" onSubmit={(event) => { event.preventDefault(); submit(); inputRef.current?.focus(); }}>
                   <label className="sr-only" htmlFor="edge-cli">Enter a CLI command</label>
                   <div className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 focus-within:border-cyan-300/70">
                     <span className="font-mono text-xs text-cyan-300">{edgePromptFor(mission.cliMode)}</span>
-                    <input ref={inputRef} autoComplete="off" className="min-w-0 flex-1 bg-transparent font-mono text-xs text-slate-100 outline-none placeholder:text-slate-700" id="edge-cli" onChange={(event) => setCommand(event.target.value)} placeholder="enter command" value={command} />
+                    <input ref={inputRef} autoComplete="off" className="min-w-0 flex-1 bg-transparent font-mono text-xs text-slate-100 outline-none placeholder:text-slate-700" id="edge-cli" onChange={(event) => setCommand(event.target.value)} onKeyDown={handleKeyDown} placeholder="enter command" value={command} />
                     <button className="text-xs font-bold text-cyan-300 hover:text-cyan-100" type="submit">Run</button>
                   </div>
                 </form>

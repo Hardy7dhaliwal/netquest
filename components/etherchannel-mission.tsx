@@ -211,6 +211,7 @@ export default function EtherchannelMission({
                 onRun={(command) => onChange(runEcCommand(mission, command))}
                 inputId="ec-cli"
                 emptyText={emptyText}
+                completions={(mission.phase === "config" ? CONFIG_COMMANDS : VERIFY_COMMANDS).map((entry) => entry.command)}
               />
               <CommandReference commands={mission.phase === "config" ? CONFIG_COMMANDS : VERIFY_COMMANDS} title={mission.phase === "config" ? "LACP fix commands" : "Verification commands"} />
             </div>

@@ -121,6 +121,7 @@ export default function RescuePanel({ rescue, onClose }: { rescue: RescueDefinit
                   history={state.cliHistory}
                   onRun={(command) => setState(runRescueCommand(state, rescue, command))}
                   inputId={`rescue-cli-${rescue.id}`}
+                  completions={[step.command]}
                   emptyText={
                     <p className="text-slate-600">
                       Type the command below to practice the fix. Type <span className="text-cyan-300">help</span> for a hint.

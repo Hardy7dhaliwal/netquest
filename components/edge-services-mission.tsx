@@ -258,6 +258,7 @@ export default function EdgeServicesMission({
                 onRun={(command) => onChange(runEdgeServicesCommand(mission, command))}
                 inputId="edge-services-cli"
                 emptyText={emptyText}
+                completions={(mission.phase === "nat-config" ? NAT_CONFIG_COMMANDS : NAT_DRILL_COMMANDS).map((entry) => entry.command)}
               />
               <CommandReference commands={mission.phase === "nat-config" ? NAT_CONFIG_COMMANDS : NAT_DRILL_COMMANDS} title={mission.phase === "nat-config" ? "NAT/PAT console commands" : "Translation drill commands"} />
             </div>

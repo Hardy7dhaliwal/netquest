@@ -130,6 +130,15 @@ const INTERFACE_KEYWORDS = new Set([
   "description",
 ]);
 
+/** The keyword vocabularies, exposed for Tab completion in the console: leading
+ * keywords for the first word of a command, sub-keywords for every word after. */
+export const IOS_LEADING_KEYWORDS = [...LEADING_WORDS].sort();
+export const IOS_SUB_KEYWORDS = [...SUB_WORDS].sort();
+
+/** The explicit short-form maps, exposed so Tab completion resolves the same
+ * ambiguous abbreviations the input normalizer does (sh→show, en→enable…). */
+export { LEADING, TOKEN };
+
 /** Expand `token` if it is an unambiguous prefix of exactly one known keyword;
  * otherwise return it unchanged (ambiguous, unknown, or already exact). */
 function resolveToken(token: string, words: ReadonlySet<string>): string {

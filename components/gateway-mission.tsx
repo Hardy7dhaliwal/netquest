@@ -222,6 +222,7 @@ export default function GatewayMission({
                 onRun={(command) => onChange(runGatewayCommand(mission, command))}
                 inputId="gateway-cli"
                 emptyText={emptyText}
+                completions={(mission.phase === "hsrp-config" ? HSRP_COMMANDS : FAILOVER_COMMANDS).map((entry) => entry.command)}
               />
               <CommandReference commands={mission.phase === "hsrp-config" ? HSRP_COMMANDS : FAILOVER_COMMANDS} title={mission.phase === "hsrp-config" ? "HSRP console commands" : "Failover console commands"} />
             </div>

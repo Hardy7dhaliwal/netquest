@@ -289,6 +289,7 @@ export default function SignalDetectiveMission({
                 onRun={(command) => onChange(runSignalCommand(mission, command))}
                 inputId="signal-detective-cli"
                 emptyText={emptyText}
+                completions={(mission.phase === "diagnose" ? DIAGNOSE_COMMANDS : mission.phase === "span" ? SPAN_COMMANDS : mission.phase === "sla" ? SLA_COMMANDS : NETCONF_COMMANDS).map((entry) => entry.command)}
               />
               <CommandReference
                 commands={mission.phase === "diagnose" ? DIAGNOSE_COMMANDS : mission.phase === "span" ? SPAN_COMMANDS : mission.phase === "sla" ? SLA_COMMANDS : NETCONF_COMMANDS}

@@ -131,6 +131,7 @@ export default function ShowAndPingMission({
             onInsertConsumed={(ts) => { if (insertSignal?.ts === ts) setInsertSignal(null); }}
             onRun={(command) => onChange(runShowAndPingCommand(mission, command))}
             prompt={showPingPromptFor(mission.cliMode)}
+            completions={guide ? [guide.command] : []}
           />
           <div className="rounded-xl border border-slate-800 bg-slate-950/80">
             <div className="flex items-center justify-between border-b border-slate-800 px-4 py-3">

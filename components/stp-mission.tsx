@@ -202,6 +202,7 @@ export default function StpMission({
                 onRun={(command) => onChange(runStpCommand(mission, command))}
                 inputId="stp-cli"
                 emptyText={emptyText}
+                completions={(mission.phase === "bpdu_guard" ? BPDU_GUARD_COMMANDS : ROOT_GUARD_COMMANDS).map((entry) => entry.command)}
               />
               <CommandReference commands={mission.phase === "bpdu_guard" ? BPDU_GUARD_COMMANDS : ROOT_GUARD_COMMANDS} title={mission.phase === "bpdu_guard" ? "BPDU Guard commands" : "Root Guard commands"} />
             </div>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Wordmark } from "@/components/wordmark";
+import { useIosConsole } from "@/components/use-ios-console";
 import { LAB_TEMPLATES } from "@/lib/lab-templates";
 import {
   advanceLab,
@@ -18,6 +19,17 @@ const PROMPTS: Record<string, string> = {
   R1: "R1#",
   SW1: "SW1#",
 };
+
+/** Commands the current lab step accepts — the Tab-completion pool. */
+function stepCompletions(template: LabTemplate | null, state: LabState | null): string[] {
+  if (!template || !state || state.status === "complete") return [];
+  const step = template.steps[state.stepIndex];
+  if (!step || step.kind === "diagnose") return [];
+  const variant = getLabVariant(template, state.variantId);
+  const commands = typeof step.commands === "function" ? step.commands(variant) : (step.commands ?? []);
+  const accepted = typeof step.acceptedCommands === "function" ? step.acceptedCommands(variant) : (step.acceptedCommands ?? []);
+  return [...new Set([...commands, ...accepted, ...variant.distractors])];
+}
 
 /**
  * Hands-on lab console. Every lab runs inspect → diagnose → configure →
@@ -39,7 +51,10 @@ export default function LabsPanel({
 }) {
   const [template, setTemplate] = useState<LabTemplate | null>(null);
   const [state, setState] = useState<LabState | null>(null);
-  const [command, setCommand] = useState("");
+  const { command, setCommand, submit, handleKeyDown } = useIosConsole({
+    onRun: (value) => state && setState(runLabCommand(state, template!, value)),
+    completions: stepCompletions(template, state),
+  });
 
   // Adaptive review hands off a specific lab+variant: jump straight in.
   useEffect(() => {
@@ -191,15 +206,13 @@ export default function LabsPanel({
                   className="mt-5"
                   onSubmit={(event) => {
                     event.preventDefault();
-                    if (!command.trim()) return;
-                    setState(runLabCommand(state, template, command));
-                    setCommand("");
+                    submit();
                   }}
                 >
                   <label className="sr-only" htmlFor="lab-command">Enter a command</label>
                   <div className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 focus-within:border-cyan-300/70">
                     <span className="font-mono text-xs text-cyan-300">{PROMPTS.R1}</span>
-                    <input autoComplete="off" className="min-w-0 flex-1 bg-transparent font-mono text-xs text-slate-100 outline-none placeholder:text-slate-700" id="lab-command" onChange={(event) => setCommand(event.target.value)} placeholder="type a command" value={command} />
+                    <input autoComplete="off" className="min-w-0 flex-1 bg-transparent font-mono text-xs text-slate-100 outline-none placeholder:text-slate-700" id="lab-command" onChange={(event) => setCommand(event.target.value)} onKeyDown={handleKeyDown} placeholder="type a command" value={command} />
                     <button className="text-xs font-bold text-cyan-300 hover:text-cyan-100" type="submit">Run</button>
                   </div>
                 </form>

@@ -260,6 +260,7 @@ export default function FabricExpressMission({
                 onRun={(command) => onChange(runFabricCommand(mission, command))}
                 inputId="fabric-express-cli"
                 emptyText={emptyText}
+                completions={(mission.phase === "vswitch" ? VSWITCH_COMMANDS : VXLAN_COMMANDS).map((entry) => entry.command)}
               />
               <CommandReference commands={mission.phase === "vswitch" ? VSWITCH_COMMANDS : VXLAN_COMMANDS} title={mission.phase === "vswitch" ? "vSwitch inspection commands" : "VTEP inspection commands"} />
             </div>

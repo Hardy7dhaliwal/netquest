@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import type { FormEvent, ReactNode } from "react";
+import { useEffect, useRef } from "react";
+import type { ReactNode } from "react";
+import { useIosConsole } from "@/components/use-ios-console";
 
 export type ConsolePanelEntry = { input: string; output: string; prompt: string };
 
@@ -10,7 +11,9 @@ export type InsertSignal = { command: string; ts: number };
 /**
  * Terminal-style console shared by the beginner missions. `insertSignal` lets
  * the parent (e.g. a guided "next step" panel) pre-fill the input box for the
- * player, who then presses Enter — typing practice without guesswork.
+ * player, who then presses Enter — typing practice without guesswork. Like a
+ * real device console: ↑/↓ recall previous commands and Tab completes the
+ * current word against `completions` (the commands the current step accepts).
  */
 export function ConsolePanel({
   deviceName,
@@ -21,6 +24,7 @@ export function ConsolePanel({
   emptyText,
   insertSignal,
   onInsertConsumed,
+  completions,
 }: {
   deviceName: string;
   prompt: string;
@@ -30,8 +34,10 @@ export function ConsolePanel({
   emptyText: ReactNode;
   insertSignal?: InsertSignal | null;
   onInsertConsumed?: (ts: number) => void;
+  /** Commands the current step accepts — drives Tab completion. */
+  completions?: string[];
 }) {
-  const [command, setCommand] = useState("");
+  const { command, setCommand, submit, handleKeyDown } = useIosConsole({ onRun, completions });
   const inputRef = useRef<HTMLInputElement>(null);
   const lastInsertTs = useRef(0);
   // Keep the latest callback in a ref so the insert effect only depends on the signal.
@@ -47,15 +53,7 @@ export function ConsolePanel({
       inputRef.current?.focus();
       onInsertConsumedRef.current?.(insertSignal.ts);
     }
-  }, [insertSignal]);
-
-  function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!command.trim()) return;
-    onRun(command);
-    setCommand("");
-    inputRef.current?.focus();
-  }
+  }, [insertSignal, setCommand]);
 
   return (
     <div className="flex min-h-[480px] flex-col overflow-hidden rounded-xl border border-slate-800 bg-[#030914] shadow-2xl shadow-cyan-950/10">
@@ -64,7 +62,7 @@ export function ConsolePanel({
           <p className="font-mono text-xs font-bold text-slate-200">{deviceName} · console</p>
           <span className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-emerald-300"><span className="h-1.5 w-1.5 rounded-full bg-emerald-300" /> connected</span>
         </div>
-        <p className="mt-2 font-mono text-xs text-slate-500">Type <span className="text-cyan-300">?</span> to list commands, or <span className="text-cyan-300">help</span> for a hint.</p>
+        <p className="mt-2 font-mono text-xs text-slate-500">Type <span className="text-cyan-300">?</span> to list commands, or <span className="text-cyan-300">help</span> for a hint. <span className="text-cyan-300">Tab</span> completes, <span className="text-cyan-300">↑↓</span> recall commands.</p>
       </div>
       <div className="flex-1 space-y-3 overflow-y-auto p-4 font-mono text-xs leading-5" aria-live="polite">
         {history.length === 0 ? emptyText : history.map((entry, index) => (
@@ -74,11 +72,11 @@ export function ConsolePanel({
           </div>
         ))}
       </div>
-      <form className="border-t border-slate-800 p-3" onSubmit={submit}>
+      <form className="border-t border-slate-800 p-3" onSubmit={(event) => { event.preventDefault(); submit(); }}>
         <label className="sr-only" htmlFor={inputId}>Enter a CLI command</label>
         <div className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 focus-within:border-cyan-300/70">
           <span className="font-mono text-xs text-cyan-300">{prompt}</span>
-          <input ref={inputRef} autoComplete="off" className="min-w-0 flex-1 bg-transparent font-mono text-xs text-slate-100 outline-none placeholder:text-slate-700" id={inputId} onChange={(event) => setCommand(event.target.value)} placeholder="enter command" value={command} />
+          <input ref={inputRef} autoComplete="off" className="min-w-0 flex-1 bg-transparent font-mono text-xs text-slate-100 outline-none placeholder:text-slate-700" id={inputId} onChange={(event) => setCommand(event.target.value)} onKeyDown={handleKeyDown} placeholder="enter command" value={command} />
           <button className="text-xs font-bold text-cyan-300 hover:text-cyan-100" type="submit">Run</button>
         </div>
       </form>

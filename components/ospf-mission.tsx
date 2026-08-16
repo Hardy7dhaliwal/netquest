@@ -258,6 +258,7 @@ export default function OspfMission({
                 onRun={(command) => onChange(runOspfCommand(mission, command))}
                 inputId="ospf-cli"
                 emptyText={emptyText}
+                completions={(mission.phase === "config" ? AREA_FIX_COMMANDS : mission.phase === "verify" ? VERIFY_COMMANDS : mission.phase === "summarize" ? SUMMARY_COMMANDS : FILTER_COMMANDS).map((entry) => entry.command)}
               />
               <CommandReference
                 commands={mission.phase === "config" ? AREA_FIX_COMMANDS : mission.phase === "verify" ? VERIFY_COMMANDS : mission.phase === "summarize" ? SUMMARY_COMMANDS : FILTER_COMMANDS}

@@ -240,6 +240,7 @@ export default function LockControlPlaneMission({
                 onRun={(command) => onChange(runLockCommand(mission, command))}
                 inputId="lock-control-plane-cli"
                 emptyText={emptyText}
+                completions={(mission.phase === "local" ? LOCAL_COMMANDS : AAA_COMMANDS).map((entry) => entry.command)}
               />
               <CommandReference commands={mission.phase === "local" ? LOCAL_COMMANDS : AAA_COMMANDS} title={mission.phase === "local" ? "Local authentication commands" : "AAA + RADIUS commands"} />
             </div>

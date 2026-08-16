@@ -226,6 +226,7 @@ export default function SdwanMission({
                 onRun={(command) => onChange(runSdwanCommand(mission, command))}
                 inputId="sdwan-cli"
                 emptyText={emptyText}
+                completions={VEDGE_COMMANDS.map((entry) => entry.command)}
               />
               <CommandReference commands={VEDGE_COMMANDS} title="vEdge inspection commands" />
             </div>

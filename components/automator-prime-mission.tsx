@@ -254,6 +254,7 @@ export default function AutomatorPrimeMission({
                 onRun={(command) => onChange(runAutomatorCommand(mission, command))}
                 inputId="automator-prime-cli"
                 emptyText={emptyText}
+                completions={(mission.phase === "python" ? PYTHON_COMMANDS : mission.phase === "json" ? JSON_COMMANDS : EEM_COMMANDS).map((entry) => entry.command)}
               />
               <CommandReference
                 commands={mission.phase === "python" ? PYTHON_COMMANDS : mission.phase === "json" ? JSON_COMMANDS : EEM_COMMANDS}
