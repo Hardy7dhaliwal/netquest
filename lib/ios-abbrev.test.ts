@@ -66,6 +66,41 @@ describe("normalizeIosCommand", () => {
     expect(normalizeIosCommand("SH RUN")).toBe("show running-config");
   });
 
+  it("resolves any unambiguous prefix, like real IOS", () => {
+    expect(normalizeIosCommand("sh ip ospf ne")).toBe("show ip ospf neighbor");
+    expect(normalizeIosCommand("sh ip bgp su")).toBe("show ip bgp summary");
+    expect(normalizeIosCommand("sh et sum")).toBe("show etherchannel summary");
+    expect(normalizeIosCommand("sh spa int gi0/5")).toBe("show spanning-tree interface gi0/5");
+    expect(normalizeIosCommand("sh ip eigrp top")).toBe("show ip eigrp topology");
+    expect(normalizeIosCommand("sh ip pim nei")).toBe("show ip pim neighbor");
+    expect(normalizeIosCommand("sh run | inc line vty")).toBe(
+      "show running-config | include line vty",
+    );
+    expect(normalizeIosCommand("sh ip route")).toBe("show ip route");
+    expect(normalizeIosCommand("sh ver")).toBe("show version");
+  });
+
+  it("resolves int to interface mid-command", () => {
+    expect(normalizeIosCommand("monitor session 1 source int gi0/1")).toBe(
+      "monitor session 1 source interface gi0/1",
+    );
+    expect(normalizeIosCommand("sh int status")).toBe("show interfaces status");
+  });
+
+  it("leaves ambiguous prefixes untouched (like IOS's ambiguous error)", () => {
+    expect(normalizeIosCommand("sh ip nat tr")).toBe("show ip nat tr");
+    expect(normalizeIosCommand("sh mo")).toBe("show mo");
+    expect(normalizeIosCommand("u")).toBe("u");
+  });
+
+  it("keeps short keywords that prefix a longer keyword (out/prefix)", () => {
+    expect(normalizeIosCommand("area 1 filter-list prefix labdeny out")).toBe(
+      "area 1 filter-list prefix labdeny out",
+    );
+    expect(normalizeIosCommand("ip access-group 110 in")).toBe("ip access-group 110 in");
+    expect(normalizeIosCommand("ip nat outside")).toBe("ip nat outside");
+  });
+
   it("leaves unknown and non-IOS input untouched", () => {
     expect(normalizeIosCommand("foo bar")).toBe("foo bar");
     expect(normalizeIosCommand("esxcli network vswitch standard list")).toBe(
