@@ -381,16 +381,49 @@ export default function Home() {
   const nextMission = MISSION_CATALOG.find((m) => !completedMissions.includes(m.id)) ?? null;
   const nextMissionIndex = nextMission ? MISSION_CATALOG.indexOf(nextMission) + 1 : null;
 
+  // Map every mission id to its exit (reset-to-not_started) so the "Next
+  // mission" button can unblock the render guard before opening a target.
+  const EXITS: Record<string, (() => void) | undefined> = {
+    "console-basics": exitCliBasicsMission,
+    "show-and-ping": exitShowAndPingMission,
+    "packet-trail": exitPacketTrailMission,
+    "vlan-that-vanished": exitVlanMission,
+    "stp-storm": exitStpMission,
+    "bundled-bottleneck": exitEcMission,
+    "area-zero-hero": exitOspfMission,
+    "edge-has-opinions": exitEdgeMission,
+    "gateway-at-dawn": exitGatewayMission,
+    "edge-services": exitEdgeServicesMission,
+    "tunnel-vision": exitTunnelVisionMission,
+    "fabric-express": exitFabricExpressMission,
+    "sdwan-overlay": exitSdwanMission,
+    "signal-detective": exitSignalDetectiveMission,
+    "campus-fabric": exitCampusFabricMission,
+    "lock-the-control-plane": exitLockControlPlaneMission,
+    "automator-prime": exitAutomatorPrimeMission,
+  };
+
   // The mission after a given one in play order that is still unplayed — the
   // target for a completion banner's "Next mission" button. Searching forward
-  // from the current mission keeps this stable even before the completion
-  // award lands in `completedMissions`.
+  // from the current mission keeps the target stable even before the
+  // completion award lands in `completedMissions`.
   function nextAfter(id: string): NextMission | null {
     const index = MISSION_CATALOG.findIndex((m) => m.id === id);
+    const exitCurrent = EXITS[id];
     for (let i = index + 1; i < MISSION_CATALOG.length; i++) {
       const candidate = MISSION_CATALOG[i];
       if (!completedMissions.includes(candidate.id)) {
-        return { title: candidate.title, onOpen: () => OPENERS[candidate.id]() };
+        return {
+          title: candidate.title,
+          onOpen: () => {
+            // The view guard renders the first mission whose status is not
+            // "not_started" (catalog order), so the completed mission we're
+            // standing on would keep blocking the target from mounting.
+            // Reset it first, then open the next mission.
+            exitCurrent?.();
+            OPENERS[candidate.id]();
+          },
+        };
       }
     }
     return null;
