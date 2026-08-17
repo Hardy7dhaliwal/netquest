@@ -7,8 +7,9 @@ import { MISSION_MAPS } from "@/lib/mission-maps";
 /**
  * A compact static network map shown on missions that require typing exact
  * values (IPs, subnets, peers). The player should never have to guess an
- * address — every value they must type appears on this map. Rendered as a
- * lightweight SVG (no React Flow dependency) so it fits the mission sidebar.
+ * address — every value they must type appears on this map. Rendered as plain
+ * HTML/CSS (device cards + labeled links) so it is always readable in the
+ * mission sidebar, without the fragile stretched-SVG approach.
  */
 export function NetworkMap({ missionId }: { missionId: string }) {
   const [open, setOpen] = useState(true);
@@ -29,72 +30,41 @@ export function NetworkMap({ missionId }: { missionId: string }) {
         <span aria-hidden="true" className="text-cyan-300">{open ? "−" : "+"}</span>
       </button>
       {open && (
-        <div className="mt-3">
-          <svg className="h-44 w-full" viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="Network topology with device addresses">
-            {map.links.map((link) => {
-              const a = byId.get(link.from);
-              const b = byId.get(link.to);
-              if (!a || !b) return null;
-              return (
-                <line
-                  className={link.dashed ? "stroke-slate-500" : "stroke-cyan-400/50"}
-                  key={`${link.from}-${link.to}`}
-                  strokeDasharray={link.dashed ? "2 2" : undefined}
-                  strokeWidth={0.5}
-                  x1={a.x}
-                  x2={b.x}
-                  y1={a.y}
-                  y2={b.y}
-                />
-              );
-            })}
-            {map.links.map((link) => {
-              const a = byId.get(link.from);
-              const b = byId.get(link.to);
-              if (!a || !b) return null;
-              const mx = (a.x + b.x) / 2;
-              const my = (a.y + b.y) / 2;
-              return (
-                <text
-                  className="fill-slate-400"
-                  dominantBaseline="middle"
-                  fontSize={3.2}
-                  key={`${link.from}-${link.to}-label`}
-                  textAnchor="middle"
-                  x={mx}
-                  y={my}
-                >
-                  {link.label}
-                </text>
-              );
-            })}
+        <div className="mt-3 space-y-3">
+          <div className="grid grid-cols-2 gap-2">
             {map.devices.map((device) => {
               const Icon = DEVICE_ICONS[device.kind];
               return (
-                <g key={device.id}>
-                  <rect
-                    className="fill-slate-950 stroke-cyan-300/30"
-                    height={18}
-                    rx={2.5}
-                    strokeWidth={0.4}
-                    width={22}
-                    x={device.x - 11}
-                    y={device.y - 9}
-                  />
-                  <g transform={`translate(${device.x - 2.6}, ${device.y - 8.2}) scale(0.22)`}>
-                    <Icon className="text-cyan-200" />
-                  </g>
-                  <text className="fill-slate-100" dominantBaseline="middle" fontSize={3.3} fontWeight={700} textAnchor="middle" x={device.x} y={device.y + 2}>
-                    {device.label}
-                  </text>
-                  <text className="fill-slate-500" dominantBaseline="middle" fontSize={2.9} textAnchor="middle" x={device.x} y={device.y + 5.6}>
-                    {device.detail}
-                  </text>
-                </g>
+                <div
+                  className="rounded-lg border border-cyan-300/25 bg-slate-950 px-2 py-2 text-center"
+                  key={device.id}
+                >
+                  <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-md border border-cyan-300/30 bg-cyan-300/10 text-cyan-200">
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <p className="mt-1.5 text-[11px] font-bold leading-tight text-slate-100">{device.label}</p>
+                  <p className="mt-0.5 text-[10px] leading-tight text-cyan-200/80">{device.detail}</p>
+                </div>
               );
             })}
-          </svg>
-          <p className="mt-1 text-center text-[10px] leading-4 text-slate-500">
+          </div>
+          <div className="space-y-1.5 border-t border-slate-800 pt-2">
+            {map.links.map((link) => {
+              const a = byId.get(link.from);
+              const b = byId.get(link.to);
+              if (!a || !b) return null;
+              return (
+                <p className="flex items-center gap-1.5 text-[10px] leading-tight text-slate-400" key={`${link.from}-${link.to}`}>
+                  <span className="shrink-0 font-semibold text-slate-300">{a.label.split(" · ")[0]}</span>
+                  <span className="text-cyan-300">—</span>
+                  <span className={`min-w-0 flex-1 truncate rounded bg-slate-800 px-1.5 py-0.5 text-center font-semibold ${link.dashed ? "text-slate-400" : "text-cyan-200"}`}>{link.label}</span>
+                  <span className="text-cyan-300">—</span>
+                  <span className="shrink-0 font-semibold text-slate-300">{b.label.split(" · ")[0]}</span>
+                </p>
+              );
+            })}
+          </div>
+          <p className="text-center text-[10px] leading-4 text-slate-500">
             These are the addresses you&rsquo;ll type in the console below.
           </p>
         </div>
