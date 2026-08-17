@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import { Wordmark } from "@/components/wordmark";
 
 import {
@@ -18,6 +19,7 @@ import { ConsolePanel } from "@/components/console-panel";
 import { GlossaryText } from "@/components/glossary-text";
 import { MissionPrimer } from "@/components/mission-primer";
 import { NetworkMap } from "@/components/network-map";
+import { MissionProgress, PhaseReviewModal, type PhaseReviewContent } from "@/components/phase-review";
 
 const phaseCopy = {
   evidence: {
@@ -57,6 +59,8 @@ const optionCopy = {
   "group-mismatch": { title: "Channel-group numbers differ", note: "Group 1 vs group 2" },
   "access-mode": { title: "Ports must be access mode", note: "Trunking is the issue" },
 } as const;
+
+const PHASE_LABELS = ["Read evidence", "Name the cause", "Type the fix", "Verify"];
 
 const phaseHints: Record<string, string[]> = {
   evidence: [
@@ -111,6 +115,22 @@ export default function EtherchannelMission({
   const copy = complete ? phaseCopy.verify : phaseCopy[activePhase];
   const cliPhase = complete || mission.phase === "config" || mission.phase === "verify";
 
+  const [reviewPhase, setReviewPhase] = useState<string | null>(null);
+  const reviewContent: PhaseReviewContent | null = reviewPhase
+    ? (() => {
+        const copy = phaseCopy[reviewPhase as keyof typeof phaseCopy];
+        const answer =
+          reviewPhase === "evidence" && mission.selectedEvidence
+            ? optionCopy[mission.selectedEvidence].title
+            : reviewPhase === "cause" && mission.selectedCause
+              ? optionCopy[mission.selectedCause].title
+              : null;
+        const commands =
+          reviewPhase === "config" ? CONFIG_COMMANDS : reviewPhase === "verify" ? VERIFY_COMMANDS : undefined;
+        return { label: copy.label, title: copy.title, prompt: copy.prompt, output: (copy as { output?: string | null }).output ?? null, answer, commands };
+      })()
+    : null;
+
   function choose(option: EvidenceOption | CauseOption) {
     if (mission.phase === "evidence") onChange(chooseEvidence(mission, option as EvidenceOption));
     else onChange(chooseCause(mission, option as CauseOption));
@@ -148,20 +168,7 @@ export default function EtherchannelMission({
           </section>
           <MissionPrimer missionId="bundled-bottleneck" />
           <NetworkMap missionId="bundled-bottleneck" />
-          <section className="rounded-xl border border-slate-800 bg-slate-900/70 p-5">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">Mission progress</p>
-              <span className="text-xs text-slate-500">{phaseIndex}/{PHASES.length}</span>
-            </div>
-            <div className="mt-4 space-y-3">
-              {PHASES.map((phase, index) => (
-                <div className="flex items-start gap-3 text-sm" key={phase}>
-                  <span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border text-[10px] ${index < phaseIndex ? "border-emerald-300 bg-emerald-300 text-slate-950" : "border-slate-600 text-transparent"}`}>✓</span>
-                  <span className={index < phaseIndex ? "text-slate-200" : "text-slate-500"}>{index === 0 ? "Read evidence" : index === 1 ? "Name the cause" : index === 2 ? "Type the fix" : "Verify"}</span>
-                </div>
-              ))}
-            </div>
-          </section>
+          <MissionProgress labels={PHASE_LABELS} phaseIndex={phaseIndex} phases={PHASES} onReview={setReviewPhase} />
           <section className="rounded-xl border border-amber-300/20 bg-amber-300/5 p-5 text-xs leading-5 text-slate-400">
             <p className="font-bold uppercase tracking-[0.2em] text-amber-200">Field note</p>
             <p className="mt-3"><GlossaryText text="LACP needs at least one active side. Every member of a bundle must share the same channel-group number and port attributes. `show etherchannel summary` is the proof." /></p>
@@ -231,6 +238,7 @@ export default function EtherchannelMission({
           {complete && <div className="mt-6 rounded-xl border border-emerald-300/30 bg-emerald-300/10 p-5 text-center"><p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">Objective 3.1.b checkpoint complete</p><p className="mt-2 text-xl font-black">Port-Channel 1 healthy · +100 XP</p><p className="mt-2 text-sm text-slate-400">Evidence: {mission.selectedEvidence} · cause: {mission.selectedCause} · fix: channel-group 1 mode active · check: show etherchannel summary (SU)</p></div>}
         </section>
       </div>
+      <PhaseReviewModal content={reviewContent} onClose={() => setReviewPhase(null)} phase={reviewPhase} />
     </main>
   );
 }

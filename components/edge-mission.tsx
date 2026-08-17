@@ -1,7 +1,7 @@
 "use client";
 import { Wordmark } from "@/components/wordmark";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useIosConsole } from "@/components/use-ios-console";
 
 import {
@@ -26,6 +26,7 @@ import { NextMissionButton, type NextMission } from "@/components/next-mission-b
 import { GlossaryText } from "@/components/glossary-text";
 import { MissionPrimer } from "@/components/mission-primer";
 import { NetworkMap } from "@/components/network-map";
+import { MissionProgress, PhaseReviewModal, type PhaseReviewContent } from "@/components/phase-review";
 
 const phaseCopy = {
   igp: {
@@ -90,6 +91,8 @@ const optionCopy = {
   "default-route": { title: "ip route 0.0.0.0 0.0.0.0 198.51.100.1", note: "A default route, not PBR" },
 } as const;
 
+const PHASE_LABELS = ["IGP choice", "Convergence", "BGP state", "BGP fix", "PBR", "Local PBR"];
+
 const phaseHints: Record<string, string[]> = {
   igp: [
     "EIGRP is a hybrid with a composite metric (bandwidth, delay, load, reliability).",
@@ -153,6 +156,27 @@ export default function EdgeMission({
   const phaseIndex = complete ? PHASES.length : PHASES.indexOf(activePhase);
   const copy = complete ? phaseCopy.local : phaseCopy[activePhase];
 
+  const [reviewPhase, setReviewPhase] = useState<string | null>(null);
+  const reviewContent: PhaseReviewContent | null = reviewPhase
+    ? (() => {
+        const copy = phaseCopy[reviewPhase as keyof typeof phaseCopy];
+        const answer =
+          reviewPhase === "igp" && mission.selectedIgp
+            ? optionCopy[mission.selectedIgp].title
+            : reviewPhase === "convergence" && mission.selectedConvergence
+              ? optionCopy[mission.selectedConvergence].title
+              : reviewPhase === "bgp-state" && mission.selectedBgpState
+                ? optionCopy[mission.selectedBgpState].title
+                : reviewPhase === "pbr" && mission.selectedPbr
+                  ? optionCopy[mission.selectedPbr].title
+                  : reviewPhase === "local" && mission.selectedLocal
+                    ? optionCopy[mission.selectedLocal].title
+                    : null;
+        const commands = reviewPhase === "bgp-fix" ? EDGE_BGP_COMMANDS : undefined;
+        return { label: copy.label, title: copy.title, prompt: copy.prompt, output: (copy as { output?: string | null }).output ?? null, answer, commands };
+      })()
+    : null;
+
   function choose(option: EdgeIgpOption | EdgeConvergenceOption | EdgeBgpStateOption | EdgePbrOption | EdgeLocalOption) {
     if (mission.phase === "igp") onChange(chooseIgp(mission, option as EdgeIgpOption));
     else if (mission.phase === "convergence") onChange(chooseConvergence(mission, option as EdgeConvergenceOption));
@@ -182,20 +206,7 @@ export default function EdgeMission({
           </section>
           <MissionPrimer missionId="edge-has-opinions" />
           <NetworkMap missionId="edge-has-opinions" />
-          <section className="rounded-xl border border-slate-800 bg-slate-900/70 p-5">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">Mission progress</p>
-              <span className="text-xs text-slate-500">{phaseIndex}/{PHASES.length}</span>
-            </div>
-            <div className="mt-4 space-y-3">
-              {PHASES.map((phase, index) => (
-                <div className="flex items-start gap-3 text-sm" key={phase}>
-                  <span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border text-[10px] ${index < phaseIndex ? "border-emerald-300 bg-emerald-300 text-slate-950" : "border-slate-600 text-transparent"}`}>✓</span>
-                  <span className={index < phaseIndex ? "text-slate-200" : "text-slate-500"}>{index === 0 ? "IGP choice" : index === 1 ? "Convergence" : index === 2 ? "BGP state" : index === 3 ? "BGP fix" : index === 4 ? "PBR" : "Local PBR"}</span>
-                </div>
-              ))}
-            </div>
-          </section>
+          <MissionProgress labels={PHASE_LABELS} phaseIndex={phaseIndex} phases={PHASES} onReview={setReviewPhase} />
           <section className="rounded-xl border border-amber-300/20 bg-amber-300/5 p-5 text-xs leading-5 text-slate-400">
             <p className="font-bold uppercase tracking-[0.2em] text-amber-200">Field note</p>
             <p className="mt-3"><GlossaryText text="eBGP peers are directly connected by default (TTL 1) — `ebgp-multihop` raises it for two-hop peers. Verify with `show ip bgp summary`: Established means prefixes flow. PBR overrides the route lookup for matched traffic; `ip local policy` covers locally sourced flows." /></p>
@@ -274,6 +285,7 @@ export default function EdgeMission({
           {complete && <div className="mt-6 rounded-xl border border-emerald-300/30 bg-emerald-300/10 p-5 text-center"><p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">Objectives 3.2.a · 3.2.c · 3.2.d checkpoint</p><p className="mt-2 text-xl font-black">IGP · eBGP · PBR · +150 XP</p><p className="mt-2 text-sm text-slate-400">IGP: {mission.selectedIgp} · convergence: {mission.selectedConvergence} · state: {mission.selectedBgpState} · bgp fix: configured &amp; verified · PBR: {mission.selectedPbr} · local: {mission.selectedLocal}</p></div>}
         </section>
       </div>
+      <PhaseReviewModal content={reviewContent} onClose={() => setReviewPhase(null)} phase={reviewPhase} />
     </main>
   );
 }

@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import { Wordmark } from "@/components/wordmark";
 
 import {
@@ -21,6 +22,7 @@ import { NextMissionButton, type NextMission } from "@/components/next-mission-b
 import { ConsolePanel } from "@/components/console-panel";
 import { GlossaryText } from "@/components/glossary-text";
 import { MissionPrimer } from "@/components/mission-primer";
+import { MissionProgress, PhaseReviewModal, type PhaseReviewContent } from "@/components/phase-review";
 
 const phaseCopy = {
   hypervisor: {
@@ -158,6 +160,26 @@ export default function FabricExpressMission({
   const phaseIndex = complete ? PHASES.length : PHASES.indexOf(activePhase);
   const copy = complete ? phaseCopy["vxlan-check"] : phaseCopy[activePhase];
   const cliPhase = complete || mission.phase === "vswitch" || mission.phase === "vxlan";
+
+  const [reviewPhase, setReviewPhase] = useState<string | null>(null);
+  const reviewContent: PhaseReviewContent | null = reviewPhase
+    ? (() => {
+        const copy = phaseCopy[reviewPhase as keyof typeof phaseCopy];
+        const answer =
+          reviewPhase === "hypervisor" && mission.selectedHypervisor
+            ? optionCopy[mission.selectedHypervisor].title
+            : reviewPhase === "vm" && mission.selectedVm
+              ? optionCopy[mission.selectedVm].title
+              : reviewPhase === "vswitch-check" && mission.selectedVswitch
+                ? optionCopy[mission.selectedVswitch].title
+                : reviewPhase === "vxlan-check" && mission.selectedVxlan
+                  ? optionCopy[mission.selectedVxlan].title
+                  : null;
+        const commands =
+          reviewPhase === "vswitch" ? VSWITCH_COMMANDS : reviewPhase === "vxlan" ? VXLAN_COMMANDS : undefined;
+        return { label: copy.label, title: copy.title, prompt: copy.prompt, output: (copy as { output?: string | null }).output ?? null, answer, commands };
+      })()
+    : null;
   const interpretSnippet = mission.phase === "vm" ? VM_CONFIG : mission.phase === "hypervisor" ? HYPERVISOR_BLURB : null;
   const cliDevice = mission.phase === "vswitch" ? "HOST-1" : "LEAF-1";
 
@@ -210,20 +232,7 @@ export default function FabricExpressMission({
             <p className="mt-3 text-sm leading-6 text-slate-400"><GlossaryText text="The data center is moving from bare-metal servers to VMs on a Type 1 hypervisor — and the network has to follow. Read the VM, inspect the vSwitch inside the host, then check the VXLAN overlay that carries the fabric between leaves." /></p>
           </section>
           <MissionPrimer missionId="fabric-express" />
-          <section className="rounded-xl border border-slate-800 bg-slate-900/70 p-5">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">Mission progress</p>
-              <span className="text-xs text-slate-500">{phaseIndex}/{PHASES.length}</span>
-            </div>
-            <div className="mt-4 space-y-3">
-              {PHASES.map((phase, index) => (
-                <div className="flex items-start gap-3 text-sm" key={phase}>
-                  <span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border text-[10px] ${index < phaseIndex ? "border-emerald-300 bg-emerald-300 text-slate-950" : "border-slate-600 text-transparent"}`}>✓</span>
-                  <span className={index < phaseIndex ? "text-slate-200" : "text-slate-500"}>{phaseLabels[index]}</span>
-                </div>
-              ))}
-            </div>
-          </section>
+          <MissionProgress labels={phaseLabels} phaseIndex={phaseIndex} phases={PHASES} onReview={setReviewPhase} />
           <section className="rounded-xl border border-amber-300/20 bg-amber-300/5 p-5 text-xs leading-5 text-slate-400">
             <p className="font-bold uppercase tracking-[0.2em] text-amber-200">Field note</p>
             <p className="mt-3"><GlossaryText text="Type 1 hypervisors (ESXi, KVM) own the hardware; Type 2 (VirtualBox, Workstation) run on a host OS. A VM's vCPU/memory/vNIC are virtual hardware backed by the host. A vSwitch is a virtual switch inside the hypervisor — its uplinks are physical NICs, and without one VMs are isolated. VXLAN wraps Layer 2 frames in UDP (port 4789); a VNI is the 24-bit overlay segment ID, and the VTEP (nve1) does the encapsulation." /></p>
@@ -299,6 +308,7 @@ export default function FabricExpressMission({
           {complete && <div className="mt-6 rounded-xl border border-emerald-300/30 bg-emerald-300/10 p-5 text-center"><p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">Objectives 2.1.a · 2.1.b · 2.1.c · 2.3.b checkpoint</p><p className="mt-2 text-xl font-black">Hypervisors · Virtual machines · Virtual switching · VXLAN · +100 XP</p><p className="mt-2 text-sm text-slate-400">hypervisor: {mission.selectedHypervisor} · VM: {mission.selectedVm} · vSwitch: {mission.selectedVswitch} · VXLAN: {mission.selectedVxlan}</p></div>}
         </section>
       </div>
+      <PhaseReviewModal content={reviewContent} onClose={() => setReviewPhase(null)} phase={reviewPhase} />
     </main>
   );
 }

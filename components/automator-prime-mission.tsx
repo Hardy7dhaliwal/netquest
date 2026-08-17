@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import { Wordmark } from "@/components/wordmark";
 
 import {
@@ -21,6 +22,7 @@ import { NextMissionButton, type NextMission } from "@/components/next-mission-b
 import { ConsolePanel } from "@/components/console-panel";
 import { GlossaryText } from "@/components/glossary-text";
 import { MissionPrimer } from "@/components/mission-primer";
+import { MissionProgress, PhaseReviewModal, type PhaseReviewContent } from "@/components/phase-review";
 
 const phaseCopy = {
   python: {
@@ -158,6 +160,32 @@ export default function AutomatorPrimeMission({
   const phaseIndex = complete ? PHASES.length : PHASES.indexOf(activePhase);
   const copy = complete ? phaseCopy.agent : phaseCopy[activePhase];
   const consolePhase = complete || mission.phase === "python" || mission.phase === "json" || mission.phase === "eem";
+
+  const [reviewPhase, setReviewPhase] = useState<string | null>(null);
+  const reviewContent: PhaseReviewContent | null = reviewPhase
+    ? (() => {
+        const copy = phaseCopy[reviewPhase as keyof typeof phaseCopy];
+        const answer =
+          reviewPhase === "yang" && mission.selectedYang
+            ? optionCopy[mission.selectedYang].title
+            : reviewPhase === "apis" && mission.selectedApis
+              ? optionCopy[mission.selectedApis].title
+              : reviewPhase === "rest" && mission.selectedRest
+                ? optionCopy[mission.selectedRest].title
+                : reviewPhase === "agent" && mission.selectedAgent
+                  ? optionCopy[mission.selectedAgent].title
+                  : null;
+        const commands =
+          reviewPhase === "python"
+            ? PYTHON_COMMANDS
+            : reviewPhase === "json"
+              ? JSON_COMMANDS
+              : reviewPhase === "eem"
+                ? EEM_COMMANDS
+                : undefined;
+        return { label: copy.label, title: copy.title, prompt: copy.prompt, output: (copy as { output?: string | null }).output ?? null, answer, commands };
+      })()
+    : null;
   const workspaceDevice = mission.phase === "eem" ? "R-CORE" : "WORKSTATION";
 
   function choose(option: AutomatorYangOption | AutomatorApisOption | AutomatorRestOption | AutomatorAgentOption) {
@@ -211,20 +239,7 @@ export default function AutomatorPrimeMission({
             <p className="mt-3 text-sm leading-6 text-slate-400"><GlossaryText text="The operations team scripts everything now. You write the Python probe that reads devices over RESTCONF, construct the JSON payloads the controllers accept, understand the YANG model behind them, call the SD-WAN Manager API, read the response codes, build the EEM applet that saves configs on change — then choose how to orchestrate the whole fleet." /></p>
           </section>
           <MissionPrimer missionId="automator-prime" />
-          <section className="rounded-xl border border-slate-800 bg-slate-900/70 p-5">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">Mission progress</p>
-              <span className="text-xs text-slate-500">{phaseIndex}/{PHASES.length}</span>
-            </div>
-            <div className="mt-4 space-y-3">
-              {PHASES.map((phase, index) => (
-                <div className="flex items-start gap-3 text-sm" key={phase}>
-                  <span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border text-[10px] ${index < phaseIndex ? "border-emerald-300 bg-emerald-300 text-slate-950" : "border-slate-600 text-transparent"}`}>✓</span>
-                  <span className={index < phaseIndex ? "text-slate-200" : "text-slate-500"}>{phaseLabels[index]}</span>
-                </div>
-              ))}
-            </div>
-          </section>
+          <MissionProgress labels={phaseLabels} phaseIndex={phaseIndex} phases={PHASES} onReview={setReviewPhase} />
           <section className="rounded-xl border border-amber-300/20 bg-amber-300/5 p-5 text-xs leading-5 text-slate-400">
             <p className="font-bold uppercase tracking-[0.2em] text-amber-200">Field note</p>
             <p className="mt-3"><GlossaryText text="Automation &amp; AI: Python scripts drive RESTCONF/REST APIs (requests + basic auth — verify=False is a lab shortcut; production points verify at a trusted CA bundle). JSON is the payload format; YANG is the data model behind it (containers/lists/leaves). Cisco Catalyst Center and SD-WAN Manager expose REST APIs (SD-WAN Manager: /dataservice/ + X-XSRF-TOKEN). Read status codes: 2xx success, 4xx bad request, 5xx server fault. EEM applets run on the box: event syslog pattern + action cli command. Agentless = SSH/WinRM with nothing installed; agent = software on each device." /></p>
@@ -296,6 +311,7 @@ export default function AutomatorPrimeMission({
           {complete && <div className="mt-6 rounded-xl border border-emerald-300/30 bg-emerald-300/10 p-5 text-center"><p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">Objectives 6.1–6.7 checkpoint · final mission</p><p className="mt-2 text-xl font-black">Python · JSON · YANG · APIs · Responses · EEM · Orchestration · +200 XP</p><p className="mt-2 text-sm text-slate-400">yang: {mission.selectedYang} · apis: {mission.selectedApis} · rest: {mission.selectedRest} · agent: {mission.selectedAgent}</p></div>}
         </section>
       </div>
+      <PhaseReviewModal content={reviewContent} onClose={() => setReviewPhase(null)} phase={reviewPhase} />
     </main>
   );
 }

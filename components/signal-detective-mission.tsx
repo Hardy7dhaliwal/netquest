@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import { Wordmark } from "@/components/wordmark";
 
 import {
@@ -20,6 +21,7 @@ import { ConsolePanel } from "@/components/console-panel";
 import { GlossaryText } from "@/components/glossary-text";
 import { MissionPrimer } from "@/components/mission-primer";
 import { NetworkMap } from "@/components/network-map";
+import { MissionProgress, PhaseReviewModal, type PhaseReviewContent } from "@/components/phase-review";
 
 const phaseCopy = {
   diagnose: {
@@ -185,6 +187,32 @@ export default function SignalDetectiveMission({
   const phaseIndex = complete ? PHASES.length : PHASES.indexOf(activePhase);
   const copy = complete ? phaseCopy["final-check"] : phaseCopy[activePhase];
   const cliPhase = complete || mission.phase === "diagnose" || mission.phase === "span" || mission.phase === "sla" || mission.phase === "netconf";
+
+  const [reviewPhase, setReviewPhase] = useState<string | null>(null);
+  const reviewContent: PhaseReviewContent | null = reviewPhase
+    ? (() => {
+        const copy = phaseCopy[reviewPhase as keyof typeof phaseCopy];
+        const answer =
+          reviewPhase === "flow" && mission.selectedFlow
+            ? optionCopy[mission.selectedFlow].title
+            : reviewPhase === "controller" && mission.selectedController
+              ? optionCopy[mission.selectedController].title
+              : reviewPhase === "final-check" && mission.selectedNetconf
+                ? optionCopy[mission.selectedNetconf].title
+                : null;
+        const commands =
+          reviewPhase === "diagnose"
+            ? DIAGNOSE_COMMANDS
+            : reviewPhase === "span"
+              ? SPAN_COMMANDS
+              : reviewPhase === "sla"
+                ? SLA_COMMANDS
+                : reviewPhase === "netconf"
+                  ? NETCONF_COMMANDS
+                  : undefined;
+        return { label: copy.label, title: copy.title, prompt: copy.prompt, output: (copy as { output?: string | null }).output ?? null, answer, commands };
+      })()
+    : null;
   const interpretSnippet = mission.phase === "flow" ? FLOW_CONFIG : null;
   const cliDevice = mission.phase === "sla" ? "R-EDGE" : "R-CORE";
 
@@ -241,20 +269,7 @@ export default function SignalDetectiveMission({
           </section>
           <MissionPrimer missionId="signal-detective" />
           <NetworkMap missionId="signal-detective" />
-          <section className="rounded-xl border border-slate-800 bg-slate-900/70 p-5">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">Mission progress</p>
-              <span className="text-xs text-slate-500">{phaseIndex}/{PHASES.length}</span>
-            </div>
-            <div className="mt-4 space-y-3">
-              {PHASES.map((phase, index) => (
-                <div className="flex items-start gap-3 text-sm" key={phase}>
-                  <span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border text-[10px] ${index < phaseIndex ? "border-emerald-300 bg-emerald-300 text-slate-950" : "border-slate-600 text-transparent"}`}>✓</span>
-                  <span className={index < phaseIndex ? "text-slate-200" : "text-slate-500"}>{phaseLabels[index]}</span>
-                </div>
-              ))}
-            </div>
-          </section>
+          <MissionProgress labels={phaseLabels} phaseIndex={phaseIndex} phases={PHASES} onReview={setReviewPhase} />
           <section className="rounded-xl border border-amber-300/20 bg-amber-300/5 p-5 text-xs leading-5 text-slate-400">
             <p className="font-bold uppercase tracking-[0.2em] text-amber-200">Field note</p>
             <p className="mt-3"><GlossaryText text="Diagnose first: ping (reachability), traceroute (path), show interface (errors/load), conditional debug (exact culprit). Flexible NetFlow counts flows and exports records (UDP 2055); SPAN copies full packets to an analyzer; IP SLA probes latency on a schedule. Catalyst Center's Assurance monitors health; its design/provision/compliance workflows push config. NETCONF speaks YANG over SSH/830; RESTCONF serves YANG JSON/XML over HTTPS/443." /></p>
@@ -331,6 +346,7 @@ export default function SignalDetectiveMission({
           {complete && <div className="mt-6 rounded-xl border border-emerald-300/30 bg-emerald-300/10 p-5 text-center"><p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">Objectives 4.1 · 4.2 · 4.3 · 4.4 · 4.5 · 4.6 checkpoint</p><p className="mt-2 text-xl font-black">Diagnostics · NetFlow · SPAN · IP SLA · Catalyst Center · NETCONF/RESTCONF · +150 XP</p><p className="mt-2 text-sm text-slate-400">NetFlow: {mission.selectedFlow} · Catalyst Center: {mission.selectedController} · programmability: {mission.selectedNetconf}</p></div>}
         </section>
       </div>
+      <PhaseReviewModal content={reviewContent} onClose={() => setReviewPhase(null)} phase={reviewPhase} />
     </main>
   );
 }

@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import { Wordmark } from "@/components/wordmark";
 
 import {
@@ -22,6 +23,7 @@ import { ConsolePanel } from "@/components/console-panel";
 import { GlossaryText } from "@/components/glossary-text";
 import { MissionPrimer } from "@/components/mission-primer";
 import { NetworkMap } from "@/components/network-map";
+import { MissionProgress, PhaseReviewModal, type PhaseReviewContent } from "@/components/phase-review";
 
 const phaseCopy = {
   planes: {
@@ -133,6 +135,25 @@ export default function SdwanMission({
   const phaseIndex = complete ? PHASES.length : PHASES.indexOf(activePhase);
   const copy = complete ? phaseCopy.benefit : phaseCopy[activePhase];
   const cliPhase = complete || mission.phase === "tlocs";
+
+  const [reviewPhase, setReviewPhase] = useState<string | null>(null);
+  const reviewContent: PhaseReviewContent | null = reviewPhase
+    ? (() => {
+        const copy = phaseCopy[reviewPhase as keyof typeof phaseCopy];
+        const answer =
+          reviewPhase === "planes" && mission.selectedPlanes
+            ? optionCopy[mission.selectedPlanes].title
+            : reviewPhase === "omp" && mission.selectedOmp
+              ? optionCopy[mission.selectedOmp].title
+              : reviewPhase === "tlocs-check" && mission.selectedTlocs
+                ? optionCopy[mission.selectedTlocs].title
+                : reviewPhase === "benefit" && mission.selectedBenefit
+                  ? optionCopy[mission.selectedBenefit].title
+                  : null;
+        const commands = reviewPhase === "tlocs" ? VEDGE_COMMANDS : undefined;
+        return { label: copy.label, title: copy.title, prompt: copy.prompt, output: (copy as { output?: string | null }).output ?? null, answer, commands };
+      })()
+    : null;
   const interpretSnippet = mission.phase === "omp" ? OMP_ROUTES : null;
 
   function choose(option: SdwanPlanesOption | SdwanOmpOption | SdwanTlocsOption | SdwanBenefitOption) {
@@ -178,20 +199,7 @@ export default function SdwanMission({
           </section>
           <MissionPrimer missionId="sdwan-overlay" />
           <NetworkMap missionId="sdwan-overlay" />
-          <section className="rounded-xl border border-slate-800 bg-slate-900/70 p-5">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">Mission progress</p>
-              <span className="text-xs text-slate-500">{phaseIndex}/{PHASES.length}</span>
-            </div>
-            <div className="mt-4 space-y-3">
-              {PHASES.map((phase, index) => (
-                <div className="flex items-start gap-3 text-sm" key={phase}>
-                  <span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border text-[10px] ${index < phaseIndex ? "border-emerald-300 bg-emerald-300 text-slate-950" : "border-slate-600 text-transparent"}`}>✓</span>
-                  <span className={index < phaseIndex ? "text-slate-200" : "text-slate-500"}>{phaseLabels[index]}</span>
-                </div>
-              ))}
-            </div>
-          </section>
+          <MissionProgress labels={phaseLabels} phaseIndex={phaseIndex} phases={PHASES} onReview={setReviewPhase} />
           <section className="rounded-xl border border-amber-300/20 bg-amber-300/5 p-5 text-xs leading-5 text-slate-400">
             <p className="font-bold uppercase tracking-[0.2em] text-amber-200">Field note</p>
             <p className="mt-3"><GlossaryText text="Catalyst SD-WAN planes: vManage (now SD-WAN Manager) = management (UI/APIs), vSmart = control (OMP route reflection + policy), vBond (now SD-WAN Validator) = orchestration (authentication + address resolution), vEdge/cEdge = data plane. OMP advertises prefixes with their TLOC over a secure DTLS/TLS channel. A TLOC (system IP + color + encapsulation) is the tunnel endpoint the data plane forwards over; BFD watches TLOCs for fast failover. Benefits: transport independence, centralized policy, app-aware paths. Limits: cost, controller dependency, overlay complexity." /></p>
@@ -267,6 +275,7 @@ export default function SdwanMission({
           {complete && <div className="mt-6 rounded-xl border border-emerald-300/30 bg-emerald-300/10 p-5 text-center"><p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">Objectives 1.2.a · 1.2.b checkpoint</p><p className="mt-2 text-xl font-black">SD-WAN planes · OMP/TLOC · Benefits &amp; limitations · +100 XP</p><p className="mt-2 text-sm text-slate-400">planes: {mission.selectedPlanes} · OMP: {mission.selectedOmp} · data plane: {mission.selectedTlocs} · benefit: {mission.selectedBenefit}</p></div>}
         </section>
       </div>
+      <PhaseReviewModal content={reviewContent} onClose={() => setReviewPhase(null)} phase={reviewPhase} />
     </main>
   );
 }

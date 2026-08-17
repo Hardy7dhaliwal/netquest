@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import { Wordmark } from "@/components/wordmark";
 
 import {
@@ -18,6 +19,7 @@ import { ConsolePanel } from "@/components/console-panel";
 import { GlossaryText } from "@/components/glossary-text";
 import { MissionPrimer } from "@/components/mission-primer";
 import { NetworkMap } from "@/components/network-map";
+import { MissionProgress, PhaseReviewModal, type PhaseReviewContent } from "@/components/phase-review";
 
 const phaseCopy = {
   root_election: {
@@ -49,6 +51,8 @@ const labels = {
   pvst: "PVST+",
   mst: "MST",
 } as const;
+
+const PHASE_LABELS = ["Root election", "BPDU Guard", "Root Guard", "MST design"];
 
 const phaseHints: Record<string, string[]> = {
   root_election: [
@@ -106,6 +110,26 @@ export default function StpMission({
   const copy = complete ? phaseCopy.mst_concept : phaseCopy[activePhase];
   const cliPhase = complete || mission.phase === "bpdu_guard" || mission.phase === "root_guard";
 
+  const [reviewPhase, setReviewPhase] = useState<string | null>(null);
+  const reviewContent: PhaseReviewContent | null = reviewPhase
+    ? (() => {
+        const copy = phaseCopy[reviewPhase as keyof typeof phaseCopy];
+        const answer =
+          reviewPhase === "root_election" && mission.selectedRoot
+            ? `Predicted root: ${mission.selectedRoot}`
+            : reviewPhase === "mst_concept" && mission.selectedProtocol
+              ? labels[mission.selectedProtocol]
+              : null;
+        const commands =
+          reviewPhase === "bpdu_guard"
+            ? BPDU_GUARD_COMMANDS
+            : reviewPhase === "root_guard"
+              ? ROOT_GUARD_COMMANDS
+              : undefined;
+        return { label: copy.label, title: copy.title, prompt: copy.prompt, output: (copy as { output?: string | null }).output ?? null, answer, commands };
+      })()
+    : null;
+
   function selectRoot(switchId: SwitchId) {
     onChange(chooseRoot(mission, switchId));
   }
@@ -146,20 +170,7 @@ export default function StpMission({
           </section>
           <MissionPrimer missionId="stp-storm" />
           <NetworkMap missionId="stp-storm" />
-          <section className="rounded-xl border border-slate-800 bg-slate-900/70 p-5">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">Mission progress</p>
-              <span className="text-xs text-slate-500">{phaseIndex}/{PHASES.length}</span>
-            </div>
-            <div className="mt-4 space-y-3">
-              {PHASES.map((phase, index) => (
-                <div className="flex items-start gap-3 text-sm" key={phase}>
-                  <span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border text-[10px] ${index < phaseIndex ? "border-emerald-300 bg-emerald-300 text-slate-950" : "border-slate-600 text-transparent"}`}>✓</span>
-                  <span className={index < phaseIndex ? "text-slate-200" : "text-slate-500"}>{index === 0 ? "Root election" : index === 1 ? "BPDU Guard" : index === 2 ? "Root Guard" : "MST design"}</span>
-                </div>
-              ))}
-            </div>
-          </section>
+          <MissionProgress labels={PHASE_LABELS} phaseIndex={phaseIndex} phases={PHASES} onReview={setReviewPhase} />
           <section className="rounded-xl border border-amber-300/20 bg-amber-300/5 p-5 text-xs leading-5 text-slate-400">
             <p className="font-bold uppercase tracking-[0.2em] text-amber-200">Field note</p>
             <p className="mt-3"><GlossaryText text="BPDU Guard belongs on edge ports. Root Guard belongs on designated ports that must not accept a superior root claim. MST reduces repeated spanning-tree instances." /></p>
@@ -231,6 +242,7 @@ export default function StpMission({
           {complete && <div className="mt-6 rounded-xl border border-emerald-300/30 bg-emerald-300/10 p-5 text-center"><p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">Objective 3.1.c checkpoint complete</p><p className="mt-2 text-xl font-black">RSTP guard strategy stabilized · +100 XP</p><p className="mt-2 text-sm text-slate-400">Root: {mission.selectedRoot} · edge: BPDU Guard enabled on Gi0/5 · designated path: Root Guard enabled on Gi0/2 · scale: {mission.selectedProtocol?.toUpperCase()}</p></div>}
         </section>
       </div>
+      <PhaseReviewModal content={reviewContent} onClose={() => setReviewPhase(null)} phase={reviewPhase} />
     </main>
   );
 }

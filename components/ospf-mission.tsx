@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import { Wordmark } from "@/components/wordmark";
 
 import {
@@ -19,6 +20,7 @@ import { ConsolePanel } from "@/components/console-panel";
 import { GlossaryText } from "@/components/glossary-text";
 import { MissionPrimer } from "@/components/mission-primer";
 import { NetworkMap } from "@/components/network-map";
+import { MissionProgress, PhaseReviewModal, type PhaseReviewContent } from "@/components/phase-review";
 
 const phaseCopy = {
   evidence: {
@@ -70,6 +72,8 @@ const optionCopy = {
   "router-id-conflict": { title: "Router IDs conflict", note: "Duplicate router IDs" },
   "process-id-diff": { title: "Process IDs must match", note: "Both run process 1 — which is fine" },
 } as const;
+
+const PHASE_LABELS = ["Read evidence", "Name the cause", "Type the fix", "Verify", "Summarize", "Filter"];
 
 const phaseHints: Record<string, string[]> = {
   evidence: [
@@ -150,6 +154,30 @@ export default function OspfMission({
   const cliPhase = complete || mission.phase === "config" || mission.phase === "verify" || mission.phase === "summarize" || mission.phase === "filter";
   const device = ospfDeviceFor(mission.phase);
 
+  const [reviewPhase, setReviewPhase] = useState<string | null>(null);
+  const reviewContent: PhaseReviewContent | null = reviewPhase
+    ? (() => {
+        const copy = phaseCopy[reviewPhase as keyof typeof phaseCopy];
+        const answer =
+          reviewPhase === "evidence" && mission.selectedEvidence
+            ? optionCopy[mission.selectedEvidence].title
+            : reviewPhase === "cause" && mission.selectedCause
+              ? optionCopy[mission.selectedCause].title
+              : null;
+        const commands =
+          reviewPhase === "config"
+            ? AREA_FIX_COMMANDS
+            : reviewPhase === "verify"
+              ? VERIFY_COMMANDS
+              : reviewPhase === "summarize"
+                ? SUMMARY_COMMANDS
+                : reviewPhase === "filter"
+                  ? FILTER_COMMANDS
+                  : undefined;
+        return { label: copy.label, title: copy.title, prompt: copy.prompt, output: copy.output, answer, commands };
+      })()
+    : null;
+
   function choose(option: OspfEvidenceOption | OspfCauseOption) {
     if (mission.phase === "evidence") onChange(chooseEvidence(mission, option as OspfEvidenceOption));
     else onChange(chooseCause(mission, option as OspfCauseOption));
@@ -195,20 +223,7 @@ export default function OspfMission({
           </section>
           <MissionPrimer missionId="area-zero-hero" />
           <NetworkMap missionId="area-zero-hero" />
-          <section className="rounded-xl border border-slate-800 bg-slate-900/70 p-5">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">Mission progress</p>
-              <span className="text-xs text-slate-500">{phaseIndex}/{PHASES.length}</span>
-            </div>
-            <div className="mt-4 space-y-3">
-              {PHASES.map((phase, index) => (
-                <div className="flex items-start gap-3 text-sm" key={phase}>
-                  <span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border text-[10px] ${index < phaseIndex ? "border-emerald-300 bg-emerald-300 text-slate-950" : "border-slate-600 text-transparent"}`}>✓</span>
-                  <span className={index < phaseIndex ? "text-slate-200" : "text-slate-500"}>{index === 0 ? "Read evidence" : index === 1 ? "Name the cause" : index === 2 ? "Type the fix" : index === 3 ? "Verify" : index === 4 ? "Summarize" : "Filter"}</span>
-                </div>
-              ))}
-            </div>
-          </section>
+          <MissionProgress labels={PHASE_LABELS} phaseIndex={phaseIndex} phases={PHASES} onReview={setReviewPhase} />
           <section className="rounded-xl border border-amber-300/20 bg-amber-300/5 p-5 text-xs leading-5 text-slate-400">
             <p className="font-bold uppercase tracking-[0.2em] text-amber-200">Field note</p>
             <p className="mt-3"><GlossaryText text="Both ends of an OSPF segment must share the same area. Process IDs are local and never need to match. Inter-area summaries use area X range on the ABR; inter-area filters use area X filter-list prefix ... in|out. `distribute-list out` only touches redistributed routes." /></p>
@@ -281,6 +296,7 @@ export default function OspfMission({
           {complete && <div className="mt-6 rounded-xl border border-emerald-300/30 bg-emerald-300/10 p-5 text-center"><p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">Objective 3.2.b checkpoint complete</p><p className="mt-2 text-xl font-black">Areas · adjacency · summarization · filtering · +100 XP</p><p className="mt-2 text-sm text-slate-400">Evidence: {mission.selectedEvidence} · cause: {mission.selectedCause} · fix: network 10.0.2.0 0.0.0.255 area 0 · check: FULL/ - from R1 · summary: area 1 range · filter: area 1 filter-list prefix LabDeny out</p></div>}
         </section>
       </div>
+      <PhaseReviewModal content={reviewContent} onClose={() => setReviewPhase(null)} phase={reviewPhase} />
     </main>
   );
 }

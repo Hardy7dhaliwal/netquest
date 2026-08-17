@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import { Wordmark } from "@/components/wordmark";
 
 import {
@@ -16,6 +17,7 @@ import { ConsolePanel } from "@/components/console-panel";
 import { GlossaryText } from "@/components/glossary-text";
 import { MissionPrimer } from "@/components/mission-primer";
 import { NetworkMap } from "@/components/network-map";
+import { MissionProgress, PhaseReviewModal, type PhaseReviewContent } from "@/components/phase-review";
 
 const phaseCopy = {
   vrf: {
@@ -147,6 +149,26 @@ export default function TunnelVisionMission({
   const copy = complete ? phaseCopy.checkpoint : phaseCopy[activePhase];
   const cliPhase = complete || mission.phase === "vrf" || mission.phase === "gre" || mission.phase === "ipsec" || mission.phase === "cryptomap";
 
+  const [reviewPhase, setReviewPhase] = useState<string | null>(null);
+  const reviewContent: PhaseReviewContent | null = reviewPhase
+    ? (() => {
+        const copy = phaseCopy[reviewPhase as keyof typeof phaseCopy];
+        const answer =
+          reviewPhase === "checkpoint" && mission.selectedCheckpoint ? optionCopy[mission.selectedCheckpoint].title : null;
+        const commands =
+          reviewPhase === "vrf"
+            ? VRF_COMMANDS
+            : reviewPhase === "gre"
+              ? GRE_COMMANDS
+              : reviewPhase === "ipsec"
+                ? IPSEC_COMMANDS
+                : reviewPhase === "cryptomap"
+                  ? CRYPTOMAP_COMMANDS
+                  : undefined;
+        return { label: copy.label, title: copy.title, prompt: copy.prompt, output: (copy as { output?: string | null }).output ?? null, answer, commands };
+      })()
+    : null;
+
   function choose(option: TunnelCheckpointOption) {
     onChange(chooseCheckpoint(mission, option));
   }
@@ -191,20 +213,7 @@ export default function TunnelVisionMission({
           </section>
           <MissionPrimer missionId="tunnel-vision" />
           <NetworkMap missionId="tunnel-vision" />
-          <section className="rounded-xl border border-slate-800 bg-slate-900/70 p-5">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">Mission progress</p>
-              <span className="text-xs text-slate-500">{phaseIndex}/{PHASES.length}</span>
-            </div>
-            <div className="mt-4 space-y-3">
-              {PHASES.map((phase, index) => (
-                <div className="flex items-start gap-3 text-sm" key={phase}>
-                  <span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border text-[10px] ${index < phaseIndex ? "border-emerald-300 bg-emerald-300 text-slate-950" : "border-slate-600 text-transparent"}`}>✓</span>
-                  <span className={index < phaseIndex ? "text-slate-200" : "text-slate-500"}>{phaseLabels[index]}</span>
-                </div>
-              ))}
-            </div>
-          </section>
+          <MissionProgress labels={phaseLabels} phaseIndex={phaseIndex} phases={PHASES} onReview={setReviewPhase} />
           <section className="rounded-xl border border-amber-300/20 bg-amber-300/5 p-5 text-xs leading-5 text-slate-400">
             <p className="font-bold uppercase tracking-[0.2em] text-amber-200">Field note</p>
             <p className="mt-3"><GlossaryText text="VRF gives each tenant its own routing table; vrf forwarding on an interface strips its IP, so re-add it. GRE encapsulates the private overlay and can carry multicast and routing protocols; IPsec encrypts it. A crypto map protects only what its ACL matches — for GRE-over-IPsec that is the GRE flow (protocol 47) between the WAN endpoints, not the inner subnets." /></p>
@@ -269,6 +278,7 @@ export default function TunnelVisionMission({
           {complete && <div className="mt-6 rounded-xl border border-emerald-300/30 bg-emerald-300/10 p-5 text-center"><p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">Objectives 2.2.a · 2.2.b checkpoint</p><p className="mt-2 text-xl font-black">VRF · GRE · IPsec · +150 XP</p><p className="mt-2 text-sm text-slate-400">VRF: GUEST on Gi0/1 · tunnel: Tunnel0 up (GRE/IP) · IPsec: esp-256-aes ACTIVE · map: CMAP protects GRE (protocol 47)</p></div>}
         </section>
       </div>
+      <PhaseReviewModal content={reviewContent} onClose={() => setReviewPhase(null)} phase={reviewPhase} />
     </main>
   );
 }

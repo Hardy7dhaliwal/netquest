@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import { Wordmark } from "@/components/wordmark";
 
 import {
@@ -20,6 +21,7 @@ import { ConsolePanel } from "@/components/console-panel";
 import { GlossaryText } from "@/components/glossary-text";
 import { MissionPrimer } from "@/components/mission-primer";
 import { NetworkMap } from "@/components/network-map";
+import { MissionProgress, PhaseReviewModal, type PhaseReviewContent } from "@/components/phase-review";
 
 const phaseCopy = {
   design: {
@@ -135,6 +137,24 @@ export default function GatewayMission({
   const copy = complete ? phaseCopy.vrrp : phaseCopy[activePhase];
   const cliPhase = complete || mission.phase === "hsrp-config" || mission.phase === "failover";
 
+  const [reviewPhase, setReviewPhase] = useState<string | null>(null);
+  const reviewContent: PhaseReviewContent | null = reviewPhase
+    ? (() => {
+        const copy = phaseCopy[reviewPhase as keyof typeof phaseCopy];
+        const answer =
+          reviewPhase === "design" && mission.selectedDesign
+            ? optionCopy[mission.selectedDesign].title
+            : reviewPhase === "ha" && mission.selectedHa
+              ? optionCopy[mission.selectedHa].title
+              : reviewPhase === "vrrp" && mission.selectedVrrp
+                ? optionCopy[mission.selectedVrrp].title
+                : null;
+        const commands =
+          reviewPhase === "hsrp-config" ? HSRP_COMMANDS : reviewPhase === "failover" ? FAILOVER_COMMANDS : undefined;
+        return { label: copy.label, title: copy.title, prompt: copy.prompt, output: (copy as { output?: string | null }).output ?? null, answer, commands };
+      })()
+    : null;
+
   function choose(option: GatewayDesignOption | GatewayHaOption | GatewayVrrpOption) {
     if (mission.phase === "design") onChange(chooseDesign(mission, option as GatewayDesignOption));
     else if (mission.phase === "ha") onChange(chooseHa(mission, option as GatewayHaOption));
@@ -177,20 +197,7 @@ export default function GatewayMission({
           </section>
           <MissionPrimer missionId="gateway-at-dawn" />
           <NetworkMap missionId="gateway-at-dawn" />
-          <section className="rounded-xl border border-slate-800 bg-slate-900/70 p-5">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">Mission progress</p>
-              <span className="text-xs text-slate-500">{phaseIndex}/{PHASES.length}</span>
-            </div>
-            <div className="mt-4 space-y-3">
-              {PHASES.map((phase, index) => (
-                <div className="flex items-start gap-3 text-sm" key={phase}>
-                  <span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border text-[10px] ${index < phaseIndex ? "border-emerald-300 bg-emerald-300 text-slate-950" : "border-slate-600 text-transparent"}`}>✓</span>
-                  <span className={index < phaseIndex ? "text-slate-200" : "text-slate-500"}>{phaseLabels[index]}</span>
-                </div>
-              ))}
-            </div>
-          </section>
+          <MissionProgress labels={phaseLabels} phaseIndex={phaseIndex} phases={PHASES} onReview={setReviewPhase} />
           <section className="rounded-xl border border-amber-300/20 bg-amber-300/5 p-5 text-xs leading-5 text-slate-400">
             <p className="font-bold uppercase tracking-[0.2em] text-amber-200">Field note</p>
             <p className="mt-3"><GlossaryText text="HSRP: two routers share a virtual IP + MAC; the Active answers for it and forwards. Priority elects the Active; `preempt` lets a higher-priority router reclaim the role after returning. VRRP does the same job — but the Master uses its real MAC and preempts by default." /></p>
@@ -256,6 +263,7 @@ export default function GatewayMission({
           {complete && <div className="mt-6 rounded-xl border border-emerald-300/30 bg-emerald-300/10 p-5 text-center"><p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">Objectives 1.1.a · 1.1.b · 3.3.c checkpoint</p><p className="mt-2 text-xl font-black">Design · HA · HSRP/VRRP · +150 XP</p><p className="mt-2 text-sm text-slate-400">design: {mission.selectedDesign} · HA: {mission.selectedHa} · HSRP: configured &amp; verified · failover: GW2 Active · VRRP: {mission.selectedVrrp}</p></div>}
         </section>
       </div>
+      <PhaseReviewModal content={reviewContent} onClose={() => setReviewPhase(null)} phase={reviewPhase} />
     </main>
   );
 }

@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import { Wordmark } from "@/components/wordmark";
 
 import {
@@ -22,6 +23,7 @@ import { ConsolePanel } from "@/components/console-panel";
 import { GlossaryText } from "@/components/glossary-text";
 import { MissionPrimer } from "@/components/mission-primer";
 import { NetworkMap } from "@/components/network-map";
+import { MissionProgress, PhaseReviewModal, type PhaseReviewContent } from "@/components/phase-review";
 
 const phaseCopy = {
   qos: {
@@ -161,6 +163,26 @@ export default function EdgeServicesMission({
   const phaseIndex = complete ? PHASES.length : PHASES.indexOf(activePhase);
   const copy = complete ? phaseCopy.multicast : phaseCopy[activePhase];
   const cliPhase = complete || mission.phase === "nat-config" || mission.phase === "nat-drill";
+
+  const [reviewPhase, setReviewPhase] = useState<string | null>(null);
+  const reviewContent: PhaseReviewContent | null = reviewPhase
+    ? (() => {
+        const copy = phaseCopy[reviewPhase as keyof typeof phaseCopy];
+        const answer =
+          reviewPhase === "qos" && mission.selectedQos
+            ? optionCopy[mission.selectedQos].title
+            : reviewPhase === "ntp" && mission.selectedNtp
+              ? optionCopy[mission.selectedNtp].title
+              : reviewPhase === "multicast" && mission.selectedMulticast
+                ? optionCopy[mission.selectedMulticast].title
+                : reviewPhase === "multicast" && mission.selectedMulticastDrill
+                  ? optionCopy[mission.selectedMulticastDrill].title
+                  : null;
+        const commands =
+          reviewPhase === "nat-config" ? NAT_CONFIG_COMMANDS : reviewPhase === "nat-drill" ? NAT_DRILL_COMMANDS : undefined;
+        return { label: copy.label, title: copy.title, prompt: copy.prompt, output: (copy as { output?: string | null }).output ?? null, answer, commands };
+      })()
+    : null;
   const interpretSnippet = mission.phase === "qos" ? QOS_CONFIG : mission.phase === "ntp" ? NTP_CONFIG : null;
 
   // The family drill unlocks only on the correct RPF answer — a wrong Q1 leaves
@@ -206,20 +228,7 @@ export default function EdgeServicesMission({
           </section>
           <MissionPrimer missionId="edge-services" />
           <NetworkMap missionId="edge-services" />
-          <section className="rounded-xl border border-slate-800 bg-slate-900/70 p-5">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">Mission progress</p>
-              <span className="text-xs text-slate-500">{phaseIndex}/{PHASES.length}</span>
-            </div>
-            <div className="mt-4 space-y-3">
-              {PHASES.map((phase, index) => (
-                <div className="flex items-start gap-3 text-sm" key={phase}>
-                  <span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border text-[10px] ${index < phaseIndex ? "border-emerald-300 bg-emerald-300 text-slate-950" : "border-slate-600 text-transparent"}`}>✓</span>
-                  <span className={index < phaseIndex ? "text-slate-200" : "text-slate-500"}>{phaseLabels[index]}</span>
-                </div>
-              ))}
-            </div>
-          </section>
+          <MissionProgress labels={phaseLabels} phaseIndex={phaseIndex} phases={PHASES} onReview={setReviewPhase} />
           <section className="rounded-xl border border-amber-300/20 bg-amber-300/5 p-5 text-xs leading-5 text-slate-400">
             <p className="font-bold uppercase tracking-[0.2em] text-amber-200">Field note</p>
             <p className="mt-3"><GlossaryText text="QoS: class-maps classify (match DSCP), policy-maps act (priority = strict LLQ queue, bandwidth = guaranteed share), service-policy attaches them. NTP syncs over UDP/123 and slews; ntp source pins the address; PTP is the hardware-timestamped alternative. NAT translates private→public; PAT overloads one address with ports. Multicast: RPF is the loop guard, PIM builds trees, IGMPv2 joins groups, IGMPv3 joins sources. The family: SSM builds (S,G) trees for one-to-many; bidir PIM uses one shared tree through the RP for many-to-many; MSDP peers RPs so separate PIM-SM domains share sources." /></p>
@@ -306,6 +315,7 @@ export default function EdgeServicesMission({
           {complete && <div className="mt-6 rounded-xl border border-emerald-300/30 bg-emerald-300/10 p-5 text-center"><p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">Objectives 1.4 · 3.3.a · 3.3.b · 3.3.d checkpoint</p><p className="mt-2 text-xl font-black">QoS · NTP/PTP · NAT/PAT · Multicast · +150 XP</p><p className="mt-2 text-sm text-slate-400">QoS: {mission.selectedQos} · clock: {mission.selectedNtp} · NAT/PAT: configured &amp; verified · multicast: {mission.selectedMulticast} · family: {mission.selectedMulticastDrill ?? "—"}</p></div>}
         </section>
       </div>
+      <PhaseReviewModal content={reviewContent} onClose={() => setReviewPhase(null)} phase={reviewPhase} />
     </main>
   );
 }

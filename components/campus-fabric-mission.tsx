@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import { Wordmark } from "@/components/wordmark";
 
 import {
@@ -20,6 +21,7 @@ import { ConsolePanel } from "@/components/console-panel";
 import { GlossaryText } from "@/components/glossary-text";
 import { MissionPrimer } from "@/components/mission-primer";
 import { NetworkMap } from "@/components/network-map";
+import { MissionProgress, PhaseReviewModal, type PhaseReviewContent } from "@/components/phase-review";
 
 const phaseCopy = {
   roles: {
@@ -109,6 +111,23 @@ export default function CampusFabricMission({
   const copy = complete ? phaseCopy.interop : phaseCopy[activePhase];
   const cliPhase = complete || mission.phase === "lisp";
 
+  const [reviewPhase, setReviewPhase] = useState<string | null>(null);
+  const reviewContent: PhaseReviewContent | null = reviewPhase
+    ? (() => {
+        const copy = phaseCopy[reviewPhase as keyof typeof phaseCopy];
+        const answer =
+          reviewPhase === "roles" && mission.selectedRoles
+            ? optionCopy[mission.selectedRoles].title
+            : reviewPhase === "lisp-check" && mission.selectedLisp
+              ? optionCopy[mission.selectedLisp].title
+              : reviewPhase === "interop" && mission.selectedInterop
+                ? optionCopy[mission.selectedInterop].title
+                : null;
+        const commands = reviewPhase === "lisp" ? LISP_COMMANDS : undefined;
+        return { label: copy.label, title: copy.title, prompt: copy.prompt, output: (copy as { output?: string | null }).output ?? null, answer, commands };
+      })()
+    : null;
+
   function choose(option: CampusRolesOption | CampusLispOption | CampusInteropOption) {
     if (mission.phase === "roles") onChange(chooseRoles(mission, option as CampusRolesOption));
     else if (mission.phase === "lisp-check") onChange(chooseLisp(mission, option as CampusLispOption));
@@ -145,20 +164,7 @@ export default function CampusFabricMission({
           </section>
           <MissionPrimer missionId="campus-fabric" />
           <NetworkMap missionId="campus-fabric" />
-          <section className="rounded-xl border border-slate-800 bg-slate-900/70 p-5">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">Mission progress</p>
-              <span className="text-xs text-slate-500">{phaseIndex}/{PHASES.length}</span>
-            </div>
-            <div className="mt-4 space-y-3">
-              {PHASES.map((phase, index) => (
-                <div className="flex items-start gap-3 text-sm" key={phase}>
-                  <span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border text-[10px] ${index < phaseIndex ? "border-emerald-300 bg-emerald-300 text-slate-950" : "border-slate-600 text-transparent"}`}>✓</span>
-                  <span className={index < phaseIndex ? "text-slate-200" : "text-slate-500"}>{phaseLabels[index]}</span>
-                </div>
-              ))}
-            </div>
-          </section>
+          <MissionProgress labels={phaseLabels} phaseIndex={phaseIndex} phases={PHASES} onReview={setReviewPhase} />
           <section className="rounded-xl border border-amber-300/20 bg-amber-300/5 p-5 text-xs leading-5 text-slate-400">
             <p className="font-bold uppercase tracking-[0.2em] text-amber-200">Field note</p>
             <p className="mt-3"><GlossaryText text="SD-Access roles: edge node (connects hosts, encapsulates/decapsulates), border node (faces external networks), control plane node (LISP map-server/map-resolver — the EID-to-RLOC database). In LISP, EIDs are endpoints and RLOCs are fabric tunnel endpoints; the map-cache resolves EID → RLOC so an edge can encapsulate. Legacy interop: the border advertises fabric prefixes outward (BGP/OSPF) and ingests external routes, with a fusion router for shared services and route leaking." /></p>
@@ -225,6 +231,7 @@ export default function CampusFabricMission({
           {complete && <div className="mt-6 rounded-xl border border-emerald-300/30 bg-emerald-300/10 p-5 text-center"><p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">Objectives 1.3.a · 1.3.b · 2.3.a checkpoint</p><p className="mt-2 text-xl font-black">SD-Access roles · LISP map-cache · Legacy interop · +100 XP</p><p className="mt-2 text-sm text-slate-400">roles: {mission.selectedRoles} · map-cache: {mission.selectedLisp} · interop: {mission.selectedInterop}</p></div>}
         </section>
       </div>
+      <PhaseReviewModal content={reviewContent} onClose={() => setReviewPhase(null)} phase={reviewPhase} />
     </main>
   );
 }

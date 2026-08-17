@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import { Wordmark } from "@/components/wordmark";
 
 import {
@@ -22,6 +23,7 @@ import { ConsolePanel } from "@/components/console-panel";
 import { GlossaryText } from "@/components/glossary-text";
 import { MissionPrimer } from "@/components/mission-primer";
 import { NetworkMap } from "@/components/network-map";
+import { MissionProgress, PhaseReviewModal, type PhaseReviewContent } from "@/components/phase-review";
 
 const phaseCopy = {
   local: {
@@ -151,6 +153,26 @@ export default function LockControlPlaneMission({
   const copy = complete ? phaseCopy.design : phaseCopy[activePhase];
   const cliPhase = complete || mission.phase === "local" || mission.phase === "aaa";
 
+  const [reviewPhase, setReviewPhase] = useState<string | null>(null);
+  const reviewContent: PhaseReviewContent | null = reviewPhase
+    ? (() => {
+        const copy = phaseCopy[reviewPhase as keyof typeof phaseCopy];
+        const answer =
+          reviewPhase === "iacl" && mission.selectedIacl
+            ? optionCopy[mission.selectedIacl].title
+            : reviewPhase === "copp" && mission.selectedCopp
+              ? optionCopy[mission.selectedCopp].title
+              : reviewPhase === "rest" && mission.selectedRest
+                ? optionCopy[mission.selectedRest].title
+                : reviewPhase === "design" && mission.selectedDesign
+                  ? optionCopy[mission.selectedDesign].title
+                  : null;
+        const commands =
+          reviewPhase === "local" ? LOCAL_COMMANDS : reviewPhase === "aaa" ? AAA_COMMANDS : undefined;
+        return { label: copy.label, title: copy.title, prompt: copy.prompt, output: (copy as { output?: string | null }).output ?? null, answer, commands };
+      })()
+    : null;
+
   function choose(option: LockIaclOption | LockCoppOption | LockRestOption | LockDesignOption) {
     if (mission.phase === "iacl") onChange(chooseIacl(mission, option as LockIaclOption));
     else if (mission.phase === "copp") onChange(chooseCopp(mission, option as LockCoppOption));
@@ -199,20 +221,7 @@ export default function LockControlPlaneMission({
           </section>
           <MissionPrimer missionId="lock-the-control-plane" />
           <NetworkMap missionId="lock-the-control-plane" />
-          <section className="rounded-xl border border-slate-800 bg-slate-900/70 p-5">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">Mission progress</p>
-              <span className="text-xs text-slate-500">{phaseIndex}/{PHASES.length}</span>
-            </div>
-            <div className="mt-4 space-y-3">
-              {PHASES.map((phase, index) => (
-                <div className="flex items-start gap-3 text-sm" key={phase}>
-                  <span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border text-[10px] ${index < phaseIndex ? "border-emerald-300 bg-emerald-300 text-slate-950" : "border-slate-600 text-transparent"}`}>✓</span>
-                  <span className={index < phaseIndex ? "text-slate-200" : "text-slate-500"}>{phaseLabels[index]}</span>
-                </div>
-              ))}
-            </div>
-          </section>
+          <MissionProgress labels={phaseLabels} phaseIndex={phaseIndex} phases={PHASES} onReview={setReviewPhase} />
           <section className="rounded-xl border border-amber-300/20 bg-amber-300/5 p-5 text-xs leading-5 text-slate-400">
             <p className="font-bold uppercase tracking-[0.2em] text-amber-200">Field note</p>
             <p className="mt-3"><GlossaryText text="Device access: username + secret, login local, transport input ssh. AAA: aaa new-model + a RADIUS/TACACS+ server, method lists (group radius local). iACLs permit only management/control flows inbound to the device. CoPP polices traffic destined to the control plane. REST APIs need TLS, API keys/tokens, and role-based authorization. Defense in depth: endpoint security (NAC/AV), NGFWs (application inspection), TrustSec (SGT tags → policy), MACsec (L2 encryption)." /></p>
@@ -281,6 +290,7 @@ export default function LockControlPlaneMission({
           {complete && <div className="mt-6 rounded-xl border border-emerald-300/30 bg-emerald-300/10 p-5 text-center"><p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">Objectives 5.1.a · 5.1.b · 5.2.a · 5.2.b · 5.3 · 5.4.a–d checkpoint</p><p className="mt-2 text-xl font-black">Device access · AAA · iACL · CoPP · REST security · Defense in depth · +200 XP</p><p className="mt-2 text-sm text-slate-400">iACL: {mission.selectedIacl} · CoPP: {mission.selectedCopp} · REST: {mission.selectedRest} · design: {mission.selectedDesign}</p></div>}
         </section>
       </div>
+      <PhaseReviewModal content={reviewContent} onClose={() => setReviewPhase(null)} phase={reviewPhase} />
     </main>
   );
 }
