@@ -18,6 +18,7 @@ import { NextMissionButton, type NextMission } from "@/components/next-mission-b
 import { ConsolePanel } from "@/components/console-panel";
 import { GlossaryText } from "@/components/glossary-text";
 import { MissionPrimer } from "@/components/mission-primer";
+import { NetworkMap } from "@/components/network-map";
 
 const phaseCopy = {
   evidence: {
@@ -190,9 +191,10 @@ export default function OspfMission({
           <section className="rounded-xl border border-slate-800 bg-slate-900/70 p-5">
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">Incident brief</p>
             <h2 className="mt-3 text-xl font-bold">The backbone is one link away.</h2>
-            <p className="mt-3 text-sm leading-6 text-slate-400"><GlossaryText text="R1 (core, area 0) and R2 (distribution) share Gi0/1, but R2 never reaches FULL and learns no core routes. Read the neighbor table, find the area fault, type the fix, verify convergence from R1, summarize R2's subnets — then filter the lab prefix so it never crosses into area 0." /></p>
+            <p className="mt-3 text-sm leading-6 text-slate-400"><GlossaryText text="R1 (core, area 0) and R2 (distribution) share the 10.0.2.0/24 backbone link on Gi0/1, but R2 never reaches FULL and learns no core routes. Read the neighbor table, find the area fault, type the fix, verify convergence from R1, summarize R2's 172.16.0.0/22 campus subnets (24 × /30) — then filter the 192.168.50.0/24 lab prefix so it never crosses into area 0." /></p>
           </section>
           <MissionPrimer missionId="area-zero-hero" />
+          <NetworkMap missionId="area-zero-hero" />
           <section className="rounded-xl border border-slate-800 bg-slate-900/70 p-5">
             <div className="flex items-center justify-between">
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">Mission progress</p>

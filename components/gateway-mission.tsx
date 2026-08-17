@@ -19,6 +19,7 @@ import { NextMissionButton, type NextMission } from "@/components/next-mission-b
 import { ConsolePanel } from "@/components/console-panel";
 import { GlossaryText } from "@/components/glossary-text";
 import { MissionPrimer } from "@/components/mission-primer";
+import { NetworkMap } from "@/components/network-map";
 
 const phaseCopy = {
   design: {
@@ -172,9 +173,10 @@ export default function GatewayMission({
           <section className="rounded-xl border border-slate-800 bg-slate-900/70 p-5">
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">Incident brief</p>
             <h2 className="mt-3 text-xl font-bold">The gateway has a single point of failure.</h2>
-            <p className="mt-3 text-sm leading-6 text-slate-400"><GlossaryText text="GW1 and GW2 form the distribution pair, but hosts still depend on one router. Configure first-hop redundancy so the campus keeps its default gateway even when a router dies — then prove the failover." /></p>
+            <p className="mt-3 text-sm leading-6 text-slate-400"><GlossaryText text="GW1 and GW2 form the distribution pair, but hosts still depend on one router. Configure first-hop redundancy on the 10.30.0.0/24 LAN (virtual gateway 10.30.0.1) so the campus keeps its default gateway even when a router dies — then prove the failover." /></p>
           </section>
           <MissionPrimer missionId="gateway-at-dawn" />
+          <NetworkMap missionId="gateway-at-dawn" />
           <section className="rounded-xl border border-slate-800 bg-slate-900/70 p-5">
             <div className="flex items-center justify-between">
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">Mission progress</p>

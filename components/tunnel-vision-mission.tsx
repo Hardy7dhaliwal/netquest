@@ -15,6 +15,7 @@ import { NextMissionButton, type NextMission } from "@/components/next-mission-b
 import { ConsolePanel } from "@/components/console-panel";
 import { GlossaryText } from "@/components/glossary-text";
 import { MissionPrimer } from "@/components/mission-primer";
+import { NetworkMap } from "@/components/network-map";
 
 const phaseCopy = {
   vrf: {
@@ -186,9 +187,10 @@ export default function TunnelVisionMission({
           <section className="rounded-xl border border-slate-800 bg-slate-900/70 p-5">
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">Incident brief</p>
             <h2 className="mt-3 text-xl font-bold">The wire is tapped.</h2>
-            <p className="mt-3 text-sm leading-6 text-slate-400"><GlossaryText text="The branch (R-BR) talks to HQ across the internet in plaintext — anyone on the path can read it — and guest traffic shares the corporate segment. Isolate the guests with a VRF, then build an encrypted GRE-over-IPsec tunnel so the private overlay crosses safely." /></p>
+            <p className="mt-3 text-sm leading-6 text-slate-400"><GlossaryText text="The branch (R-BR, WAN 198.51.100.2) talks to HQ (WAN 203.0.113.1) across the internet in plaintext — anyone on the path can read it — and guest traffic (192.168.20.0/24) shares the corporate segment. Isolate the guests with a VRF, then build an encrypted GRE-over-IPsec tunnel (10.99.0.0/30) so the private overlay crosses safely." /></p>
           </section>
           <MissionPrimer missionId="tunnel-vision" />
+          <NetworkMap missionId="tunnel-vision" />
           <section className="rounded-xl border border-slate-800 bg-slate-900/70 p-5">
             <div className="flex items-center justify-between">
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">Mission progress</p>

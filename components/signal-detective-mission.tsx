@@ -19,6 +19,7 @@ import { NextMissionButton, type NextMission } from "@/components/next-mission-b
 import { ConsolePanel } from "@/components/console-panel";
 import { GlossaryText } from "@/components/glossary-text";
 import { MissionPrimer } from "@/components/mission-primer";
+import { NetworkMap } from "@/components/network-map";
 
 const phaseCopy = {
   diagnose: {
@@ -236,9 +237,10 @@ export default function SignalDetectiveMission({
           <section className="rounded-xl border border-slate-800 bg-slate-900/70 p-5">
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">Incident brief</p>
             <h2 className="mt-3 text-xl font-bold">The finance app is crawling.</h2>
-            <p className="mt-3 text-sm leading-6 text-slate-400"><GlossaryText text="Users on 10.20.0.0/24 report the finance app is barely usable. On R-CORE, work the diagnostic ladder to find what is eating the traffic, then build the telemetry so the next outage finds itself: NetFlow records, a SPAN mirror, an IP SLA probe, and a programmatic interface." /></p>
+            <p className="mt-3 text-sm leading-6 text-slate-400"><GlossaryText text="Users on 10.20.0.0/24 report the finance app (203.0.113.1) is barely usable. On R-CORE (10.20.0.1), work the diagnostic ladder to find what is eating the traffic, then build the telemetry so the next outage finds itself: NetFlow records, a SPAN mirror, an IP SLA probe, and a programmatic interface." /></p>
           </section>
           <MissionPrimer missionId="signal-detective" />
+          <NetworkMap missionId="signal-detective" />
           <section className="rounded-xl border border-slate-800 bg-slate-900/70 p-5">
             <div className="flex items-center justify-between">
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">Mission progress</p>
