@@ -21,6 +21,7 @@ import { NextMissionButton, type NextMission } from "@/components/next-mission-b
 import { ConsolePanel } from "@/components/console-panel";
 import { GlossaryText } from "@/components/glossary-text";
 import { MissionPrimer } from "@/components/mission-primer";
+import { NetworkMap } from "@/components/network-map";
 
 const phaseCopy = {
   planes: {
@@ -176,6 +177,7 @@ export default function SdwanMission({
             <p className="mt-3 text-sm leading-6 text-slate-400"><GlossaryText text="The branch WAN is being rebuilt with Catalyst SD-WAN: cloud controllers (vManage — now branded SD-WAN Manager — plus vSmart and vBond, the SD-WAN Validator) and a vEdge on site. Map the planes, read what OMP advertises, then verify the vEdge's TLOCs, BFD, and control connections — and decide whether the tradeoff is worth it." /></p>
           </section>
           <MissionPrimer missionId="sdwan-overlay" />
+          <NetworkMap missionId="sdwan-overlay" />
           <section className="rounded-xl border border-slate-800 bg-slate-900/70 p-5">
             <div className="flex items-center justify-between">
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">Mission progress</p>

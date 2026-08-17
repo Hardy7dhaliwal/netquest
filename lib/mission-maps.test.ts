@@ -11,6 +11,10 @@ const REQUIRED_MAP_IDS = [
   "gateway-at-dawn",
   "edge-services",
   "edge-has-opinions",
+  "stp-storm",
+  "bundled-bottleneck",
+  "sdwan-overlay",
+  "campus-fabric",
 ];
 
 describe("mission network maps", () => {

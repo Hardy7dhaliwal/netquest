@@ -17,6 +17,7 @@ import { NextMissionButton, type NextMission } from "@/components/next-mission-b
 import { ConsolePanel } from "@/components/console-panel";
 import { GlossaryText } from "@/components/glossary-text";
 import { MissionPrimer } from "@/components/mission-primer";
+import { NetworkMap } from "@/components/network-map";
 
 const phaseCopy = {
   root_election: {
@@ -144,6 +145,7 @@ export default function StpMission({
             <p className="mt-3 text-sm leading-6 text-slate-400"><GlossaryText text="Stabilize the campus in four steps: elect the root, harden the edge, protect the root path, and control VLAN scale." /></p>
           </section>
           <MissionPrimer missionId="stp-storm" />
+          <NetworkMap missionId="stp-storm" />
           <section className="rounded-xl border border-slate-800 bg-slate-900/70 p-5">
             <div className="flex items-center justify-between">
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">Mission progress</p>

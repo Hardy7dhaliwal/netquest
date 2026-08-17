@@ -126,4 +126,61 @@ export const MISSION_MAPS: Record<string, MissionMap> = {
       { from: "transit", to: "ispr", label: "203.0.113.2" },
     ],
   },
+
+  // ─── The STP Storm (root election / guards) ────────────────────────────
+  "stp-storm": {
+    devices: [
+      { id: "sw1", kind: "switch", label: "SW1", detail: "bridge ID 32769", x: 24, y: 60 },
+      { id: "sw2", kind: "switch", label: "SW2 · root", detail: "bridge ID 24577", x: 76, y: 60 },
+      { id: "rogue", kind: "switch", label: "Rogue switch", detail: "plugged into Gi0/5", x: 24, y: 18 },
+    ],
+    links: [
+      { from: "sw1", to: "sw2", label: "uplink Gi0/2 · root guard" },
+      { from: "sw1", to: "rogue", label: "edge Gi0/5 · BPDU guard", dashed: true },
+    ],
+  },
+
+  // ─── The Bundled Bottleneck (EtherChannel / LACP) ──────────────────────
+  "bundled-bottleneck": {
+    devices: [
+      { id: "sw1", kind: "switch", label: "SW1", detail: "Gi0/1 + Gi0/2 → Po1", x: 24, y: 50 },
+      { id: "sw2", kind: "switch", label: "SW2", detail: "LACP passive", x: 76, y: 50 },
+    ],
+    links: [
+      { from: "sw1", to: "sw2", label: "Gi0/1 (P) · LACP" },
+      { from: "sw1", to: "sw2", label: "Gi0/2 · passive — missing", dashed: true },
+    ],
+  },
+
+  // ─── SD-WAN: The WAN Overlay (planes) ──────────────────────────────────
+  "sdwan-overlay": {
+    devices: [
+      { id: "vedge", kind: "router", label: "vEdge · branch", detail: "10.20.0.0/24 · TLOC 10.70.70.1", x: 20, y: 50 },
+      { id: "vsmart", kind: "router", label: "vSmart", detail: "control · OMP", x: 70, y: 22 },
+      { id: "vbond", kind: "router", label: "vBond", detail: "orchestration", x: 70, y: 50 },
+      { id: "vmanage", kind: "router", label: "vManage", detail: "management", x: 70, y: 78 },
+    ],
+    links: [
+      { from: "vedge", to: "vsmart", label: "OMP · DTLS" },
+      { from: "vedge", to: "vbond", label: "auth / address" },
+      { from: "vedge", to: "vmanage", label: "management" },
+    ],
+  },
+
+  // ─── The Campus Fabric (SD-Access / LISP) ──────────────────────────────
+  "campus-fabric": {
+    devices: [
+      { id: "legacy", kind: "pc", label: "Legacy network", detail: "non-fabric hosts", x: 12, y: 50 },
+      { id: "fusion", kind: "router", label: "Fusion router", detail: "shared services", x: 36, y: 50 },
+      { id: "border", kind: "router", label: "Border node", detail: "faces outside", x: 60, y: 50 },
+      { id: "edge", kind: "switch", label: "Edge node", detail: "serves fabric hosts", x: 84, y: 28 },
+      { id: "cp1", kind: "router", label: "CP-1", detail: "LISP map-server", x: 84, y: 74 },
+    ],
+    links: [
+      { from: "legacy", to: "fusion", label: "legacy reach" },
+      { from: "fusion", to: "border", label: "route leaking" },
+      { from: "border", to: "edge", label: "fabric" },
+      { from: "edge", to: "cp1", label: "LISP EID→RLOC" },
+    ],
+  },
 };
