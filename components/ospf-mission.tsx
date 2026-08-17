@@ -146,7 +146,7 @@ export default function OspfMission({
   const activePhase = mission.phase === "complete" ? "filter" : mission.phase;
   const phaseIndex = complete ? PHASES.length : PHASES.indexOf(activePhase);
   const copy = complete ? phaseCopy.filter : phaseCopy[activePhase];
-  const cliPhase = mission.phase === "config" || mission.phase === "verify" || mission.phase === "summarize" || mission.phase === "filter";
+  const cliPhase = complete || mission.phase === "config" || mission.phase === "verify" || mission.phase === "summarize" || mission.phase === "filter";
   const device = ospfDeviceFor(mission.phase);
 
   function choose(option: OspfEvidenceOption | OspfCauseOption) {

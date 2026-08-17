@@ -103,7 +103,7 @@ export default function StpMission({
   const activePhase = mission.phase === "complete" ? "mst_concept" : mission.phase;
   const phaseIndex = complete ? PHASES.length : PHASES.indexOf(activePhase);
   const copy = complete ? phaseCopy.mst_concept : phaseCopy[activePhase];
-  const cliPhase = mission.phase === "bpdu_guard" || mission.phase === "root_guard";
+  const cliPhase = complete || mission.phase === "bpdu_guard" || mission.phase === "root_guard";
 
   function selectRoot(switchId: SwitchId) {
     onChange(chooseRoot(mission, switchId));

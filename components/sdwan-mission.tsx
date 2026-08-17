@@ -131,7 +131,7 @@ export default function SdwanMission({
   const activePhase = mission.phase === "complete" ? "benefit" : mission.phase;
   const phaseIndex = complete ? PHASES.length : PHASES.indexOf(activePhase);
   const copy = complete ? phaseCopy.benefit : phaseCopy[activePhase];
-  const cliPhase = mission.phase === "tlocs";
+  const cliPhase = complete || mission.phase === "tlocs";
   const interpretSnippet = mission.phase === "omp" ? OMP_ROUTES : null;
 
   function choose(option: SdwanPlanesOption | SdwanOmpOption | SdwanTlocsOption | SdwanBenefitOption) {

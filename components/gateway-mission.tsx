@@ -132,7 +132,7 @@ export default function GatewayMission({
   const activePhase = mission.phase === "complete" ? "vrrp" : mission.phase;
   const phaseIndex = complete ? PHASES.length : PHASES.indexOf(activePhase);
   const copy = complete ? phaseCopy.vrrp : phaseCopy[activePhase];
-  const cliPhase = mission.phase === "hsrp-config" || mission.phase === "failover";
+  const cliPhase = complete || mission.phase === "hsrp-config" || mission.phase === "failover";
 
   function choose(option: GatewayDesignOption | GatewayHaOption | GatewayVrrpOption) {
     if (mission.phase === "design") onChange(chooseDesign(mission, option as GatewayDesignOption));

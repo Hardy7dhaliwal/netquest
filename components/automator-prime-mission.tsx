@@ -157,7 +157,7 @@ export default function AutomatorPrimeMission({
   const activePhase = mission.phase === "complete" ? "agent" : mission.phase;
   const phaseIndex = complete ? PHASES.length : PHASES.indexOf(activePhase);
   const copy = complete ? phaseCopy.agent : phaseCopy[activePhase];
-  const consolePhase = mission.phase === "python" || mission.phase === "json" || mission.phase === "eem";
+  const consolePhase = complete || mission.phase === "python" || mission.phase === "json" || mission.phase === "eem";
   const workspaceDevice = mission.phase === "eem" ? "R-CORE" : "WORKSTATION";
 
   function choose(option: AutomatorYangOption | AutomatorApisOption | AutomatorRestOption | AutomatorAgentOption) {

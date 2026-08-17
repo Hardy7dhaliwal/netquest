@@ -216,7 +216,7 @@ export default function EdgeMission({
             <pre className="mt-6 overflow-x-auto whitespace-pre rounded-xl border border-slate-800 bg-slate-950/80 p-4 font-mono text-xs leading-5 text-slate-300">{copy.output}</pre>
           )}
 
-          {!complete && mission.phase === "bgp-fix" && (
+          {(complete || mission.phase === "bgp-fix") && (
             <div className="mt-6 space-y-4">
               <div className="flex flex-col overflow-hidden rounded-xl border border-slate-800 bg-[#030914] shadow-2xl shadow-cyan-950/10">
                 <div className="border-b border-slate-800 bg-slate-900/80 px-4 py-3">

@@ -148,7 +148,7 @@ export default function LockControlPlaneMission({
   const activePhase = mission.phase === "complete" ? "design" : mission.phase;
   const phaseIndex = complete ? PHASES.length : PHASES.indexOf(activePhase);
   const copy = complete ? phaseCopy.design : phaseCopy[activePhase];
-  const cliPhase = mission.phase === "local" || mission.phase === "aaa";
+  const cliPhase = complete || mission.phase === "local" || mission.phase === "aaa";
 
   function choose(option: LockIaclOption | LockCoppOption | LockRestOption | LockDesignOption) {
     if (mission.phase === "iacl") onChange(chooseIacl(mission, option as LockIaclOption));

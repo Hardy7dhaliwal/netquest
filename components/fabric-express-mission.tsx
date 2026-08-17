@@ -157,7 +157,7 @@ export default function FabricExpressMission({
   const activePhase = mission.phase === "complete" ? "vxlan-check" : mission.phase;
   const phaseIndex = complete ? PHASES.length : PHASES.indexOf(activePhase);
   const copy = complete ? phaseCopy["vxlan-check"] : phaseCopy[activePhase];
-  const cliPhase = mission.phase === "vswitch" || mission.phase === "vxlan";
+  const cliPhase = complete || mission.phase === "vswitch" || mission.phase === "vxlan";
   const interpretSnippet = mission.phase === "vm" ? VM_CONFIG : mission.phase === "hypervisor" ? HYPERVISOR_BLURB : null;
   const cliDevice = mission.phase === "vswitch" ? "HOST-1" : "LEAF-1";
 

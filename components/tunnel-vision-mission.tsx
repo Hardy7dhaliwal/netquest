@@ -144,7 +144,7 @@ export default function TunnelVisionMission({
   const activePhase = mission.phase === "complete" ? "checkpoint" : mission.phase;
   const phaseIndex = complete ? PHASES.length : PHASES.indexOf(activePhase);
   const copy = complete ? phaseCopy.checkpoint : phaseCopy[activePhase];
-  const cliPhase = mission.phase === "vrf" || mission.phase === "gre" || mission.phase === "ipsec" || mission.phase === "cryptomap";
+  const cliPhase = complete || mission.phase === "vrf" || mission.phase === "gre" || mission.phase === "ipsec" || mission.phase === "cryptomap";
 
   function choose(option: TunnelCheckpointOption) {
     onChange(chooseCheckpoint(mission, option));

@@ -106,7 +106,7 @@ export default function CampusFabricMission({
   const activePhase = mission.phase === "complete" ? "interop" : mission.phase;
   const phaseIndex = complete ? PHASES.length : PHASES.indexOf(activePhase);
   const copy = complete ? phaseCopy.interop : phaseCopy[activePhase];
-  const cliPhase = mission.phase === "lisp";
+  const cliPhase = complete || mission.phase === "lisp";
 
   function choose(option: CampusRolesOption | CampusLispOption | CampusInteropOption) {
     if (mission.phase === "roles") onChange(chooseRoles(mission, option as CampusRolesOption));

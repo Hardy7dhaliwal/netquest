@@ -183,7 +183,7 @@ export default function SignalDetectiveMission({
   const activePhase = mission.phase === "complete" ? "final-check" : mission.phase;
   const phaseIndex = complete ? PHASES.length : PHASES.indexOf(activePhase);
   const copy = complete ? phaseCopy["final-check"] : phaseCopy[activePhase];
-  const cliPhase = mission.phase === "diagnose" || mission.phase === "span" || mission.phase === "sla" || mission.phase === "netconf";
+  const cliPhase = complete || mission.phase === "diagnose" || mission.phase === "span" || mission.phase === "sla" || mission.phase === "netconf";
   const interpretSnippet = mission.phase === "flow" ? FLOW_CONFIG : null;
   const cliDevice = mission.phase === "sla" ? "R-EDGE" : "R-CORE";
 

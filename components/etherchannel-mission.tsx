@@ -108,7 +108,7 @@ export default function EtherchannelMission({
   const activePhase = mission.phase === "complete" ? "verify" : mission.phase;
   const phaseIndex = complete ? PHASES.length : PHASES.indexOf(activePhase);
   const copy = complete ? phaseCopy.verify : phaseCopy[activePhase];
-  const cliPhase = mission.phase === "config" || mission.phase === "verify";
+  const cliPhase = complete || mission.phase === "config" || mission.phase === "verify";
 
   function choose(option: EvidenceOption | CauseOption) {
     if (mission.phase === "evidence") onChange(chooseEvidence(mission, option as EvidenceOption));

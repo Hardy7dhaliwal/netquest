@@ -159,7 +159,7 @@ export default function EdgeServicesMission({
   const activePhase = mission.phase === "complete" ? "multicast" : mission.phase;
   const phaseIndex = complete ? PHASES.length : PHASES.indexOf(activePhase);
   const copy = complete ? phaseCopy.multicast : phaseCopy[activePhase];
-  const cliPhase = mission.phase === "nat-config" || mission.phase === "nat-drill";
+  const cliPhase = complete || mission.phase === "nat-config" || mission.phase === "nat-drill";
   const interpretSnippet = mission.phase === "qos" ? QOS_CONFIG : mission.phase === "ntp" ? NTP_CONFIG : null;
 
   // The family drill unlocks only on the correct RPF answer — a wrong Q1 leaves
