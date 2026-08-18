@@ -78,6 +78,30 @@ describe("Lock the Control Plane mission", () => {
       expect(early.cliHistory.at(-1)?.output).toContain("configure terminal");
       expect(early.userCreated).toBe(false);
     });
+
+    it("shows the VTY lines as still open until the local auth is configured", () => {
+      let state = startLockControlPlaneMission();
+      state = runLockCommand(state, "enable");
+      const early = runLockCommand(state, "show running-config | include line vty");
+      expect(early.localVerified).toBe(false);
+      expect(early.phase).toBe("local");
+      expect(early.cliHistory.at(-1)?.output).toContain("still open");
+      expect(localDone(early)).toBe(false);
+    });
+
+    it("does not verify with only some of the local-auth steps done", () => {
+      let state = startLockControlPlaneMission();
+      state = runLockCommand(state, "enable");
+      state = runLockCommand(state, "configure terminal");
+      state = runLockCommand(state, "username admin secret C1scoBranch!");
+      state = runLockCommand(state, "line vty 0 4");
+      state = runLockCommand(state, "login local");
+      state = runLockCommand(state, "end");
+      const partial = runLockCommand(state, "show running-config | include line vty");
+      expect(partial.localVerified).toBe(false);
+      expect(partial.phase).toBe("local");
+      expect(partial.cliHistory.at(-1)?.output).toContain("still open");
+    });
   });
 
   describe("AAA phase (5.1.b)", () => {

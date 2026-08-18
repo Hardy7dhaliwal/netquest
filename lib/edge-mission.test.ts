@@ -112,6 +112,14 @@ describe("The Edge Has Opinions mission", () => {
     expect(state.cliHistory.at(-1)?.output).toContain("00:02:11");
   });
 
+  it("reports the multihop command as already applied on re-entry", () => {
+    const state = cli(toBgpFix(), "enable", "configure terminal", "router bgp 65100", "neighbor 203.0.113.2 ebgp-multihop 2");
+    const again = runEdgeCommand(state, "neighbor 203.0.113.2 ebgp-multihop 2");
+    expect(again.bgpConfigured).toBe(true);
+    expect(again.phase).toBe("bgp-fix");
+    expect(again.cliHistory.at(-1)?.output).toContain("already enabled");
+  });
+
   it("guides show ip bgp summary back to privileged EXEC", () => {
     const state = cli(toBgpFix(), "enable", "configure terminal", "router bgp 65100", "neighbor 203.0.113.2 ebgp-multihop 2", "show ip bgp summary");
 

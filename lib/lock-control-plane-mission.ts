@@ -186,8 +186,13 @@ export function runLockCommand(state: LockControlPlaneMissionState, rawCommand: 
     output = state.vtySsh ? "VTY lines already accept SSH only." : "VTY lines now accept SSH only — Telnet is locked out.";
     next = { ...state, vtySsh: true };
   } else if (state.phase === "local" && state.cliMode === "privileged" && command === "show running-config | include line vty") {
-    output = vtyCheck();
-    next = { ...state, localVerified: true };
+    if (state.userCreated && state.vtyLocal && state.vtySsh) {
+      output = vtyCheck();
+      next = { ...state, localVerified: true };
+    } else {
+      output =
+        "line vty 0 4\n  transport input telnet\n  exec-timeout 10 0\n\nThe VTY lines are still open — create the local user (username admin secret C1scoBranch!), then apply login local and transport input ssh before verifying.";
+    }
   } else if (state.phase === "local" && (command.startsWith("username") || command.startsWith("line ") || command === "login local" || command === "transport input ssh" || command.startsWith("show running-config"))) {
     output = state.cliMode === "config" ? "That is a show command — type end first, then run it from privileged EXEC." : "Type configure terminal first, then configure the username and VTY lines.";
   } else if (state.phase === "aaa" && state.cliMode === "config" && command === "aaa new-model") {

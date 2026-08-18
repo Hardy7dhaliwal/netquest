@@ -145,9 +145,9 @@ export function runEdgeCommand(state: EdgeMissionState, rawCommand: string): Edg
   } else if (state.cliMode === "config" && command === "router bgp 65100") {
     nextMode = "config-router";
   } else if (state.cliMode === "config-router" && command === "neighbor 203.0.113.2 ebgp-multihop 2") {
-    if (!state.bgpConfigured) {
-      output = "eBGP multihop enabled for neighbor 203.0.113.2 (max hops 2).";
-    }
+    output = state.bgpConfigured
+      ? "eBGP multihop is already enabled for neighbor 203.0.113.2 (max hops 2)."
+      : "eBGP multihop enabled for neighbor 203.0.113.2 (max hops 2).";
     next = { ...state, bgpConfigured: true };
   } else if (state.cliMode === "privileged" && command === "show ip bgp summary") {
     output = bgpSummary(state);
