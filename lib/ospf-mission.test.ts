@@ -134,6 +134,19 @@ describe("Area Zero Hero mission", () => {
   });
 
   describe("compliance filter drill on R2", () => {
+    it("refuses to apply the filter before the LabDeny prefix-list exists", () => {
+      let state = toFilter();
+      expect(state.phase).toBe("filter");
+      state = runOspfCommand(state, "enable");
+      state = runOspfCommand(state, "configure terminal");
+      state = runOspfCommand(state, "router ospf 1");
+      const early = runOspfCommand(state, "area 1 filter-list prefix LabDeny out");
+      expect(early.filterSet).toBe(false);
+      expect(early.status).toBe("in_progress");
+      expect(early.phase).toBe("filter");
+      expect(early.cliHistory.at(-1)?.output).toContain("create the prefix-list first");
+    });
+
     it("accepts the prefix-list and completes on the area filter-list", () => {
       let state = toFilter();
       expect(state.phase).toBe("filter");
@@ -150,6 +163,18 @@ describe("Area Zero Hero mission", () => {
       expect(state.phase).toBe("complete");
       expect(state.cliHistory.at(-1)?.output).toContain("no longer leave area 1");
       expect(state.eventLog.at(-1)?.tone).toBe("success");
+    });
+
+    it("cannot skip the catch-all permit and still apply the filter", () => {
+      let state = toFilter();
+      state = runOspfCommand(state, "enable");
+      state = runOspfCommand(state, "configure terminal");
+      state = runOspfCommand(state, "router ospf 1");
+      state = runOspfCommand(state, "ip prefix-list LabDeny seq 5 deny 192.168.50.0/24");
+      const incomplete = runOspfCommand(state, "area 1 filter-list prefix LabDeny out");
+      expect(incomplete.filterSet).toBe(false);
+      expect(incomplete.phase).toBe("filter");
+      expect(incomplete.cliHistory.at(-1)?.output).toContain("create the prefix-list first");
     });
   });
 

@@ -142,8 +142,9 @@ describe("The Signal Detective mission", () => {
       state = runSignalCommand(state, "enable");
       state = runSignalCommand(state, "configure terminal");
       state = runSignalCommand(state, "monitor session 1 source interface gi0/1 both");
-      expect(state.spanConfigured).toBe(true);
+      expect(state.spanSource).toBe(true);
       state = runSignalCommand(state, "monitor session 1 destination interface gi0/2");
+      expect(state.spanDest).toBe(true);
       state = runSignalCommand(state, "end");
       const verified = runSignalCommand(state, "show monitor session 1");
       expect(verified.spanVerified).toBe(true);
@@ -157,8 +158,22 @@ describe("The Signal Detective mission", () => {
       let state = atSpan();
       state = runSignalCommand(state, "enable");
       const early = runSignalCommand(state, "show monitor session 1");
-      expect(early.cliHistory.at(-1)?.output).toContain("does not exist");
+      expect(early.cliHistory.at(-1)?.output).toContain("incomplete");
       expect(early.phase).toBe("span");
+    });
+
+    it("refuses to verify until BOTH the source and destination ports are set", () => {
+      let state = atSpan();
+      expect(state.phase).toBe("span");
+      state = runSignalCommand(state, "enable");
+      state = runSignalCommand(state, "configure terminal");
+      state = runSignalCommand(state, "monitor session 1 source interface gi0/1 both");
+      state = runSignalCommand(state, "end");
+      const early = runSignalCommand(state, "show monitor session 1");
+      expect(early.spanVerified).toBe(false);
+      expect(early.phase).toBe("span");
+      expect(early.cliHistory.at(-1)?.output).toContain("BOTH");
+      expect(spanDone(early)).toBe(false);
     });
   });
 
@@ -169,9 +184,11 @@ describe("The Signal Detective mission", () => {
       state = runSignalCommand(state, "enable");
       state = runSignalCommand(state, "configure terminal");
       state = runSignalCommand(state, "ip sla 10");
+      expect(state.slaEntry).toBe(true);
       state = runSignalCommand(state, "icmp-echo 203.0.113.1");
-      expect(state.slaConfigured).toBe(true);
+      expect(state.slaEcho).toBe(true);
       state = runSignalCommand(state, "frequency 60");
+      expect(state.slaFreq).toBe(true);
       state = runSignalCommand(state, "ip sla schedule 10 life forever start-time now");
       state = runSignalCommand(state, "end");
       const verified = runSignalCommand(state, "show ip sla statistics");
@@ -186,8 +203,23 @@ describe("The Signal Detective mission", () => {
       let state = atSla();
       state = runSignalCommand(state, "enable");
       const early = runSignalCommand(state, "show ip sla statistics");
-      expect(early.cliHistory.at(-1)?.output).toContain("No active IPSLA operations");
+      expect(early.cliHistory.at(-1)?.output).toContain("No complete IPSLA operation");
       expect(early.phase).toBe("sla");
+    });
+
+    it("refuses to verify until the full probe sequence is in place", () => {
+      let state = atSla();
+      expect(state.phase).toBe("sla");
+      state = runSignalCommand(state, "enable");
+      state = runSignalCommand(state, "configure terminal");
+      state = runSignalCommand(state, "ip sla 10");
+      state = runSignalCommand(state, "icmp-echo 203.0.113.1");
+      state = runSignalCommand(state, "end");
+      const early = runSignalCommand(state, "show ip sla statistics");
+      expect(early.slaVerified).toBe(false);
+      expect(early.phase).toBe("sla");
+      expect(early.cliHistory.at(-1)?.output).toContain("No complete IPSLA operation");
+      expect(slaDone(early)).toBe(false);
     });
   });
 
@@ -223,6 +255,16 @@ describe("The Signal Detective mission", () => {
       expect(read.cliHistory.at(-1)?.output).toContain("yang-data+json");
       expect(read.cliHistory.at(-1)?.output).toContain("200 OK");
       expect(read.eventLog.at(-1)?.tone).toBe("success");
+    });
+
+    it("refuses the GET until the restconf service is enabled", () => {
+      let state = atNetconf();
+      expect(state.phase).toBe("netconf");
+      state = runSignalCommand(state, "enable");
+      const early = runSignalCommand(state, "show restconf interface gigabitethernet0/1");
+      expect(early.netconfRead).toBe(false);
+      expect(early.phase).toBe("netconf");
+      expect(early.cliHistory.at(-1)?.output).toContain("not enabled");
     });
 
     it("confirms the restconf service is enabled before the GET", () => {

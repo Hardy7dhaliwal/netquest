@@ -1040,10 +1040,15 @@ export default function Home() {
       && typeof snapshot.ifChecked === "boolean"
       && typeof snapshot.debugSeen === "boolean"
       && typeof snapshot.aclSeen === "boolean"
-      && typeof snapshot.spanConfigured === "boolean"
+      && typeof snapshot.spanSource === "boolean"
+      && typeof snapshot.spanDest === "boolean"
       && typeof snapshot.spanVerified === "boolean"
-      && typeof snapshot.slaConfigured === "boolean"
+      && typeof snapshot.slaEntry === "boolean"
+      && typeof snapshot.slaEcho === "boolean"
+      && typeof snapshot.slaFreq === "boolean"
+      && typeof snapshot.slaSchedule === "boolean"
       && typeof snapshot.slaVerified === "boolean"
+      && typeof snapshot.restconfEnabled === "boolean"
       && typeof snapshot.netconfRead === "boolean"
       && flowOptions.includes(snapshot.selectedFlow ?? null)
       && controllerOptions.includes(snapshot.selectedController ?? null)

@@ -33,6 +33,8 @@ export type OspfMissionState = {
   areaFixed: boolean;
   areaVerified: boolean;
   summarySet: boolean;
+  prefixDenySet: boolean;
+  prefixPermitSet: boolean;
   filterSet: boolean;
   attempts: number;
   eventLog: OspfEvent[];
@@ -53,6 +55,8 @@ export const INITIAL_OSPF_MISSION: OspfMissionState = {
   areaFixed: false,
   areaVerified: false,
   summarySet: false,
+  prefixDenySet: false,
+  prefixPermitSet: false,
   filterSet: false,
   attempts: 0,
   eventLog: [],
@@ -63,6 +67,11 @@ const INVALID = "% Invalid input detected at '^' marker.";
 /** Which router the single console is attached to for the current phase. */
 export function ospfDeviceFor(phase: OspfPhase): OspfDevice {
   return phase === "verify" ? "R1" : "R2";
+}
+
+/** The LabDeny prefix-list is only usable once both entries exist. */
+export function prefixListCreated(state: OspfMissionState) {
+  return state.prefixDenySet && state.prefixPermitSet;
 }
 
 export function ospfPromptFor(mode: OspfCliMode, device: OspfDevice) {
@@ -153,12 +162,20 @@ export function runOspfCommand(state: OspfMissionState, rawCommand: string): Osp
     output = state.summarySet ? "Summary already installed." : "Route summary for area 1 installed — 24 /30 routes collapse into one /22.";
     next = { ...state, summarySet: true };
   } else if (state.phase === "filter" && (state.cliMode === "config" || state.cliMode === "config-router") && command === "ip prefix-list labdeny seq 5 deny 192.168.50.0/24") {
-    output = "Prefix-list LabDeny created — the lab prefix 192.168.50.0/24 is denied.";
+    output = state.prefixDenySet ? "Deny entry already exists." : "Prefix-list LabDeny created — the lab prefix 192.168.50.0/24 is denied.";
+    next = { ...state, prefixDenySet: true };
   } else if (state.phase === "filter" && (state.cliMode === "config" || state.cliMode === "config-router") && command === "ip prefix-list labdeny seq 10 permit 0.0.0.0/0 le 32") {
-    output = "Prefix-list LabDeny completed — everything else is permitted.";
+    output = state.prefixPermitSet ? "Permit entry already exists." : "Prefix-list LabDeny completed — everything else is permitted.";
+    next = { ...state, prefixPermitSet: true };
   } else if (state.phase === "filter" && state.cliMode === "config-router" && command === "area 1 filter-list prefix labdeny out") {
-    output = state.filterSet ? "Filter already applied." : "Type-3 LSA filter applied at the ABR edge — the lab prefix can no longer leave area 1.";
-    next = { ...state, filterSet: true };
+    if (!prefixListCreated(state)) {
+      output = "LabDeny does not exist yet — create the prefix-list first (ip prefix-list LabDeny seq 5 deny 192.168.50.0/24, then the catch-all permit), then apply it with area 1 filter-list.";
+    } else if (state.filterSet) {
+      output = "Filter already applied.";
+    } else {
+      output = "Type-3 LSA filter applied at the ABR edge — the lab prefix can no longer leave area 1.";
+      next = { ...state, filterSet: true };
+    }
   } else if (command.startsWith("router ospf") && state.cliMode !== "config") {
     output = "Enter configuration mode first: configure terminal, then router ospf 1.";
   } else if ((command.startsWith("network") || command.startsWith("area")) && state.cliMode !== "config-router") {

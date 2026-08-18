@@ -35,12 +35,17 @@ export type SignalDetectiveMissionState = {
   debugSeen: boolean;
   aclSeen: boolean;
   // span phase (R-CORE)
-  spanConfigured: boolean;
+  spanSource: boolean;
+  spanDest: boolean;
   spanVerified: boolean;
   // sla phase (R-EDGE)
-  slaConfigured: boolean;
+  slaEntry: boolean;
+  slaEcho: boolean;
+  slaFreq: boolean;
+  slaSchedule: boolean;
   slaVerified: boolean;
   // netconf phase (R-CORE)
+  restconfEnabled: boolean;
   netconfRead: boolean;
   selectedFlow: SignalFlowOption | null;
   selectedController: SignalControllerOption | null;
@@ -65,10 +70,15 @@ export const INITIAL_SIGNAL_DETECTIVE_MISSION: SignalDetectiveMissionState = {
   ifChecked: false,
   debugSeen: false,
   aclSeen: false,
-  spanConfigured: false,
+  spanSource: false,
+  spanDest: false,
   spanVerified: false,
-  slaConfigured: false,
+  slaEntry: false,
+  slaEcho: false,
+  slaFreq: false,
+  slaSchedule: false,
   slaVerified: false,
+  restconfEnabled: false,
   netconfRead: false,
   selectedFlow: null,
   selectedController: null,
@@ -88,11 +98,11 @@ export function diagnoseDone(state: SignalDetectiveMissionState) {
 }
 
 export function spanDone(state: SignalDetectiveMissionState) {
-  return state.spanConfigured && state.spanVerified;
+  return state.spanSource && state.spanDest && state.spanVerified;
 }
 
 export function slaDone(state: SignalDetectiveMissionState) {
-  return state.slaConfigured && state.slaVerified;
+  return state.slaEntry && state.slaEcho && state.slaFreq && state.slaSchedule && state.slaVerified;
 }
 
 export function resetSignalDetectiveMission(): SignalDetectiveMissionState {
@@ -280,14 +290,14 @@ export function runSignalCommand(state: SignalDetectiveMissionState, rawCommand:
   } else if (state.phase === "diagnose" && (command.startsWith("ping") || command.startsWith("traceroute") || command.startsWith("show") || command.startsWith("debug") || command.startsWith("undebug"))) {
     output = "Type enable to enter privileged EXEC on R-CORE, then run the command.";
   } else if (state.phase === "span" && state.cliMode === "config" && command === "monitor session 1 source interface gi0/1 both") {
-    output = "Session 1 source ports: Gi0/1 (both directions)";
-    next = { ...state, spanConfigured: true };
+    output = state.spanSource ? "Session 1 source ports already set." : "Session 1 source ports: Gi0/1 (both directions)";
+    next = { ...state, spanSource: true };
   } else if (state.phase === "span" && state.cliMode === "config" && command === "monitor session 1 destination interface gi0/2") {
-    output = "Session 1 destination port: Gi0/2";
-    next = { ...state, spanConfigured: true };
+    output = state.spanDest ? "Session 1 destination port already set." : "Session 1 destination port: Gi0/2";
+    next = { ...state, spanDest: true };
   } else if (state.phase === "span" && state.cliMode === "privileged" && command === "show monitor session 1") {
-    if (!state.spanConfigured) {
-      output = "Session 1 does not exist — configure the source and destination ports first.";
+    if (!(state.spanSource && state.spanDest)) {
+      output = "Session 1 is incomplete — configure BOTH the source port (gi0/1) and the destination port (gi0/2) first.";
     } else {
       output = monitorSession();
       next = { ...state, spanVerified: true };
@@ -295,19 +305,20 @@ export function runSignalCommand(state: SignalDetectiveMissionState, rawCommand:
   } else if (state.phase === "span" && (command.startsWith("monitor session") || command === "show monitor session 1")) {
     output = state.cliMode === "config" ? "That is a show command — type end first, then show monitor session 1." : "Type configure terminal first, then add the monitor session commands.";
   } else if (state.phase === "sla" && state.cliMode === "config" && command === "ip sla 10") {
-    output = "IPSLA operation 10 configured — define its probe below.";
+    output = state.slaEntry ? "IPSLA operation 10 already exists." : "IPSLA operation 10 configured — define its probe below.";
+    next = { ...state, slaEntry: true };
   } else if (state.phase === "sla" && state.cliMode === "config" && command === "icmp-echo 203.0.113.1") {
-    output = "Probe 10 sends ICMP echo to 203.0.113.1.";
-    next = { ...state, slaConfigured: true };
+    output = state.slaEcho ? "Probe already defined." : "Probe 10 sends ICMP echo to 203.0.113.1.";
+    next = { ...state, slaEcho: true };
   } else if (state.phase === "sla" && state.cliMode === "config" && command === "frequency 60") {
-    output = "Probe 10 runs every 60 seconds.";
-    next = { ...state, slaConfigured: true };
+    output = state.slaFreq ? "Frequency already set." : "Probe 10 runs every 60 seconds.";
+    next = { ...state, slaFreq: true };
   } else if (state.phase === "sla" && state.cliMode === "config" && command === "ip sla schedule 10 life forever start-time now") {
-    output = "Probe 10 scheduled — running forever, starting now.";
-    next = { ...state, slaConfigured: true };
+    output = state.slaSchedule ? "Probe 10 is already scheduled." : "Probe 10 scheduled — running forever, starting now.";
+    next = { ...state, slaSchedule: true };
   } else if (state.phase === "sla" && state.cliMode === "privileged" && command === "show ip sla statistics") {
-    if (!state.slaConfigured) {
-      output = "No active IPSLA operations — define and schedule the probe first.";
+    if (!(state.slaEntry && state.slaEcho && state.slaFreq && state.slaSchedule)) {
+      output = "No complete IPSLA operation yet — define the entry (ip sla 10), its probe (icmp-echo), the frequency, and the schedule first.";
     } else {
       output = slaStats();
       next = { ...state, slaVerified: true };
@@ -315,12 +326,19 @@ export function runSignalCommand(state: SignalDetectiveMissionState, rawCommand:
   } else if (state.phase === "sla" && (command.startsWith("ip sla") || command === "icmp-echo 203.0.113.1" || command === "frequency 60" || command === "show ip sla statistics")) {
     output = state.cliMode === "config" ? "That is a show command — type end first, then show ip sla statistics." : "Type configure terminal first, then define the probe under ip sla 10.";
   } else if (state.phase === "netconf" && state.cliMode === "config" && command === "restconf") {
-    output = "RESTCONF enabled on HTTPS (port 443).";
+    output = state.restconfEnabled ? "RESTCONF already enabled." : "RESTCONF enabled on HTTPS (port 443).";
+    next = { ...state, restconfEnabled: true };
   } else if (state.phase === "netconf" && state.cliMode === "privileged" && command === "show restconf") {
-    output = "RESTCONF service is enabled (HTTPS, port 443).";
+    output = state.restconfEnabled
+      ? "RESTCONF service is enabled (HTTPS, port 443)."
+      : "RESTCONF is not enabled yet — enter configuration mode (configure terminal), run restconf, then end and check again.";
   } else if (state.phase === "netconf" && state.cliMode === "privileged" && command === "show restconf interface gigabitethernet0/1") {
-    output = netconfJson();
-    next = { ...state, netconfRead: true };
+    if (!state.restconfEnabled) {
+      output = "RESTCONF is not enabled — enter configuration mode and run restconf first, then end and retry the GET.";
+    } else {
+      output = netconfJson();
+      next = { ...state, netconfRead: true };
+    }
   } else if (state.phase === "netconf" && (command.startsWith("restconf") || command.startsWith("show restconf"))) {
     output = state.cliMode === "config" ? "Type end first, then run the RESTCONF GET from privileged EXEC." : "Type configure terminal first to enable the restconf service, then GET the interface.";
   } else {
