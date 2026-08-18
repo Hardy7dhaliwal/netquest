@@ -114,6 +114,72 @@ describe("lab flow", () => {
     expect(state.clean).toBe(false);
   });
 
+  it("rejects the other variant's VLAN in the trunk lab", () => {
+    const template = findLab("lab-trunk-vlan");
+    let state = startLab(template, "a");
+    state = runLabCommand(state, template, "show interfaces trunk");
+    state = answerLabDiagnose(state, template, "allowed");
+    // Variant B's VLAN (120) must NOT apply on variant A (VLAN 30).
+    state = runLabCommand(state, template, "switchport trunk allowed vlan add 120");
+    expect(state.stepIndex).toBe(2); // still on configure
+    expect(state.clean).toBe(false);
+  });
+
+  it("rejects the other variant's ACL number in the iACL lab", () => {
+    const template = findLab("lab-iacl");
+    let state = startLab(template, "a");
+    state = runLabCommand(state, template, "show access-lists");
+    state = answerLabDiagnose(state, template, "notapplied");
+    // Variant B's ACL (170) must NOT apply on variant A (ACL 150).
+    state = runLabCommand(state, template, "ip access-group 170 in");
+    expect(state.stepIndex).toBe(2); // still on configure
+    expect(state.clean).toBe(false);
+  });
+
+  it("accepts only the variant's own interface in the iACL inspect", () => {
+    const template = findLab("lab-iacl");
+    let state = startLab(template, "b");
+    // Variant A's interface (gi0/1) is not a valid inspect on variant B (Gi0/3).
+    state = runLabCommand(state, template, "show ip interface gi0/1");
+    expect(state.stepIndex).toBe(0); // still on inspect
+    expect(state.clean).toBe(false);
+    state = runLabCommand(state, template, "show ip interface gi0/3");
+    expect(state.stepIndex).toBe(1); // variant's own interface advances
+  });
+
+  it("rejects the other variant's RESTCONF URL in the JSON lab", () => {
+    const template = findLab("lab-json");
+    let state = startLab(template, "a");
+    // Variant B's URL must not inspect on variant A.
+    state = runLabCommand(state, template, "curl -X PATCH -d @payload.json https://172.16.1.5/restconf/data/Cisco-IOS-XE-native:native/interface/GigabitEthernet=0/3");
+    expect(state.stepIndex).toBe(0); // still on inspect
+    expect(state.clean).toBe(false);
+    state = runLabCommand(state, template, "curl -X PATCH -d @payload.json https://10.1.1.5/restconf/data/Cisco-IOS-XE-native:native/interface/GigabitEthernet=0/1");
+    expect(state.stepIndex).toBe(1);
+  });
+
+  it("rejects the other variant's prefix in the BGP weight lab", () => {
+    const template = findLab("lab-bgp-weight");
+    let state = startLab(template, "a");
+    // Variant B's prefix must not inspect on variant A.
+    state = runLabCommand(state, template, "show ip bgp 172.16.0.0/24");
+    expect(state.stepIndex).toBe(0);
+    expect(state.clean).toBe(false);
+    state = runLabCommand(state, template, "show ip bgp 10.1.0.0/24");
+    expect(state.stepIndex).toBe(1);
+  });
+
+  it("rejects the other variant's prefix in the route-reflector lab", () => {
+    const template = findLab("lab-ibgp-rr");
+    let state = startLab(template, "a");
+    // Variant B's prefix must not inspect on variant A.
+    state = runLabCommand(state, template, "show ip bgp 172.16.0.0/24");
+    expect(state.stepIndex).toBe(0);
+    expect(state.clean).toBe(false);
+    state = runLabCommand(state, template, "show ip bgp 10.1.0.0/24");
+    expect(state.stepIndex).toBe(1);
+  });
+
   it("rejects distractor commands with targeted feedback and marks the run non-clean", () => {
     const template = findLab("lab-iacl");
     let state = startLab(template, "a");

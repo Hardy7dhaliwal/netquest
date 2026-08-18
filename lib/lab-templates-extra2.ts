@@ -399,7 +399,7 @@ export const LAB_TEMPLATES_EXTRA2: LabTemplate[] = [
         addressing: "PATCH https://10.1.1.5/restconf/data/Cisco-IOS-XE-native:native/interface/GigabitEthernet=0/1",
         interfaces: "GigabitEthernet0/1",
         distractors: ["\"ipv4\": {\"address\": {\"ip\": \"192.0.2.1\"}}", "Content-Type: application/json", "PATCH /restconf/data/native"],
-        values: { iface: "GigabitEthernet0/1", ip: "192.0.2.1", desc: "uplink", body: "{\"name\": \"GigabitEthernet0/1\", \"description\": \"uplink\"}" },
+        values: { iface: "GigabitEthernet0/1", ip: "192.0.2.1", desc: "uplink", url: "https://10.1.1.5/restconf/data/Cisco-IOS-XE-native:native/interface/GigabitEthernet=0/1", body: "{\"name\": \"GigabitEthernet0/1\", \"description\": \"uplink\"}" },
       },
       {
         id: "b",
@@ -408,7 +408,7 @@ export const LAB_TEMPLATES_EXTRA2: LabTemplate[] = [
         addressing: "PATCH https://172.16.1.5/restconf/data/Cisco-IOS-XE-native:native/interface/GigabitEthernet=0/3",
         interfaces: "GigabitEthernet0/3",
         distractors: ["\"ipv4\": {\"address\": {\"ip\": \"172.16.0.1\"}}", "Content-Type: application/json", "PATCH /restconf/data/native"],
-        values: { iface: "GigabitEthernet0/3", ip: "172.16.0.1", desc: "server-link", body: "{\"name\": \"GigabitEthernet0/3\", \"description\": \"server-link\"}" },
+        values: { iface: "GigabitEthernet0/3", ip: "172.16.0.1", desc: "server-link", url: "https://172.16.1.5/restconf/data/Cisco-IOS-XE-native:native/interface/GigabitEthernet=0/3", body: "{\"name\": \"GigabitEthernet0/3\", \"description\": \"server-link\"}" },
       },
     ],
     steps: [
@@ -416,7 +416,7 @@ export const LAB_TEMPLATES_EXTRA2: LabTemplate[] = [
         kind: "inspect",
         title: "Send the request",
         prompt: "Issue the RESTCONF PATCH and read the response.",
-        commands: ["curl -X PATCH -d @payload.json https://10.1.1.5/restconf/data/Cisco-IOS-XE-native:native/interface/GigabitEthernet=0/1", "curl -X PATCH -d @payload.json https://172.16.1.5/restconf/data/Cisco-IOS-XE-native:native/interface/GigabitEthernet=0/3", "cat payload.json"],
+        commands: (variant) => [`curl -X PATCH -d @payload.json ${variant.values!.url}`, "cat payload.json"],
         output: () =>
           `HTTP/1.1 400 Bad Request\nContent-Type: application/json\n\n{\n  "errors": {\n    "error": [\n      {\n        "error-message": "JSON parsing failed: trailing characters or malformed token",\n        "error-tag": "malformed-message"\n      }\n    ]\n  }\n}`,
         wrongHint: "Send the PATCH with curl and read the 400 response body.",
@@ -448,7 +448,7 @@ export const LAB_TEMPLATES_EXTRA2: LabTemplate[] = [
         kind: "verify",
         title: "Verify the change",
         prompt: "Confirm the interface now carries the applied configuration.",
-        commands: ["curl -X GET https://10.1.1.5/restconf/data/Cisco-IOS-XE-native:native/interface/GigabitEthernet=0/1", "curl -X GET https://172.16.1.5/restconf/data/Cisco-IOS-XE-native:native/interface/GigabitEthernet=0/3"],
+        commands: (variant) => [`curl -X GET ${variant.values!.url}`],
         output: (variant) =>
           `HTTP/1.1 200 OK\nContent-Type: application/yang-data+json\n\n{\n  "Cisco-IOS-XE-native:interface": {\n    "name": "${variant.values!.iface}",\n    "description": "${variant.values!.desc}"\n  }\n}`,
         wrongHint: "GET the interface back from RESTCONF — 200 with the description proves the PATCH landed.",

@@ -50,7 +50,7 @@ export const LAB_TEMPLATES_EXTRA7: LabTemplate[] = [
         kind: "inspect",
         title: "Inspect the reflected paths",
         prompt: "Show the client's BGP table entry for the prefix, including the cluster list of each path, and confirm the reflector sessions are up.",
-        commands: ["show ip bgp", "show ip bgp 10.1.0.0/24", "show ip bgp 172.16.0.0/24", "show ip bgp summary"],
+        commands: (variant) => ["show ip bgp", `show ip bgp ${variant.values!.prefix}`, "show ip bgp summary"],
         output: (variant) =>
           variant.values!.fix.startsWith("neighbor")
             ? `BGP routing table entry for ${variant.values!.prefix}, version 7\nPaths: (1 available, best #1)\n  Path #1: (Received by speaker 0)\n  Origin IGP, metric 0, localpref 100, valid, internal, best\n  Cluster list:  ${variant.values!.longCluster}\n\n(no path via ${variant.values!.rrName} — the reflected route never arrived; only the longer-cluster-list path exists)`
@@ -87,7 +87,7 @@ export const LAB_TEMPLATES_EXTRA7: LabTemplate[] = [
         kind: "verify",
         title: "Verify both paths",
         prompt: "Confirm the client now sees both iBGP paths and the shorter-cluster-list path is best.",
-        commands: ["show ip bgp", "show ip bgp 10.1.0.0/24", "show ip bgp 172.16.0.0/24"],
+        commands: (variant) => ["show ip bgp", `show ip bgp ${variant.values!.prefix}`],
         output: (variant) =>
           `BGP routing table entry for ${variant.values!.prefix}, version 8\nPaths: (2 available, best #1)\n  Path #1: (Received by speaker 0)\n  Origin IGP, metric 0, localpref 100, valid, internal, best\n  Cluster list:  ${variant.values!.shortCluster}\n  Path #2: (Received by speaker 0, via ${variant.values!.backupHop})\n  Origin IGP, metric 0, localpref 100, valid, internal\n  Cluster list:  ${variant.values!.longCluster}\n\n(shortest cluster list wins — the direct path via ${variant.values!.directHop} holds '>')`,
         wrongHint: "Re-run show ip bgp <prefix> — both paths must be present and the '>' must sit on the shorter cluster list.",

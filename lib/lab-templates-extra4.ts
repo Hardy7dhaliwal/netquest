@@ -118,7 +118,7 @@ export const LAB_TEMPLATES_EXTRA4: LabTemplate[] = [
         kind: "inspect",
         title: "Inspect the BGP table",
         prompt: "Show the BGP table entry for the prefix.",
-        commands: ["show ip bgp", "show ip bgp 10.1.0.0/24", "show ip bgp 172.16.0.0/24"],
+        commands: (variant) => ["show ip bgp", `show ip bgp ${variant.values!.prefix}`],
         output: (variant) =>
           `BGP table version is 14, local router ID is 10.255.0.1\nStatus codes: s suppressed, d damped, h history, * valid, > best, i - internal\n\n   Network          Next Hop            Metric LocPrf Weight Path\n*> ${variant.values!.prefix.padEnd(13)} ${variant.values!.wrongPeer}                   0    100   1000 ${variant.id === "a" ? "65001 65003" : "64501 64503"} i\n*                   ${variant.values!.preferredPeer}                  0    100      0 ${variant.id === "a" ? "65002" : "64502"} i\n`,
         wrongHint: "The BGP table is shown by show ip bgp — look for the '>' marker and the weight/AS-path columns.",
@@ -151,7 +151,7 @@ export const LAB_TEMPLATES_EXTRA4: LabTemplate[] = [
         kind: "verify",
         title: "Verify the best path",
         prompt: "Confirm the '>' marker moved to the preferred peer's path.",
-        commands: ["show ip bgp", "show ip bgp 10.1.0.0/24", "show ip bgp 172.16.0.0/24"],
+        commands: (variant) => ["show ip bgp", `show ip bgp ${variant.values!.prefix}`],
         output: (variant) =>
           `BGP table version is 15, local router ID is 10.255.0.1\n\n   Network          Next Hop            Metric LocPrf Weight Path\n*  ${variant.values!.prefix.padEnd(13)} ${variant.values!.wrongPeer}                   0    100   1000 ${variant.id === "a" ? "65001 65003" : "64501 64503"} i\n*>                  ${variant.values!.preferredPeer}                  0    100   1000 ${variant.id === "a" ? "65002" : "64502"} i\n`,
         wrongHint: "Re-run show ip bgp — the '>' should now sit on the preferred peer's path (weight ties, so the shorter AS path wins).",
